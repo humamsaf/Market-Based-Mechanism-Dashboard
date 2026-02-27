@@ -171,8 +171,9 @@ st.divider()
 # OPTIONAL: Quick notes / changelog
 # -----------------------------
 st.subheader("📝 Notes")
-st.info(
-    "Saran: taruh ringkasan metodologi + definisi kolom (data dictionary) di halaman About/Methods, "
-    "biar landing page tetap clean."
-)st.divider()
+sst.info(
+    "Saran: taruh ringkasan metodologi..."
+)
+
+st.divider()
 st.info("Buka menu di sidebar untuk masuk ke masing-masing dashboard: MBM National / CORSIA / CDM.")
