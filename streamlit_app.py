@@ -3,12 +3,12 @@ from pathlib import Path
 from utils.paths import data_path, repo_root
 
 st.set_page_config(
-    page_title="Global Dashboard (MBM • CORSIA • CDM)",
+    page_title="Global Market-Based Mechanism Dashboard (MBM • CORSIA • CDM)",
     page_icon="🌍",
     layout="wide",
 )
 
-st.title("🌍 Global Dashboard")
+st.title("🌍 Global Market-Based MechanismDashboard")
 st.caption("Multi-page Streamlit app: MBM National • CORSIA • CDM")
 
 st.subheader("Status data files (di folder `data/`)")
