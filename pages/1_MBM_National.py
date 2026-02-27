@@ -1,30 +1,24 @@
-# pages/1_MBM_National.py
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 import pycountry
 
-# optional, tapi kita include di requirements
-from streamlit_plotly_events import plotly_events
+st.set_page_config(page_title="Global MBM Dashboard", layout="wide")
 
-from utils.paths import data_path
-
-st.set_page_config(page_title="MBM National", page_icon="🏛️", layout="wide")
-
-FILE_PATH = data_path("Global Market Based Mechanism.xlsx")
+FILE_PATH = "data/Global Market Based Mechanism.xlsx"
 
 MECH_COLS = {
     "1. Carbon Tax": "Carbon Tax",
     "2. ETS": "ETS",
     "3. Tax Incentives": "Tax Incentives",
     "4. Fuel Mandates": "Fuel Mandates",
-    "5. VCM project": "VCM project",
+    "5. VCM project ": "VCM project",
     "6. Feebates": "Feebates",
     "7. CBAM": "CBAM",
     "8. AMC": "AMC",
 }
-MECH_LIST = list(MECH_COLS.values())
 
+# --- helper: country name -> ISO3
 MANUAL_ISO3 = {
     "Côte d’Ivoire": "CIV",
     "Côte d'Ivoire": "CIV",
@@ -46,123 +40,288 @@ MANUAL_ISO3 = {
     "Tanzania": "TZA",
     "Micronesia": "FSM",
     "Palestine": "PSE",
-    "Türkiye": "TUR",
 }
 
-def country_to_iso3(name: str):
-    if pd.isna(name):
-        return None
-    n = str(name).strip()
-    if n in MANUAL_ISO3:
-        return MANUAL_ISO3[n]
+def to_iso3(name: str):
+    name = (name or "").strip()
+    if name in MANUAL_ISO3:
+        return MANUAL_ISO3[name]
     try:
-        return pycountry.countries.lookup(n).alpha_3
+        c = pycountry.countries.lookup(name)
+        return c.alpha_3
     except Exception:
         return None
 
-@st.cache_data(show_spinner=False)
-def load_data():
+@st.cache_data
+def load_raw() -> pd.DataFrame:
     df = pd.read_excel(FILE_PATH)
-    # normalize columns
     df.columns = [str(c).strip() for c in df.columns]
-    # ensure key column exists
-    if "Jurisdiction" not in df.columns:
-        # try common fallbacks
-        for cand in ["Country", "State", "Jurisdiction "]:
-            if cand in df.columns:
-                df = df.rename(columns={cand: "Jurisdiction"})
-                break
-    df["iso3"] = df["Jurisdiction"].apply(country_to_iso3)
     return df
 
-def mech_exists(row, mech_name: str):
-    # attempt to detect if mechanism exists in row
-    if mech_name not in row.index:
-        return False
-    v = row.get(mech_name)
-    if pd.isna(v):
-        return False
-    s = str(v).strip().lower()
-    if s in ("", "no", "none", "0", "false", "nan", "-"):
-        return False
-    return True
+def tidy_long(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    keep = ["No", "Country", "Region"] + [c.strip() for c in MECH_COLS.keys()] + ["Total Mechanism"]
+    keep = [c for c in keep if c in df_raw.columns]
+    df = df_raw[keep].copy()
 
-def show_mech_cards(row):
-    st.subheader("Mechanisms")
-    cols = st.columns(4)
-    for i, mech in enumerate(MECH_LIST):
-        col = cols[i % 4]
-        present = mech_exists(row, mech)
-        with col:
-            st.metric(mech, "YES" if present else "NO")
+    df = df[df["Country"].notna()]
+    df["Country"] = df["Country"].astype(str).str.strip()
+    df = df[df["Country"].str.lower() != "country"]
 
-def show_detail(row, mech_selected: str):
-    st.subheader(f"Detail: {mech_selected}")
-    if mech_selected not in row.index:
-        st.warning("Kolom mechanism ini tidak ditemukan di dataset.")
-        return
-    st.write(row.get(mech_selected))
-
-# =========================
-# UI
-# =========================
-st.title("🏛️ MBM National Dashboard")
-st.caption("Click map → pilih negara → lihat ringkasan + 8 mechanism cards")
-
-try:
-    df = load_data()
-except FileNotFoundError:
-    st.error(f"File tidak ditemukan: {FILE_PATH}. Pastikan Excel ada di folder `data/`.")
-    st.stop()
-
-if df.empty:
-    st.warning("Dataset kosong.")
-    st.stop()
-
-# Map dataset for Plotly
-map_df = df.dropna(subset=["iso3"]).copy()
-map_df["has_any_mech"] = 0
-for mech in MECH_LIST:
-    if mech in map_df.columns:
-        map_df["has_any_mech"] = map_df["has_any_mech"] | map_df[mech].notna().astype(int)
-
-left, right = st.columns([2.2, 1])
-
-with left:
-    st.subheader("World map (click a country)")
-    fig = px.choropleth(
-        map_df,
-        locations="iso3",
-        color="has_any_mech",
-        hover_name="Jurisdiction",
-        color_continuous_scale="Blues",
+    value_cols = [c.strip() for c in MECH_COLS.keys() if c.strip() in df.columns]
+    long = df.melt(
+        id_vars=["No", "Country", "Region"],
+        value_vars=value_cols,
+        var_name="mechanism_type_raw",
+        value_name="mechanism_detail",
     )
-    fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
-    selected = plotly_events(fig, click_event=True, hover_event=False, select_event=False, key="mbm_map_evt")
+    long["mechanism_type"] = long["mechanism_type_raw"].map(
+        {k.strip(): v for k, v in MECH_COLS.items()}
+    ).fillna(long["mechanism_type_raw"])
+    long = long.drop(columns=["mechanism_type_raw"])
 
-# Resolve selection
-selected_iso3 = None
-if selected and isinstance(selected, list) and len(selected) > 0:
-    pt = selected[0]
-    selected_iso3 = pt.get("location")
+    long["mechanism_detail"] = long["mechanism_detail"].astype(str).str.strip()
+    long = long[long["mechanism_detail"] != ""]
+    long = long[long["mechanism_detail"].str.lower() != "nan"]
 
-with right:
-    st.subheader("Country panel")
-    if selected_iso3:
-        row = df[df["iso3"] == selected_iso3].head(1)
-        if row.empty:
-            st.warning("Negara tidak ditemukan di tabel.")
-        else:
-            row = row.iloc[0]
-            st.write(f"**Jurisdiction:** {row.get('Jurisdiction')}")
-            show_mech_cards(row)
+    # VCM numeric
+    long["vcm_projects"] = pd.NA
+    mask_vcm = long["mechanism_type"] == "VCM project"
+    long.loc[mask_vcm, "vcm_projects"] = pd.to_numeric(long.loc[mask_vcm, "mechanism_detail"], errors="coerce")
 
-            st.divider()
-            mech_selected = st.selectbox("Drilldown mechanism", MECH_LIST, key="mbm_mech_select")
-            show_detail(row, mech_selected)
-    else:
-        st.info("Klik negara di peta untuk melihat detail di panel ini.")
+    # drop non-VCM zeros
+    long = long[~((~mask_vcm) & (long["mechanism_detail"] == "0"))]
+
+    return df, long
+
+def summarize_mechanisms(df_long: pd.DataFrame) -> pd.DataFrame:
+    g = (
+        df_long.groupby(["Country", "mechanism_type"])["mechanism_detail"]
+        .apply(lambda s: "; ".join(sorted({x for x in s.astype(str).str.strip() if x and x.lower() != "nan"})))
+        .reset_index()
+    )
+
+    # numbered list of mechanism types (no details)
+    types_list = (
+        g.groupby("Country")["mechanism_type"]
+        .apply(lambda s: "<br>".join([f"{i+1}. {t}" for i, t in enumerate(sorted(set(s.tolist())))]))
+        .reset_index(name="mechanism_types_list_html")
+    )
+
+    counts = g.groupby("Country")["mechanism_type"].nunique().reset_index(name="mechanism_type_count")
+
+    vcm = (
+        df_long[df_long["mechanism_type"] == "VCM project"]
+        .dropna(subset=["vcm_projects"])
+        .groupby("Country")["vcm_projects"]
+        .sum()
+        .reset_index(name="vcm_projects_sum")
+    )
+
+    out = counts.merge(types_list, on="Country", how="left").merge(vcm, on="Country", how="left")
+    out["vcm_projects_sum"] = pd.to_numeric(out["vcm_projects_sum"], errors="coerce").fillna(0).astype(int)
+    out["mechanism_types_list_html"] = out["mechanism_types_list_html"].fillna("No recorded mechanisms in this dataset.")
+    return out
+
+# ===== Load
+raw = load_raw()
+wide, long = tidy_long(raw)
+
+# ===== Header
+st.title("Global Market-Based Mechanisms Dashboard")
+st.caption(
+    "Coverage: 194 countries and territories, including UN member states, microstates, and UN observer entities "
+    "(e.g. Vatican City and Palestine). Kosovo is not included."
+)
+
+# ===== Sidebar (clean)
+st.sidebar.header("Filters")
+region_sel = st.sidebar.multiselect("Region", sorted(long["Region"].dropna().unique()), key="f_region")
+type_sel = st.sidebar.multiselect("Mechanism type", sorted(long["mechanism_type"].dropna().unique()), key="f_type")
+country_sel = st.sidebar.multiselect("Country", sorted(long["Country"].dropna().unique()), key="f_country")
+keyword = st.sidebar.text_input("Search in details", value="", key="f_kw").strip()
+st.sidebar.caption(
+    f"Active filters → Region:{len(region_sel)} | Type:{len(type_sel)} | Country:{len(country_sel)} | Keyword:'{keyword}'"
+)
+
+if st.sidebar.button("Reset filters", use_container_width=True):
+    for k in ["f_region", "f_type", "f_country", "f_kw"]:
+        if k in st.session_state:
+            del st.session_state[k]
+    st.rerun()
+
+f = long.copy()
+if region_sel:
+    f = f[f["Region"].isin(region_sel)]
+if type_sel:
+    f = f[f["mechanism_type"].isin(type_sel)]
+if country_sel:
+    f = f[f["Country"].isin(country_sel)]
+if keyword:
+    f = f[f["mechanism_detail"].str.contains(keyword, case=False, na=False)]
+
+# ===== KPIs
+k1, k2, k3, k4 = st.columns(4)
+k1.metric("Countries covered", int(wide["Country"].nunique()))
+
+wide_view = wide.copy()
+if region_sel:
+    wide_view = wide_view[wide_view["Region"].isin(region_sel)]
+if country_sel:
+    wide_view = wide_view[wide_view["Country"].isin(country_sel)]
+
+k2.metric("Countries in view", int(wide_view["Country"].nunique()))
+k3.metric("Mechanism types in view", int(f["mechanism_type"].nunique()))
+
+vcm_sum = f.loc[f["mechanism_type"] == "VCM project", "vcm_projects"].sum(min_count=1)
+k4.metric("VCM projects (sum)", 0 if pd.isna(vcm_sum) else int(vcm_sum))
 
 st.divider()
-with st.expander("Raw data preview"):
-    st.dataframe(df, use_container_width=True)
+st.subheader("World map")
+
+MAP_OPTIONS = ["Total mechanisms (0–8)"] + list(MECH_COLS.values())
+map_choice = st.selectbox("Map mode", MAP_OPTIONS, index=0, key="map_choice")
+
+# Base countries (include zero cases)
+base = wide_view[["Country", "Region"]].drop_duplicates().copy()
+base["iso3"] = base["Country"].apply(to_iso3)
+
+# Summary from filtered long
+country_summary = summarize_mechanisms(f)
+
+# Merge to base so missing countries become 0
+m = base.merge(country_summary, on="Country", how="left")
+m["mechanism_type_count"] = m["mechanism_type_count"].fillna(0).astype(int)
+m["vcm_projects_sum"] = pd.to_numeric(m["vcm_projects_sum"], errors="coerce").fillna(0).astype(int)
+m["mechanism_types_list_html"] = m["mechanism_types_list_html"].fillna("No recorded mechanisms in this dataset.")
+
+missing_iso = m[m["iso3"].isna()]["Country"].tolist()
+if missing_iso:
+    st.warning(
+        f"ISO3 not found for {len(missing_iso)} countries/territories (not shown on map). "
+        f"Examples: {', '.join(missing_iso[:10])}"
+    )
+
+m_plot = m.dropna(subset=["iso3"]).copy()
+
+# ---- Choose metric for coloring
+if map_choice == "Total mechanisms (0–8)":
+    fig_map = px.choropleth(
+        m_plot,
+        locations="iso3",
+        color="mechanism_type_count",
+        hover_name="Country",
+    )
+    fig_map.update_coloraxes(cmin=0, cmax=8)
+    fig_map.update_traces(
+        hovertemplate=
+        "<b>%{hovertext}</b><br>" +
+        "Total mechanisms (0–8): %{customdata[0]}<br><br>" +
+        "%{customdata[1]}<extra></extra>",
+        customdata=m_plot[["mechanism_type_count", "mechanism_types_list_html"]].values,
+    )
+
+elif map_choice == "VCM project":
+    fig_map = px.choropleth(
+        m_plot,
+        locations="iso3",
+        color="vcm_projects_sum",
+        hover_name="Country",
+    )
+    fig_map.update_traces(
+        hovertemplate=
+        "<b>%{hovertext}</b><br>" +
+        "VCM projects (sum): %{customdata[0]}<br><br>" +
+        "%{customdata[1]}<extra></extra>",
+        customdata=m_plot[["vcm_projects_sum", "mechanism_types_list_html"]].values,
+    )
+
+else:
+    pres = (
+        f[f["mechanism_type"] == map_choice]
+        .groupby("Country")["mechanism_type"]
+        .size()
+        .reset_index(name="present")
+    )
+    pres["present"] = 1
+
+    m_plot2 = m_plot.merge(pres[["Country", "present"]], on="Country", how="left")
+    m_plot2["present"] = m_plot2["present"].fillna(0).astype(int)
+
+    fig_map = px.choropleth(
+        m_plot2,
+        locations="iso3",
+        color="present",
+        hover_name="Country",
+    )
+    fig_map.update_coloraxes(cmin=0, cmax=1)
+    fig_map.update_traces(
+        hovertemplate=
+        "<b>%{hovertext}</b><br>" +
+        f"{map_choice} present: %{{customdata[0]}}<br><br>" +
+        "%{customdata[1]}<extra></extra>",
+        customdata=m_plot2[["present", "mechanism_types_list_html"]].values,
+    )
+
+st.plotly_chart(fig_map, use_container_width=True, key="map_choropleth")
+
+# ===== Tabs
+tab1, tab2, tab3 = st.tabs(["Summary charts", "Country profile", "Data table"])
+
+with tab1:
+    c1, c2 = st.columns(2)
+
+    with c1:
+        st.subheader("Countries by mechanism type")
+        by_type = (
+            f.groupby("mechanism_type")["Country"].nunique()
+            .reset_index(name="countries")
+            .sort_values("countries", ascending=False)
+        )
+        st.plotly_chart(px.bar(by_type, x="mechanism_type", y="countries"), use_container_width=True, key="bar_type")
+
+    with c2:
+        st.subheader("Top countries by VCM projects")
+        v = f[f["mechanism_type"] == "VCM project"].dropna(subset=["vcm_projects"]).copy()
+        if len(v) == 0:
+            st.info("No VCM data under the current filters.")
+        else:
+            top = (
+                v.groupby("Country")["vcm_projects"].sum()
+                .reset_index()
+                .assign(vcm_projects=lambda d: d["vcm_projects"].fillna(0).astype(int))
+                .sort_values("vcm_projects", ascending=False)
+                .head(20)
+            )
+            st.plotly_chart(px.bar(top, x="Country", y="vcm_projects"), use_container_width=True, key="bar_vcm")
+
+with tab2:
+    st.subheader("Country profile")
+    countries_all = sorted(wide["Country"].unique())
+    default_idx = countries_all.index("United Kingdom") if "United Kingdom" in countries_all else 0
+    sel = st.selectbox("Select a country", countries_all, index=default_idx, key="country_profile")
+
+    cf = long[long["Country"] == sel].copy()
+    st.write("Region:", cf["Region"].iloc[0] if len(cf) else "—")
+
+    prof = (
+        cf.groupby("mechanism_type")["mechanism_detail"]
+        .apply(lambda s: "\n".join(f"- {x}" for x in sorted({v.strip() for v in s.astype(str) if v and v.lower() != "nan"})))
+        .reset_index()
+        .sort_values("mechanism_type")
+    )
+
+    for _, r in prof.iterrows():
+        st.markdown(f"**{r['mechanism_type']}**")
+        st.markdown(r["mechanism_detail"])
+
+with tab3:
+    st.subheader("Detail table (filtered)")
+    show_cols = ["Country", "Region", "mechanism_type", "mechanism_detail", "vcm_projects"]
+    st.dataframe(
+        f[show_cols].sort_values(["Country", "mechanism_type"]),
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    csv = f[["Country", "Region", "mechanism_type", "mechanism_detail"]].to_csv(index=False).encode("utf-8")
+    st.download_button("Download filtered data (CSV)", csv, "filtered_mbm.csv", "text/csv", use_container_width=True)
