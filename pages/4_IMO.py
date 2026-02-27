@@ -1,46 +1,97 @@
+# pages/4_IMO.py
+from __future__ import annotations
+
 import re
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import streamlit as st
 import plotly.express as px
 
 # =========================
-# CONFIG
+# PAGE CONFIG
 # =========================
-st.set_page_config(page_title="Fleet Fuel & Emissions Dashboard", layout="wide")
+st.set_page_config(page_title="IMO – Fleet Fuel & Emissions", layout="wide")
 
 st.markdown(
     """
     <style>
-      .block-container {padding-top: 1.2rem; padding-bottom: 2rem;}
-      .kpi-card {border: 1px solid rgba(0,0,0,0.08); border-radius: 14px; padding: 12px 14px;}
-      .muted {color: rgba(0,0,0,0.55); font-size: 0.9rem;}
-      .title {font-size: 1.35rem; font-weight: 700; margin-bottom: 0.25rem;}
+      .block-container {padding-top: 1.1rem; padding-bottom: 2rem;}
+      .kpi-card {
+        border: 1px solid rgba(0,0,0,0.08);
+        border-radius: 14px;
+        padding: 12px 14px;
+        background: rgba(255,255,255,0.02);
+      }
+      .muted {color: rgba(0,0,0,0.55); font-size: 0.92rem;}
+      .title {font-size: 1.35rem; font-weight: 750; margin-bottom: 0.25rem;}
+      .subtitle {margin-top: -0.2rem; margin-bottom: 0.6rem;}
+      .small-note {font-size: 0.88rem; color: rgba(0,0,0,0.55);}
     </style>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
+
+# =========================
+# PATH FIX (WORKS ON STREAMLIT CLOUD)
+# =========================
+REPO_ROOT = Path(__file__).resolve().parents[1]  # from pages/ -> repo root
+DATA_PATH = REPO_ROOT / "data" / "data fuel.xlsx"
+
+# Optional quick debug (comment if not needed)
+# st.write("DATA_PATH:", str(DATA_PATH))
+# st.write("Exists:", DATA_PATH.exists())
+
+if not DATA_PATH.exists():
+    st.error(
+        f"File tidak ketemu: {DATA_PATH}\n\n"
+        "Pastikan file `data fuel.xlsx` ada di folder `data/` dan namanya persis sama (termasuk spasi)."
+    )
+    st.stop()
 
 # =========================
 # LOAD & CLEAN
 # =========================
 @st.cache_data(show_spinner=False)
-def load_data(path: str) -> pd.DataFrame:
+def load_data(path: Path) -> pd.DataFrame:
     df = pd.read_excel(path)
 
-    # Rename first col
+    # Rename first column to Category if needed
     first_col = df.columns[0]
-    df = df.rename(columns={first_col: "Category"})
+    if first_col != "Category":
+        df = df.rename(columns={first_col: "Category"})
 
     # Normalize column names
-    df.columns = [c.replace("\n", " ").strip() for c in df.columns]
+    df.columns = [str(c).replace("\n", " ").strip() for c in df.columns]
 
-    # Identify hierarchy: ship type row vs size category row
-    # Size category rows typically contain "DWT"
+    # Detect CO2 column robustly
+    col_map = {c.lower().strip(): c for c in df.columns}
+    co2_col = None
+    candidates = ["co2 emissions", "co2 emission", "co2 (tonnes)", "co2"]
+    for key in candidates:
+        if key in col_map:
+            co2_col = col_map[key]
+            break
+    if co2_col is None:
+        # fallback contains
+        for c in df.columns:
+            lc = c.lower()
+            if "co2" in lc and "emiss" in lc:
+                co2_col = c
+                break
+
+    if co2_col is None:
+        raise ValueError("Kolom CO2 emissions tidak ditemukan. Cek header di Excel.")
+
+    df = df.rename(columns={co2_col: "CO2 emissions"})
+
+    # Build hierarchy: rows alternate between ship type and size categories
     def is_size_row(x: str) -> bool:
         if not isinstance(x, str):
             return False
-        return bool(re.search(r"\bDWT\b", x)) or x.lower().startswith("less than")
+        t = x.strip().lower()
+        return ("dwt" in t) or t.startswith("less than") or ("≤" in t) or ("<" in t)
 
     ship_type = []
     size_cat = []
@@ -58,123 +109,114 @@ def load_data(path: str) -> pd.DataFrame:
     df["Ship type"] = ship_type
     df["Size category"] = size_cat
 
-    # Coerce numeric columns (everything except Category/Ship type/Size category)
+    # Coerce numeric columns
     non_num = {"Category", "Ship type", "Size category"}
     for c in df.columns:
         if c not in non_num:
             df[c] = pd.to_numeric(df[c], errors="coerce")
 
-    # Tidy: drop fully empty ship types (just in case)
+    # Drop rows without ship type (safety)
     df = df.dropna(subset=["Ship type"]).copy()
 
     return df
 
-DATA_PATH = "data fuel.xlsx"
+
 df_raw = load_data(DATA_PATH)
 
-# Detect fuel columns (everything that is NOT obvious fleet activity / counts)
+# =========================
+# IDENTIFY FUEL COLUMNS
+# =========================
 KNOWN_NON_FUEL = {
-    "Number of ships", "Gross tonnage", "Deadweight tonnage",
-    "Distance travelled", "Hours under way", "CO2 emissions"
+    "Number of ships",
+    "Gross tonnage",
+    "Deadweight tonnage",
+    "Distance travelled",
+    "Hours under way",
+    "CO2 emissions",
 }
 
-# Some sheets might keep "CO2 emissions" as "CO2 emissions" with spaces
-# Make sure we map it robustly
-col_map = {c.lower(): c for c in df_raw.columns}
-co2_col = None
-for k in ["co2 emissions", "co2  emissions", "co2 emissions ", "co2 emissions  "]:
-    if k in col_map:
-        co2_col = col_map[k]
-        break
-# fallback: find any column containing "co2" and "emission"
-if co2_col is None:
-    for c in df_raw.columns:
-        if "co2" in c.lower() and "emission" in c.lower():
-            co2_col = c
-            break
-
-if co2_col is None:
-    st.error("Tidak ketemu kolom CO2 emissions di file. Cek header kolomnya.")
-    st.stop()
-
-# Standardize to a single name
-df_raw = df_raw.rename(columns={co2_col: "CO2 emissions"})
-if "CO2 emissions" not in KNOWN_NON_FUEL:
-    KNOWN_NON_FUEL.add("CO2 emissions")
-
-fuel_cols = [c for c in df_raw.columns
-             if c not in {"Category", "Ship type", "Size category"}
-             and c not in KNOWN_NON_FUEL]
+fuel_cols = [
+    c
+    for c in df_raw.columns
+    if c not in {"Category", "Ship type", "Size category"} and c not in KNOWN_NON_FUEL
+]
 
 # =========================
 # SIDEBAR FILTERS
 # =========================
-st.sidebar.markdown("### Filters")
-all_ship_types = sorted([x for x in df_raw["Ship type"].dropna().unique().tolist() if x.strip() != ""])
-all_sizes = ["All sizes"] + sorted([x for x in df_raw["Size category"].dropna().unique().tolist() if x != "All sizes"])
+st.sidebar.markdown("### IMO – Filters")
+
+all_ship_types = sorted(
+    [x for x in df_raw["Ship type"].dropna().unique().tolist() if str(x).strip() != ""]
+)
+
+all_sizes_unique = sorted(
+    [x for x in df_raw["Size category"].dropna().unique().tolist() if str(x).strip() != ""]
+)
+# Put All sizes first
+all_sizes = ["All sizes"] + [s for s in all_sizes_unique if s != "All sizes"]
 
 sel_ship_types = st.sidebar.multiselect(
     "Ship type",
     options=all_ship_types,
-    default=all_ship_types
+    default=all_ship_types,
 )
 
 sel_sizes = st.sidebar.multiselect(
     "Size category",
     options=all_sizes,
-    default=["All sizes"]
+    default=["All sizes"],
 )
 
-metric_mode = st.sidebar.radio(
+fuel_chart_mode = st.sidebar.radio(
     "Fuel chart mode",
-    ["Total fuel (all types)", "Fuel mix share (%)"],
-    index=0
+    ["Total fuel (absolute)", "Fuel mix share (%)"],
+    index=0,
 )
 
-top_n = st.sidebar.slider("Top N ship types", 5, 30, 15)
+top_n = st.sidebar.slider("Top N ship types", min_value=5, max_value=30, value=15)
 
-# Filter dataframe
+# Apply filters
 df = df_raw[df_raw["Ship type"].isin(sel_ship_types)].copy()
 df = df[df["Size category"].isin(sel_sizes)].copy()
 
 # =========================
 # AGGREGATIONS
 # =========================
-# 1) Aggregated by ship type (for professional overview)
-agg_cols = ["Number of ships", "CO2 emissions"] + fuel_cols + [
-    c for c in ["Gross tonnage", "Deadweight tonnage", "Distance travelled", "Hours under way"]
-    if c in df.columns
-]
+agg_cols = ["Number of ships", "CO2 emissions"] + fuel_cols
+for c in ["Gross tonnage", "Deadweight tonnage", "Distance travelled", "Hours under way"]:
+    if c in df.columns:
+        agg_cols.append(c)
 
 df_by_type = (
     df.groupby("Ship type", as_index=False)[agg_cols]
-      .sum(numeric_only=True)
+    .sum(numeric_only=True)
 )
 
 # Totals for KPIs
 total_ships = float(df_by_type["Number of ships"].sum()) if "Number of ships" in df_by_type else np.nan
 total_co2 = float(df_by_type["CO2 emissions"].sum()) if "CO2 emissions" in df_by_type else np.nan
+
 top_ship_by_ships = (
     df_by_type.sort_values("Number of ships", ascending=False).head(1)["Ship type"].iloc[0]
     if len(df_by_type) else "-"
 )
 
-# Overall fuel totals
-fuel_totals = df_by_type[fuel_cols].sum().sort_values(ascending=False)
+fuel_totals = df_by_type[fuel_cols].sum().sort_values(ascending=False) if len(fuel_cols) else pd.Series(dtype=float)
 top_fuel = fuel_totals.index[0] if len(fuel_totals) else "-"
 
 # =========================
 # HEADER
 # =========================
-st.markdown('<div class="title">Fleet Fuel & Emissions Dashboard</div>', unsafe_allow_html=True)
+st.markdown('<div class="title">IMO – Fleet Fuel & Emissions Dashboard</div>', unsafe_allow_html=True)
 st.markdown(
-    f'<div class="muted">Highlight utama: <b>jumlah kapal per ship type</b> + <b>fuel used</b> + <b>CO₂ emissions</b>. '
-    f'Data lain ditampilkan sebagai info pendukung.</div>',
-    unsafe_allow_html=True
+    '<div class="muted subtitle">Highlight utama: <b>Number of ships</b> + <b>CO₂ emissions</b>. '
+    'Fuel ditampilkan sebagai mix & breakdown. Variabel lain sebagai info pendukung.</div>',
+    unsafe_allow_html=True,
 )
 
 # =========================
-# KPI ROW (ships + emissions highlighted)
+# KPI ROW
 # =========================
 k1, k2, k3, k4 = st.columns(4)
 
@@ -203,126 +245,142 @@ st.divider()
 # =========================
 # MAIN LAYOUT
 # =========================
-left, right = st.columns([1.15, 0.85], gap="large")
+left, right = st.columns([1.18, 0.82], gap="large")
 
-# ---- LEFT: Ships + Emissions (highlight)
+# ---- LEFT: highlight ships + CO2
 with left:
-    st.subheader("Fleet composition & emissions (highlight)")
+    st.subheader("Fleet composition & emissions")
 
-    # Top N ship types by number of ships
-    top_df = df_by_type.sort_values("Number of ships", ascending=False).head(top_n).copy()
+    if len(df_by_type) == 0:
+        st.warning("Tidak ada data untuk filter yang dipilih.")
+        st.stop()
+
+    top_df_ships = df_by_type.sort_values("Number of ships", ascending=False).head(top_n).copy()
 
     fig_ships = px.bar(
-        top_df,
+        top_df_ships,
         x="Number of ships",
         y="Ship type",
         orientation="h",
-        title=f"Top {top_n} ship types by number of ships"
+        title=f"Top {top_n} ship types by number of ships",
     )
     fig_ships.update_layout(height=520, margin=dict(l=10, r=10, t=50, b=10))
     st.plotly_chart(fig_ships, use_container_width=True)
 
-    # Emissions bar (top N) — separate chart to keep emissions clearly highlighted
+    top_df_co2 = df_by_type.sort_values("CO2 emissions", ascending=False).head(top_n).copy()
     fig_co2 = px.bar(
-        top_df.sort_values("CO2 emissions", ascending=False),
+        top_df_co2,
         x="CO2 emissions",
         y="Ship type",
         orientation="h",
-        title=f"Top {top_n} ship types by CO₂ emissions"
+        title=f"Top {top_n} ship types by CO₂ emissions",
     )
     fig_co2.update_layout(height=520, margin=dict(l=10, r=10, t=50, b=10))
     st.plotly_chart(fig_co2, use_container_width=True)
 
-# ---- RIGHT: Fuel mix + supporting info
+# ---- RIGHT: fuel mix highlight + breakdown
 with right:
-    st.subheader("Fuel used (highlight)")
+    st.subheader("Fuel used")
 
-    # Fuel donut overall
-    fuel_df = fuel_totals.reset_index()
-    fuel_df.columns = ["Fuel", "Total"]
-
-    fig_donut = px.pie(
-        fuel_df,
-        names="Fuel",
-        values="Total",
-        hole=0.55,
-        title="Overall fuel mix (all ship types)"
-    )
-    fig_donut.update_layout(height=420, margin=dict(l=10, r=10, t=50, b=10))
-    st.plotly_chart(fig_donut, use_container_width=True)
-
-    # Fuel by ship type: stacked bar
-    st.markdown("#### Fuel by ship type")
-
-    fuel_by_type = df_by_type[["Ship type"] + fuel_cols].copy()
-    # keep only top N ship types to stay readable
-    fuel_by_type = fuel_by_type.merge(top_df[["Ship type"]], on="Ship type", how="inner")
-
-    fuel_long = fuel_by_type.melt(id_vars=["Ship type"], var_name="Fuel", value_name="Amount").copy()
-    fuel_long["Amount"] = fuel_long["Amount"].fillna(0)
-
-    if metric_mode == "Fuel mix share (%)":
-        # convert within each ship type to share
-        totals = fuel_long.groupby("Ship type", as_index=False)["Amount"].sum().rename(columns={"Amount": "Total"})
-        fuel_long = fuel_long.merge(totals, on="Ship type", how="left")
-        fuel_long["Share (%)"] = np.where(fuel_long["Total"] > 0, 100 * fuel_long["Amount"] / fuel_long["Total"], 0.0)
-        y_col = "Share (%)"
-        title = "Fuel mix share by ship type (%)"
+    if len(fuel_cols) == 0:
+        st.info("Kolom fuel tidak terdeteksi di file. Pastikan header fuel ada (MDO/MGO, HFO, LFO, Ethanol, dll).")
     else:
-        y_col = "Amount"
-        title = "Total fuel amounts by ship type (stacked)"
+        fuel_df = fuel_totals.reset_index()
+        fuel_df.columns = ["Fuel", "Total"]
 
-    fig_stack = px.bar(
-        fuel_long,
-        x=y_col,
-        y="Ship type",
-        color="Fuel",
-        orientation="h",
-        title=title
-    )
-    fig_stack.update_layout(height=620, margin=dict(l=10, r=10, t=50, b=10), legend_title_text="Fuel")
-    st.plotly_chart(fig_stack, use_container_width=True)
+        fig_donut = px.pie(
+            fuel_df,
+            names="Fuel",
+            values="Total",
+            hole=0.55,
+            title="Overall fuel mix (all ship types)",
+        )
+        fig_donut.update_layout(height=420, margin=dict(l=10, r=10, t=50, b=10))
+        st.plotly_chart(fig_donut, use_container_width=True)
 
-    st.info(
-        "Catatan: metric lain (Gross tonnage, Distance travelled, Hours under way, dll) ditampilkan di tabel detail sebagai info pendukung."
+        st.markdown("#### Fuel by ship type")
+        fuel_by_type = df_by_type[["Ship type"] + fuel_cols].copy()
+
+        # keep ship types aligned with "Top by ships" for readability
+        keep_types = top_df_ships["Ship type"].tolist()
+        fuel_by_type = fuel_by_type[fuel_by_type["Ship type"].isin(keep_types)].copy()
+
+        fuel_long = fuel_by_type.melt(id_vars=["Ship type"], var_name="Fuel", value_name="Amount")
+        fuel_long["Amount"] = fuel_long["Amount"].fillna(0)
+
+        if fuel_chart_mode == "Fuel mix share (%)":
+            totals = fuel_long.groupby("Ship type", as_index=False)["Amount"].sum().rename(columns={"Amount": "Total"})
+            fuel_long = fuel_long.merge(totals, on="Ship type", how="left")
+            fuel_long["Share (%)"] = np.where(fuel_long["Total"] > 0, 100 * fuel_long["Amount"] / fuel_long["Total"], 0.0)
+            x_col = "Share (%)"
+            title = "Fuel mix share by ship type (%)"
+        else:
+            x_col = "Amount"
+            title = "Total fuel by ship type (stacked)"
+
+        fig_stack = px.bar(
+            fuel_long,
+            x=x_col,
+            y="Ship type",
+            color="Fuel",
+            orientation="h",
+            title=title,
+        )
+        fig_stack.update_layout(
+            height=640,
+            margin=dict(l=10, r=10, t=50, b=10),
+            legend_title_text="Fuel",
+        )
+        st.plotly_chart(fig_stack, use_container_width=True)
+
+    st.markdown(
+        '<div class="small-note">Note: variabel lain (Gross tonnage, Distance travelled, Hours under way, dll) '
+        'ditampilkan di tabel detail sebagai supporting info.</div>',
+        unsafe_allow_html=True,
     )
 
 st.divider()
 
 # =========================
-# DETAIL TABLE (professional + highlighted emissions)
+# DETAIL TABLE (ships + CO2 highlighted)
 # =========================
-st.subheader("Detail table (with emissions highlight)")
+st.subheader("Detail table (ships & CO₂ highlighted)")
 
 detail = df_by_type.copy()
 detail = detail.sort_values(["Number of ships", "CO2 emissions"], ascending=False)
 
-# Choose columns to show: highlight ships + emissions, then fuels, then other info
-show_cols = ["Ship type", "Number of ships", "CO2 emissions"] + fuel_cols
+# Choose columns: highlighted first, then fuels, then supporting
+show_cols = ["Ship type", "Number of ships", "CO2 emissions"]
+show_cols += fuel_cols
+
 for c in ["Gross tonnage", "Deadweight tonnage", "Distance travelled", "Hours under way"]:
     if c in detail.columns:
         show_cols.append(c)
 
 detail_show = detail[show_cols].copy()
 
-# Format and style: highlight CO2 + ships
-def _style_highlight(s: pd.Series):
-    # highlight top values (ships & CO2)
+def _highlight_max_col(s: pd.Series):
     if s.name in ["Number of ships", "CO2 emissions"]:
-        vmax = np.nanmax(s.values.astype(float)) if len(s) else 0
-        return ["font-weight:700; background-color: rgba(255, 165, 0, 0.18)" if (v == vmax and vmax > 0) else "" for v in s]
+        vals = pd.to_numeric(s, errors="coerce").fillna(0).values
+        vmax = float(np.max(vals)) if len(vals) else 0.0
+        return [
+            "font-weight:700; background-color: rgba(255, 165, 0, 0.20)" if (float(v) == vmax and vmax > 0) else ""
+            for v in vals
+        ]
     return [""] * len(s)
+
+fmt_map = {c: "{:,.0f}" for c in detail_show.columns if c != "Ship type"}
 
 styled = (
     detail_show.style
-    .apply(_style_highlight, axis=0)
-    .format({c: "{:,.0f}" for c in detail_show.columns if c not in ["Ship type"]})
+    .apply(_highlight_max_col, axis=0)
+    .format(fmt_map)
 )
 
 st.dataframe(styled, use_container_width=True, height=520)
 
 # =========================
-# OPTIONAL: RAW LEVEL VIEW
+# RAW VIEW (OPTIONAL)
 # =========================
 with st.expander("Show raw rows (ship type + size categories)"):
     st.dataframe(df, use_container_width=True, height=420)
