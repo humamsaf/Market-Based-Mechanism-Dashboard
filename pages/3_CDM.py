@@ -189,16 +189,14 @@ if ex.empty:
     st.info("Tidak ada data untuk map (cek kolom 'Host country').")
 else:
     geo_counts = ex.groupby("iso3").size().reset_index(name="mechanism_type_count")  # <- title legend
-
-    fig_map = px.choropleth(
-        geo_counts,
-        locations="iso3",
-        color="mechanism_type_count",
-        projection="equirectangular",  # lebih “flat” seperti gambar
-        labels={"mechanism_type_count": "mechanism_type_count"},
-        # color_continuous_scale="Blues",  # optional; default juga ok
-    )
-
+fig_map = px.choropleth(
+    geo_counts,
+    locations="iso3",
+    color="mechanism_type_count",
+    projection="equirectangular",
+    labels={"mechanism_type_count": "mechanism_type_count"},
+    color_continuous_scale="Blues_r",   # reverse scale
+)
     # border negara tegas + style clean
     fig_map.update_traces(
         marker_line_color="gray",
