@@ -9,8 +9,9 @@ from pathlib import Path
 # =========================
 st.set_page_config(page_title="CDM Activities in Transition", layout="wide")
 
-# Kalau file kamu ada di folder data/, ganti jadi: DATA_PATH = Path("data") / "CDM.xlsx"
-DATA_PATH = Path("CDM.xlsx")
+# repo_root/data/CDM.xlsx (aman walau file ini ada di /pages)
+BASE_DIR = Path(__file__).resolve().parents[1]
+DATA_PATH = BASE_DIR / "data" / "CDM.xlsx"
 
 # =========================
 # Helpers
@@ -68,7 +69,7 @@ def split_countries(val):
 @st.cache_data
 def load_data(path: Path) -> pd.DataFrame:
     if not path.exists():
-        raise FileNotFoundError(f"Dataset not found: {path.resolve()}")
+        raise FileNotFoundError(f"Dataset not found: {path}")
 
     df = pd.read_excel(path)
 
@@ -92,8 +93,17 @@ def apply_filters(df: pd.DataFrame) -> pd.DataFrame:
     def multiselect(col, label):
         if col not in df.columns:
             return None
-        opts = sorted([x for x in df[col].dropna().unique().tolist()])
+        # safer sorting (mix types)
+        vals = df[col].dropna().astype(str).unique().tolist()
+        opts = sorted(vals)
         return st.sidebar.multiselect(label, opts)
+
+    # NOTE: we cast columns to str for filtering consistency
+    out = df.copy()
+
+    # Build filters from string-cast values
+    for c in out.columns:
+        out[c] = out[c].astype(object)
 
     f_region = multiselect("Region", "Region")
     f_subregion = multiselect("Sub-region", "Sub-region")
@@ -104,12 +114,10 @@ def apply_filters(df: pd.DataFrame) -> pd.DataFrame:
     f_method = multiselect("Methodology after transition", "Methodology after transition")
     f_approved = multiselect("Approved by Host Party", "Approved by Host Party")
 
-    out = df.copy()
-
     def filt(col, selected):
         nonlocal out
         if selected and col in out.columns:
-            out = out[out[col].isin(selected)]
+            out = out[out[col].astype(str).isin(selected)]
 
     filt("Region", f_region)
     filt("Sub-region", f_subregion)
@@ -144,26 +152,27 @@ def make_exploded_for_geo(df_filtered: pd.DataFrame) -> pd.DataFrame:
 # App
 # =========================
 st.title("List of CDM activities in transition (Streamlit)")
-st.caption(f"Data path: `{DATA_PATH.as_posix()}`")
+st.caption(f"Dataset: `{DATA_PATH.as_posix()}`")
 
 df = load_data(DATA_PATH)
 df_f = apply_filters(df)
 
 # KPIs
 total_selected = len(df_f)
+
 requested_transition = (
     (df_f["Transition Request"].astype(str).str.lower() == "yes").sum()
     if "Transition Request" in df_f.columns else 0
 )
+
 approved_yes = (
     (df_f["Approved by Host Party"].astype(str).str.lower() == "yes").sum()
     if "Approved by Host Party" in df_f.columns else 0
 )
 
+reductions_sum = 0.0
 if "Reductions (ktCO2e/yr)" in df_f.columns:
     reductions_sum = pd.to_numeric(df_f["Reductions (ktCO2e/yr)"], errors="coerce").fillna(0).sum()
-else:
-    reductions_sum = 0.0
 
 k1, k2, k3, k4 = st.columns(4)
 k1.metric("Selected", f"{total_selected:,}")
@@ -174,7 +183,6 @@ k4.metric("Reductions sum (ktCO2e/yr)", f"{reductions_sum:,.1f}")
 st.divider()
 
 left, right = st.columns([1.05, 1.0], gap="large")
-
 ex = make_exploded_for_geo(df_f)
 
 # Bar chart
@@ -260,7 +268,6 @@ st.divider()
 
 # Detail table
 st.subheader("Details")
-
 cols_prefer = [
     "Region", "Sub-region", "Host country", "Title", "Type", "Type.1",
     "Reductions (ktCO2e/yr)",
