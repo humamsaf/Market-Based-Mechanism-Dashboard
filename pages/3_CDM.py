@@ -179,7 +179,7 @@ k4.metric("Reductions sum (ktCO2e/yr)", f"{reductions_sum:,.1f}")
 st.divider()
 
 # ======================
-# MAP (TOP, FULL WIDTH, "SQUARE")
+# MAP (TOP)
 # ======================
 st.subheader("World map (by host party)")
 
@@ -188,31 +188,52 @@ ex = make_exploded_for_geo(df_f)
 if ex.empty:
     st.info("Tidak ada data untuk map (cek kolom 'Host country').")
 else:
-    geo_counts = ex.groupby("iso3").size().reset_index(name="count")
+    geo_counts = ex.groupby("iso3").size().reset_index(name="mechanism_type_count")  # <- title legend
 
     fig_map = px.choropleth(
         geo_counts,
         locations="iso3",
-        color="count",
-        projection="natural earth",
-        labels={"count": "Activities"},
+        color="mechanism_type_count",
+        projection="equirectangular",  # lebih “flat” seperti gambar
+        labels={"mechanism_type_count": "mechanism_type_count"},
+        # color_continuous_scale="Blues",  # optional; default juga ok
     )
 
-    # tampil "kotak": height besar + frame
-    fig_map.update_layout(
-        height=720,
-        margin=dict(l=0, r=0, t=10, b=0),
+    # border negara tegas + style clean
+    fig_map.update_traces(
+        marker_line_color="gray",
+        marker_line_width=0.6,
+        hovertemplate="ISO3: %{location}<br>Count: %{z}<extra></extra>",
     )
+
+    fig_map.update_layout(
+        height=650,
+        margin=dict(l=40, r=40, t=20, b=20),
+        paper_bgcolor="white",
+        plot_bgcolor="white",
+        coloraxis_colorbar=dict(
+            title="mechanism_type_count",
+            ticks="outside",
+        ),
+    )
+
+    # frame kotak + background putih, mirip geopandas look
     fig_map.update_geos(
-        showcountries=True,
-        showcoastlines=False,
         showframe=True,
-        fitbounds="locations",
+        framecolor="black",
+        framewidth=1,
+        showcountries=True,
+        countrycolor="gray",
+        showcoastlines=True,
+        coastlinecolor="gray",
+        showland=True,
+        landcolor="white",
+        showocean=True,
+        oceancolor="white",
+        bgcolor="white",
     )
 
     st.plotly_chart(fig_map, use_container_width=True)
-
-st.divider()
 
 # ======================
 # BAR (LEFT) + PIE (RIGHT)
