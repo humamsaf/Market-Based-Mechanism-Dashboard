@@ -89,13 +89,11 @@ def load_data(path: Path) -> pd.DataFrame:
 
 def apply_filters(df: pd.DataFrame) -> pd.DataFrame:
     st.sidebar.header("Filters")
-
     out = df.copy()
 
     def multiselect(col, label):
         if col not in out.columns:
             return None
-        # cast to str so unique+sorting stable
         opts = sorted(out[col].dropna().astype(str).unique().tolist())
         return st.sidebar.multiselect(label, opts)
 
@@ -179,7 +177,7 @@ k4.metric("Reductions sum (ktCO2e/yr)", f"{reductions_sum:,.1f}")
 st.divider()
 
 # ======================
-# MAP (TOP)
+# MAP (TOP, FULL WIDTH) - reversed colors
 # ======================
 st.subheader("World map (by host party)")
 
@@ -188,16 +186,17 @@ ex = make_exploded_for_geo(df_f)
 if ex.empty:
     st.info("Tidak ada data untuk map (cek kolom 'Host country').")
 else:
-    geo_counts = ex.groupby("iso3").size().reset_index(name="mechanism_type_count")  # <- title legend
-fig_map = px.choropleth(
-    geo_counts,
-    locations="iso3",
-    color="mechanism_type_count",
-    projection="equirectangular",
-    labels={"mechanism_type_count": "mechanism_type_count"},
-    color_continuous_scale="Blues_r",   # reverse scale
-)
-    # border negara tegas + style clean
+    geo_counts = ex.groupby("iso3").size().reset_index(name="mechanism_type_count")
+
+    fig_map = px.choropleth(
+        geo_counts,
+        locations="iso3",
+        color="mechanism_type_count",
+        projection="equirectangular",
+        color_continuous_scale="Blues_r",  # ✅ reverse colors
+        labels={"mechanism_type_count": "mechanism_type_count"},
+    )
+
     fig_map.update_traces(
         marker_line_color="gray",
         marker_line_width=0.6,
@@ -215,7 +214,6 @@ fig_map = px.choropleth(
         ),
     )
 
-    # frame kotak + background putih, mirip geopandas look
     fig_map.update_geos(
         showframe=True,
         framecolor="black",
@@ -229,9 +227,12 @@ fig_map = px.choropleth(
         showocean=True,
         oceancolor="white",
         bgcolor="white",
+        fitbounds="locations",
     )
 
     st.plotly_chart(fig_map, use_container_width=True)
+
+st.divider()
 
 # ======================
 # BAR (LEFT) + PIE (RIGHT)
