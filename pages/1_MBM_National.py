@@ -1,3 +1,12 @@
+# streamlit_app.py
+# ------------------------------------------------------------
+# Global Market-Based Mechanisms Dashboard
+# - Reads: data/Global Market Based Mechanism.xlsx
+# - World choropleth map with blue gradient (0 = light blue, higher = darker)
+# ------------------------------------------------------------
+
+from __future__ import annotations
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -12,7 +21,7 @@ MECH_COLS = {
     "2. ETS": "ETS",
     "3. Tax Incentives": "Tax Incentives",
     "4. Fuel Mandates": "Fuel Mandates",
-    "5. VCM project ": "VCM project",
+    "5. VCM project ": "VCM project",  # note trailing space matches your sheet header
     "6. Feebates": "Feebates",
     "7. CBAM": "CBAM",
     "8. AMC": "AMC",
@@ -42,6 +51,7 @@ MANUAL_ISO3 = {
     "Palestine": "PSE",
 }
 
+
 def to_iso3(name: str):
     name = (name or "").strip()
     if name in MANUAL_ISO3:
@@ -52,11 +62,13 @@ def to_iso3(name: str):
     except Exception:
         return None
 
+
 @st.cache_data
 def load_raw() -> pd.DataFrame:
     df = pd.read_excel(FILE_PATH)
     df.columns = [str(c).strip() for c in df.columns]
     return df
+
 
 def tidy_long(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     keep = ["No", "Country", "Region"] + [c.strip() for c in MECH_COLS.keys()] + ["Total Mechanism"]
@@ -74,29 +86,38 @@ def tidy_long(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         var_name="mechanism_type_raw",
         value_name="mechanism_detail",
     )
-    long["mechanism_type"] = long["mechanism_type_raw"].map(
-        {k.strip(): v for k, v in MECH_COLS.items()}
-    ).fillna(long["mechanism_type_raw"])
+
+    long["mechanism_type"] = (
+        long["mechanism_type_raw"]
+        .map({k.strip(): v for k, v in MECH_COLS.items()})
+        .fillna(long["mechanism_type_raw"])
+    )
     long = long.drop(columns=["mechanism_type_raw"])
 
     long["mechanism_detail"] = long["mechanism_detail"].astype(str).str.strip()
-    long = long[long["mechanism_detail"] != ""]
-    long = long[long["mechanism_detail"].str.lower() != "nan"]
+    long = long[(long["mechanism_detail"] != "") & (long["mechanism_detail"].str.lower() != "nan")]
 
     # VCM numeric
     long["vcm_projects"] = pd.NA
     mask_vcm = long["mechanism_type"] == "VCM project"
-    long.loc[mask_vcm, "vcm_projects"] = pd.to_numeric(long.loc[mask_vcm, "mechanism_detail"], errors="coerce")
+    long.loc[mask_vcm, "vcm_projects"] = pd.to_numeric(
+        long.loc[mask_vcm, "mechanism_detail"], errors="coerce"
+    )
 
     # drop non-VCM zeros
     long = long[~((~mask_vcm) & (long["mechanism_detail"] == "0"))]
 
     return df, long
 
+
 def summarize_mechanisms(df_long: pd.DataFrame) -> pd.DataFrame:
     g = (
         df_long.groupby(["Country", "mechanism_type"])["mechanism_detail"]
-        .apply(lambda s: "; ".join(sorted({x for x in s.astype(str).str.strip() if x and x.lower() != "nan"})))
+        .apply(
+            lambda s: "; ".join(
+                sorted({x for x in s.astype(str).str.strip() if x and x.lower() != "nan"})
+            )
+        )
         .reset_index()
     )
 
@@ -119,8 +140,11 @@ def summarize_mechanisms(df_long: pd.DataFrame) -> pd.DataFrame:
 
     out = counts.merge(types_list, on="Country", how="left").merge(vcm, on="Country", how="left")
     out["vcm_projects_sum"] = pd.to_numeric(out["vcm_projects_sum"], errors="coerce").fillna(0).astype(int)
-    out["mechanism_types_list_html"] = out["mechanism_types_list_html"].fillna("No recorded mechanisms in this dataset.")
+    out["mechanism_types_list_html"] = out["mechanism_types_list_html"].fillna(
+        "No recorded mechanisms in this dataset."
+    )
     return out
+
 
 # ===== Load
 raw = load_raw()
@@ -136,7 +160,9 @@ st.caption(
 # ===== Sidebar (clean)
 st.sidebar.header("Filters")
 region_sel = st.sidebar.multiselect("Region", sorted(long["Region"].dropna().unique()), key="f_region")
-type_sel = st.sidebar.multiselect("Mechanism type", sorted(long["mechanism_type"].dropna().unique()), key="f_type")
+type_sel = st.sidebar.multiselect(
+    "Mechanism type", sorted(long["mechanism_type"].dropna().unique()), key="f_type"
+)
 country_sel = st.sidebar.multiselect("Country", sorted(long["Country"].dropna().unique()), key="f_country")
 keyword = st.sidebar.text_input("Search in details", value="", key="f_kw").strip()
 st.sidebar.caption(
@@ -203,20 +229,22 @@ if missing_iso:
 
 m_plot = m.dropna(subset=["iso3"]).copy()
 
-# ---- Choose metric for coloring
+# ---- Choose metric for coloring (Blue gradient: low=light, high=dark)
 if map_choice == "Total mechanisms (0–8)":
     fig_map = px.choropleth(
         m_plot,
         locations="iso3",
         color="mechanism_type_count",
         hover_name="Country",
+        color_continuous_scale="Blues",
     )
     fig_map.update_coloraxes(cmin=0, cmax=8)
     fig_map.update_traces(
-        hovertemplate=
-        "<b>%{hovertext}</b><br>" +
-        "Total mechanisms (0–8): %{customdata[0]}<br><br>" +
-        "%{customdata[1]}<extra></extra>",
+        hovertemplate=(
+            "<b>%{hovertext}</b><br>"
+            "Total mechanisms (0–8): %{customdata[0]}<br><br>"
+            "%{customdata[1]}<extra></extra>"
+        ),
         customdata=m_plot[["mechanism_type_count", "mechanism_types_list_html"]].values,
     )
 
@@ -226,12 +254,14 @@ elif map_choice == "VCM project":
         locations="iso3",
         color="vcm_projects_sum",
         hover_name="Country",
+        color_continuous_scale="Blues",
     )
     fig_map.update_traces(
-        hovertemplate=
-        "<b>%{hovertext}</b><br>" +
-        "VCM projects (sum): %{customdata[0]}<br><br>" +
-        "%{customdata[1]}<extra></extra>",
+        hovertemplate=(
+            "<b>%{hovertext}</b><br>"
+            "VCM projects (sum): %{customdata[0]}<br><br>"
+            "%{customdata[1]}<extra></extra>"
+        ),
         customdata=m_plot[["vcm_projects_sum", "mechanism_types_list_html"]].values,
     )
 
@@ -247,21 +277,25 @@ else:
     m_plot2 = m_plot.merge(pres[["Country", "present"]], on="Country", how="left")
     m_plot2["present"] = m_plot2["present"].fillna(0).astype(int)
 
-   fig_map = px.choropleth(
-    m_plot,
-    locations="iso3",
-    color="mechanism_type_count",
-    hover_name="Country",
-    color_continuous_scale="Blues",
-)
+    fig_map = px.choropleth(
+        m_plot2,
+        locations="iso3",
+        color="present",
+        hover_name="Country",
+        color_continuous_scale="Blues",
+    )
     fig_map.update_coloraxes(cmin=0, cmax=1)
     fig_map.update_traces(
-        hovertemplate=
-        "<b>%{hovertext}</b><br>" +
-        f"{map_choice} present: %{{customdata[0]}}<br><br>" +
-        "%{customdata[1]}<extra></extra>",
+        hovertemplate=(
+            "<b>%{hovertext}</b><br>"
+            f"{map_choice} present: %{{customdata[0]}}<br><br>"
+            "%{customdata[1]}<extra></extra>"
+        ),
         customdata=m_plot2[["present", "mechanism_types_list_html"]].values,
     )
+
+# Optional: clearer borders
+fig_map.update_geos(showcoastlines=True, coastlinecolor="gray", showcountries=True)
 
 st.plotly_chart(fig_map, use_container_width=True, key="map_choropleth")
 
@@ -306,7 +340,11 @@ with tab2:
 
     prof = (
         cf.groupby("mechanism_type")["mechanism_detail"]
-        .apply(lambda s: "\n".join(f"- {x}" for x in sorted({v.strip() for v in s.astype(str) if v and v.lower() != "nan"})))
+        .apply(
+            lambda s: "\n".join(
+                f"- {x}" for x in sorted({v.strip() for v in s.astype(str) if v and v.lower() != "nan"})
+            )
+        )
         .reset_index()
         .sort_values("mechanism_type")
     )
