@@ -247,12 +247,13 @@ else:
     m_plot2 = m_plot.merge(pres[["Country", "present"]], on="Country", how="left")
     m_plot2["present"] = m_plot2["present"].fillna(0).astype(int)
 
-    fig_map = px.choropleth(
-        m_plot2,
-        locations="iso3",
-        color="present",
-        hover_name="Country",
-    )
+   fig_map = px.choropleth(
+    m_plot,
+    locations="iso3",
+    color="mechanism_type_count",
+    hover_name="Country",
+    color_continuous_scale="Blues",
+)
     fig_map.update_coloraxes(cmin=0, cmax=1)
     fig_map.update_traces(
         hovertemplate=
