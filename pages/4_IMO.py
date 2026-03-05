@@ -3,11 +3,12 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import pandas as pd
-import streamlit as st
 import plotly.express as px
+import streamlit as st
 
 # =========================
 # PAGE CONFIG
@@ -28,13 +29,337 @@ st.markdown(
       .title {font-size: 1.35rem; font-weight: 750; margin-bottom: 0.25rem;}
       .subtitle {margin-top: -0.2rem; margin-bottom: 0.6rem;}
       .small-note {font-size: 0.88rem; color: rgba(0,0,0,0.55);}
+      .mono {font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
     </style>
     """,
     unsafe_allow_html=True,
 )
 
 # =========================
-# PATH FIX (WORKS ON STREAMLIT CLOUD)
+# CONSTANTS
+# =========================
+REPO_ROOT = Path(__file__).resolve().parents[1]  # .../pages/ -> repo root
+DEFAULT_XLSX = REPO_ROOT / "data" / "IMO.xlsx"
+
+TOTAL_REGEX = re.compile(r"(^|\b)(total|grand total|subtotal|overall total|all\s*total)\b", re.IGNORECASE)
+
+# =========================
+# HELPERS
+# =========================
+def normalize_colname(c: str) -> str:
+    c = str(c).strip()
+    c = re.sub(r"\s+", " ", c)
+    return c
+
+def remove_total_rows(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Removes any row that contains a 'total-ish' label in ANY cell.
+    This prevents double counting in charts/tables.
+    """
+    if df.empty:
+        return df
+
+    # Convert to string (safe) and scan row-wise
+    s = df.astype(str)
+    mask_total = s.apply(lambda row: row.str.contains(TOTAL_REGEX, na=False).any(), axis=1)
+
+    # Also remove rows that are entirely NaN/blank
+    mask_blank = df.isna().all(axis=1) | (s.apply(lambda r: (r.str.strip() == "").all(), axis=1))
+
+    cleaned = df.loc[~(mask_total | mask_blank)].copy()
+    return cleaned
+
+def to_numeric_series(x: pd.Series) -> pd.Series:
+    """
+    Robust numeric conversion: strips commas, spaces, non-numeric suffixes.
+    """
+    if x is None:
+        return x
+    y = x.astype(str)
+    y = y.str.replace(",", "", regex=False)
+    y = y.str.replace(" ", "", regex=False)
+    y = y.str.replace(r"[^\d\.\-eE+]", "", regex=True)
+    return pd.to_numeric(y, errors="coerce")
+
+def pick_first_existing_col(df: pd.DataFrame, candidates: list[str]) -> Optional[str]:
+    cols = {normalize_colname(c).lower(): c for c in df.columns}
+    for want in candidates:
+        key = normalize_colname(want).lower()
+        if key in cols:
+            return cols[key]
+    return None
+
+@st.cache_data(show_spinner=False)
+def load_sheet(path: Path, sheet_name: Optional[str]) -> pd.DataFrame:
+    df = pd.read_excel(path, sheet_name=sheet_name)
+    df.columns = [normalize_colname(c) for c in df.columns]
+    df = remove_total_rows(df)  # ✅ IMPORTANT: remove Total rows everywhere
+    return df
+
+def format_compact_number(v: float) -> str:
+    if v is None or (isinstance(v, float) and np.isnan(v)):
+        return "—"
+    abs_v = abs(float(v))
+    if abs_v >= 1e12:
+        return f"{v/1e12:.2f}T"
+    if abs_v >= 1e9:
+        return f"{v/1e9:.2f}B"
+    if abs_v >= 1e6:
+        return f"{v/1e6:.2f}M"
+    if abs_v >= 1e3:
+        return f"{v/1e3:.2f}K"
+    return f"{v:,.0f}"
+
+# =========================
+# UI: HEADER
+# =========================
+st.markdown('<div class="title">IMO – Fleet Fuel & Emissions</div>', unsafe_allow_html=True)
+st.markdown(
+    '<div class="muted subtitle">Halaman ini otomatis <b>menghapus semua baris berlabel Total/Grand Total/Subtotal</b> supaya tidak double-count.</div>',
+    unsafe_allow_html=True,
+)
+
+# =========================
+# SIDEBAR: FILE + SHEET
+# =========================
+with st.sidebar:
+    st.header("Data source")
+
+    # Let user override file path if needed
+    use_default = st.checkbox("Use default path", value=True)
+    if use_default:
+        xlsx_path = DEFAULT_XLSX
+        st.caption(f"Default: `{xlsx_path.as_posix()}`")
+    else:
+        manual_path = st.text_input("Excel path", value=str(DEFAULT_XLSX))
+        xlsx_path = Path(manual_path)
+
+    if not xlsx_path.exists():
+        st.error("File tidak ditemukan. Pastikan Excel ada di path tersebut.")
+        st.stop()
+
+    # List sheets
+    try:
+        xl = pd.ExcelFile(xlsx_path)
+        sheets = xl.sheet_names
+    except Exception as e:
+        st.error(f"Gagal baca Excel: {e}")
+        st.stop()
+
+    sheet_name = st.selectbox("Sheet", options=sheets, index=0)
+    st.divider()
+
+    st.subheader("Chart options")
+    top_n = st.slider("Top-N categories (untuk bar chart)", 5, 40, 15)
+    show_table = st.checkbox("Show cleaned data table", value=False)
+
+# =========================
+# LOAD DATA
+# =========================
+with st.spinner("Loading & cleaning data (remove Total rows)…"):
+    df = load_sheet(xlsx_path, sheet_name)
+
+# =========================
+# QUICK DATA HEALTH + PREVIEW
+# =========================
+st.markdown("### Data preview (cleaned)")
+st.caption("Catatan: Baris yang mengandung kata 'total' di kolom mana pun sudah dibuang.")
+st.dataframe(df.head(30), use_container_width=True)
+
+if df.empty:
+    st.warning("Sheet ini kosong setelah cleaning. Bisa jadi isinya hanya baris Total/Subtotal.")
+    st.stop()
+
+# =========================
+# TRY TO AUTO-DETECT COMMON COLUMNS
+# =========================
+# We’ll try to detect common fields. If not found, we’ll still show a generic explorer.
+fuel_col = pick_first_existing_col(df, ["Fuel", "Fuel type", "Fuel Type", "Fuel Category"])
+ship_col = pick_first_existing_col(df, ["Ship type", "Ship Type", "Vessel type", "Vessel Type"])
+year_col = pick_first_existing_col(df, ["Year", "Reporting year", "Reporting Year"])
+value_col = pick_first_existing_col(df, ["Value", "Amount", "Consumption", "Fuel consumption", "Emissions", "CO2", "CO2e", "Tonnes"])
+
+# If there are multiple numeric columns and value_col not found, pick the first numeric-like column
+if value_col is None:
+    numeric_candidates = []
+    for c in df.columns:
+        s = to_numeric_series(df[c])
+        if s.notna().mean() > 0.6:  # mostly numeric
+            numeric_candidates.append(c)
+    if numeric_candidates:
+        value_col = numeric_candidates[0]
+
+# =========================
+# FILTERS (ONLY IF COLUMNS EXIST)
+# =========================
+filters = st.columns(4)
+df_f = df.copy()
+
+with filters[0]:
+    if year_col:
+        years = sorted([y for y in pd.unique(df_f[year_col]) if str(y).strip() != ""])
+        sel_years = st.multiselect("Year", years, default=years[-1:] if years else [])
+        if sel_years:
+            df_f = df_f[df_f[year_col].isin(sel_years)]
+    else:
+        st.caption("Year: (kolom tidak terdeteksi)")
+
+with filters[1]:
+    if ship_col:
+        ships = sorted([s for s in pd.unique(df_f[ship_col]) if str(s).strip() != ""])
+        sel_ships = st.multiselect("Ship type", ships, default=[])
+        if sel_ships:
+            df_f = df_f[df_f[ship_col].isin(sel_ships)]
+    else:
+        st.caption("Ship type: (kolom tidak terdeteksi)")
+
+with filters[2]:
+    if fuel_col:
+        fuels = sorted([f for f in pd.unique(df_f[fuel_col]) if str(f).strip() != ""])
+        sel_fuels = st.multiselect("Fuel", fuels, default=[])
+        if sel_fuels:
+            df_f = df_f[df_f[fuel_col].isin(sel_fuels)]
+    else:
+        st.caption("Fuel: (kolom tidak terdeteksi)")
+
+with filters[3]:
+    if value_col:
+        st.caption(f"Value column: `{value_col}`")
+    else:
+        st.warning("Tidak ada kolom numeric/value yang terdeteksi. Grafik akan dinonaktifkan.")
+
+# =========================
+# KPIs (IF VALUE AVAILABLE)
+# =========================
+st.markdown("### KPIs")
+kcols = st.columns(4)
+
+if value_col:
+    v = to_numeric_series(df_f[value_col])
+    total_value = float(np.nansum(v.values)) if v.notna().any() else np.nan
+    n_rows = int(len(df_f))
+    n_fuels = int(df_f[fuel_col].nunique()) if fuel_col else np.nan
+    n_ships = int(df_f[ship_col].nunique()) if ship_col else np.nan
+
+    kcols[0].markdown(
+        f'<div class="kpi-card"><div class="muted">Total ({value_col})</div>'
+        f'<div class="mono" style="font-size:1.45rem;font-weight:800;">{format_compact_number(total_value)}</div></div>',
+        unsafe_allow_html=True,
+    )
+    kcols[1].markdown(
+        f'<div class="kpi-card"><div class="muted">Rows (after cleaning)</div>'
+        f'<div class="mono" style="font-size:1.45rem;font-weight:800;">{n_rows:,}</div></div>',
+        unsafe_allow_html=True,
+    )
+    kcols[2].markdown(
+        f'<div class="kpi-card"><div class="muted">Unique fuels</div>'
+        f'<div class="mono" style="font-size:1.45rem;font-weight:800;">{("—" if np.isnan(n_fuels) else f"{n_fuels:,}")}</div></div>',
+        unsafe_allow_html=True,
+    )
+    kcols[3].markdown(
+        f'<div class="kpi-card"><div class="muted">Unique ship types</div>'
+        f'<div class="mono" style="font-size:1.45rem;font-weight:800;">{("—" if np.isnan(n_ships) else f"{n_ships:,}")}</div></div>',
+        unsafe_allow_html=True,
+    )
+else:
+    for c in kcols:
+        c.info("KPI dinonaktifkan (kolom numeric/value tidak ditemukan).")
+
+st.divider()
+
+# =========================
+# CHARTS (IF WE CAN)
+# =========================
+st.markdown("### Charts")
+
+if not value_col:
+    st.warning("Tidak bisa bikin grafik karena tidak ada kolom numeric/value yang terdeteksi.")
+else:
+    # Make a working numeric column
+    df_plot = df_f.copy()
+    df_plot["_value"] = to_numeric_series(df_plot[value_col])
+
+    # Drop rows with NaN values
+    df_plot = df_plot[df_plot["_value"].notna()].copy()
+    if df_plot.empty:
+        st.warning("Setelah filter & numeric coercion, tidak ada data numeric untuk diplot.")
+    else:
+        c1, c2 = st.columns(2)
+
+        # 1) Fuel share (if fuel column exists)
+        with c1:
+            if fuel_col:
+                agg = (
+                    df_plot.groupby(fuel_col, dropna=False)["_value"]
+                    .sum()
+                    .sort_values(ascending=False)
+                    .head(top_n)
+                    .reset_index()
+                )
+                fig = px.bar(agg, x=fuel_col, y="_value", title=f"Top fuels by {value_col}")
+                fig.update_layout(xaxis_title=None, yaxis_title=value_col)
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("Fuel chart: kolom Fuel tidak terdeteksi.")
+
+        # 2) Ship type share (if ship column exists)
+        with c2:
+            if ship_col:
+                agg = (
+                    df_plot.groupby(ship_col, dropna=False)["_value"]
+                    .sum()
+                    .sort_values(ascending=False)
+                    .head(top_n)
+                    .reset_index()
+                )
+                fig = px.bar(agg, x=ship_col, y="_value", title=f"Top ship types by {value_col}")
+                fig.update_layout(xaxis_title=None, yaxis_title=value_col)
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("Ship-type chart: kolom Ship Type tidak terdeteksi.")
+
+        # 3) Trend by year (if year exists)
+        if year_col:
+            st.markdown("#### Trend by year")
+            # Coerce year to int-ish if possible
+            yy = df_plot[year_col].astype(str).str.extract(r"(\d{4})")[0]
+            df_plot["_year"] = pd.to_numeric(yy, errors="coerce")
+            trend = (
+                df_plot.dropna(subset=["_year"])
+                .groupby("_year")["_value"]
+                .sum()
+                .sort_index()
+                .reset_index()
+            )
+            if trend.empty:
+                st.info("Tidak ada year valid (4-digit) untuk bikin trend.")
+            else:
+                fig = px.line(trend, x="_year", y="_value", markers=True, title=f"{value_col} over time")
+                fig.update_layout(xaxis_title="Year", yaxis_title=value_col)
+                st.plotly_chart(fig, use_container_width=True)
+
+# =========================
+# OPTIONAL: SHOW FULL CLEANED TABLE
+# =========================
+if show_table:
+    st.divider()
+    st.markdown("### Full cleaned table")
+    st.caption("Ini sudah termasuk removal baris 'Total/Grand Total/Subtotal' otomatis.")
+    st.dataframe(df_f, use_container_width=True)
+
+# =========================
+# FOOTNOTE
+# =========================
+st.markdown(
+    """
+<div class="small-note">
+<b>Cleaning rule:</b> Sistem akan menghapus baris jika ada sel mana pun yang mengandung kata
+<span class="mono">total</span>/<span class="mono">grand total</span>/<span class="mono">subtotal</span> (case-insensitive).
+Kalau Anda punya label agregat lain yang ingin dibuang, bilang saja keyword-nya.
+</div>
+""",
+    unsafe_allow_html=True,
+)# PATH FIX (WORKS ON STREAMLIT CLOUD)
 # =========================
 REPO_ROOT = Path(__file__).resolve().parents[1]  # from pages/ -> repo root
 DATA_PATH = REPO_ROOT / "data" / "data fuel.xlsx"
