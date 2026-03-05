@@ -193,7 +193,7 @@ else:
         locations="iso3",
         color="mechanism_type_count",
         projection="equirectangular",
-        color_continuous_scale="Blues_r",  # ✅ reverse colors
+        color_continuous_scale="Blues",  # ✅ reverse colors
         labels={"mechanism_type_count": "mechanism_type_count"},
     )
 
