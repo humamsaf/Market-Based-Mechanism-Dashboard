@@ -90,20 +90,14 @@ def load_data(path: Path) -> pd.DataFrame:
 def apply_filters(df: pd.DataFrame) -> pd.DataFrame:
     st.sidebar.header("Filters")
 
-    def multiselect(col, label):
-        if col not in df.columns:
-            return None
-        # safer sorting (mix types)
-        vals = df[col].dropna().astype(str).unique().tolist()
-        opts = sorted(vals)
-        return st.sidebar.multiselect(label, opts)
-
-    # NOTE: we cast columns to str for filtering consistency
     out = df.copy()
 
-    # Build filters from string-cast values
-    for c in out.columns:
-        out[c] = out[c].astype(object)
+    def multiselect(col, label):
+        if col not in out.columns:
+            return None
+        # cast to str so unique+sorting stable
+        opts = sorted(out[col].dropna().astype(str).unique().tolist())
+        return st.sidebar.multiselect(label, opts)
 
     f_region = multiselect("Region", "Region")
     f_subregion = multiselect("Sub-region", "Sub-region")
@@ -157,7 +151,9 @@ st.caption(f"Dataset: `{DATA_PATH.as_posix()}`")
 df = load_data(DATA_PATH)
 df_f = apply_filters(df)
 
+# =========================
 # KPIs
+# =========================
 total_selected = len(df_f)
 
 requested_transition = (
@@ -182,16 +178,53 @@ k4.metric("Reductions sum (ktCO2e/yr)", f"{reductions_sum:,.1f}")
 
 st.divider()
 
-left, right = st.columns([1.05, 1.0], gap="large")
+# ======================
+# MAP (TOP, FULL WIDTH, "SQUARE")
+# ======================
+st.subheader("World map (by host party)")
+
 ex = make_exploded_for_geo(df_f)
 
-# Bar chart
+if ex.empty:
+    st.info("Tidak ada data untuk map (cek kolom 'Host country').")
+else:
+    geo_counts = ex.groupby("iso3").size().reset_index(name="count")
+
+    fig_map = px.choropleth(
+        geo_counts,
+        locations="iso3",
+        color="count",
+        projection="natural earth",
+        labels={"count": "Activities"},
+    )
+
+    # tampil "kotak": height besar + frame
+    fig_map.update_layout(
+        height=720,
+        margin=dict(l=0, r=0, t=10, b=0),
+    )
+    fig_map.update_geos(
+        showcountries=True,
+        showcoastlines=False,
+        showframe=True,
+        fitbounds="locations",
+    )
+
+    st.plotly_chart(fig_map, use_container_width=True)
+
+st.divider()
+
+# ======================
+# BAR (LEFT) + PIE (RIGHT)
+# ======================
+left, right = st.columns([1.05, 1.0], gap="large")
+
 with left:
-    st.subheader("CDM Activity by Host Party")
+    st.subheader("CDM Activity by Host Party (Ranked)")
     topn_bar = st.slider("Top N (bar)", min_value=5, max_value=30, value=10, step=1)
 
     if ex.empty:
-        st.info("Tidak ada data host party untuk divisualisasikan (cek kolom 'Host country').")
+        st.info("Tidak ada data host party untuk divisualisasikan.")
     else:
         counts = (
             ex.groupby("country_clean", dropna=True)
@@ -208,66 +241,56 @@ with left:
             orientation="h",
             labels={"count": "Activities", "country_clean": "Host Party"},
         )
-        fig_bar.update_layout(height=380, margin=dict(l=10, r=10, t=10, b=10))
+
+        # ✅ ranking terbesar di ATAS
+        fig_bar.update_yaxes(autorange="reversed")
+
+        fig_bar.update_layout(height=520, margin=dict(l=10, r=10, t=10, b=10))
         st.plotly_chart(fig_bar, use_container_width=True)
 
-# Map
 with right:
-    st.subheader("World map (by host party)")
-    if ex.empty:
-        st.info("Tidak ada data untuk map (cek kolom 'Host country').")
+    st.subheader("Emission Reductions by Host Country (ktCO2e/yr)")
+
+    if "Reductions (ktCO2e/yr)" in df_f.columns and "Host country" in df_f.columns:
+        pie_df = df_f.copy()
+        pie_df["reductions"] = pd.to_numeric(
+            pie_df["Reductions (ktCO2e/yr)"], errors="coerce"
+        ).fillna(0)
+
+        pie_df["host_token"] = pie_df["Host country"].apply(split_countries)
+        pie_df = pie_df.explode("host_token")
+        pie_df["host_token"] = pie_df["host_token"].astype(str).str.strip()
+        pie_df = pie_df[pie_df["host_token"].notna() & (pie_df["host_token"] != "")]
+
+        red_by_country = (
+            pie_df.groupby("host_token", as_index=False)["reductions"]
+            .sum()
+            .sort_values("reductions", ascending=False)
+        )
+
+        topn_pie = st.slider("Top N countries (pie)", 5, 25, 10, 1)
+        top = red_by_country.head(topn_pie).copy()
+        others_sum = red_by_country["reductions"].iloc[topn_pie:].sum()
+
+        if others_sum > 0:
+            top = pd.concat(
+                [top, pd.DataFrame([{"host_token": "Others", "reductions": others_sum}])],
+                ignore_index=True
+            )
+
+        fig_pie = px.pie(top, names="host_token", values="reductions", hole=0.35)
+        fig_pie.update_layout(height=520, margin=dict(l=10, r=10, t=10, b=10))
+        st.plotly_chart(fig_pie, use_container_width=True)
     else:
-        geo_counts = ex.groupby("iso3").size().reset_index(name="count")
-        fig_map = px.choropleth(
-            geo_counts,
-            locations="iso3",
-            color="count",
-            projection="natural earth",
-            labels={"count": "Activities"},
-        )
-        fig_map.update_layout(height=380, margin=dict(l=0, r=0, t=10, b=0))
-        st.plotly_chart(fig_map, use_container_width=True)
+        st.info("Kolom 'Host country' atau 'Reductions (ktCO2e/yr)' tidak ditemukan di dataset.")
 
 st.divider()
 
-# Pie (filtered)
-st.subheader("Emission Reductions by Host Country (ktCO2e/yr)")
-
-if "Reductions (ktCO2e/yr)" in df_f.columns and "Host country" in df_f.columns:
-    pie_df = df_f.copy()
-    pie_df["reductions"] = pd.to_numeric(pie_df["Reductions (ktCO2e/yr)"], errors="coerce").fillna(0)
-
-    pie_df["host_token"] = pie_df["Host country"].apply(split_countries)
-    pie_df = pie_df.explode("host_token")
-    pie_df["host_token"] = pie_df["host_token"].astype(str).str.strip()
-    pie_df = pie_df[pie_df["host_token"].notna() & (pie_df["host_token"] != "")]
-
-    red_by_country = (
-        pie_df.groupby("host_token", as_index=False)["reductions"]
-        .sum()
-        .sort_values("reductions", ascending=False)
-    )
-
-    topn_pie = st.slider("Top N countries (pie)", 5, 25, 10, 1)
-    top = red_by_country.head(topn_pie).copy()
-    others_sum = red_by_country["reductions"].iloc[topn_pie:].sum()
-
-    if others_sum > 0:
-        top = pd.concat(
-            [top, pd.DataFrame([{"host_token": "Others", "reductions": others_sum}])],
-            ignore_index=True
-        )
-
-    fig_pie = px.pie(top, names="host_token", values="reductions", hole=0.35)
-    fig_pie.update_layout(height=420, margin=dict(l=10, r=10, t=10, b=10))
-    st.plotly_chart(fig_pie, use_container_width=True)
-else:
-    st.info("Kolom 'Host country' atau 'Reductions (ktCO2e/yr)' tidak ditemukan di dataset.")
-
-st.divider()
-
+# ======================
 # Detail table
+# ======================
 st.subheader("Details")
+
 cols_prefer = [
     "Region", "Sub-region", "Host country", "Title", "Type", "Type.1",
     "Reductions (ktCO2e/yr)",
@@ -280,4 +303,4 @@ cols_show = [c for c in cols_prefer if c in df_f.columns]
 if not cols_show:
     cols_show = df_f.columns.tolist()
 
-st.dataframe(df_f[cols_show], use_container_width=True, height=420)
+st.dataframe(df_f[cols_show], use_container_width=True, height=520)
