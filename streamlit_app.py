@@ -13,7 +13,80 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pycountry
 
-st.set_page_config(page_title="Global MBM Dashboard", layout="wide")
+st.set_page_config(
+    page_title="Global MBM Dashboard",
+    page_icon="🌍",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+# ── Custom CSS: sembunyikan default Streamlit branding, rapikan sidebar ──
+st.markdown("""
+<style>
+    /* Sembunyikan header Streamlit default */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+
+    /* Sidebar styling */
+    section[data-testid="stSidebar"] {
+        background-color: #1a1a2e;
+        min-width: 200px !important;
+        max-width: 200px !important;
+    }
+    section[data-testid="stSidebar"] * {
+        color: white !important;
+    }
+
+    /* Nav button styling */
+    div[data-testid="stSidebar"] .stButton button {
+        background: transparent;
+        border: none;
+        color: #aab4c8 !important;
+        font-size: 14px;
+        font-weight: 500;
+        text-align: left;
+        padding: 8px 12px;
+        width: 100%;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+    div[data-testid="stSidebar"] .stButton button:hover {
+        background: rgba(255,255,255,0.08);
+        color: white !important;
+    }
+
+    /* Main content padding */
+    .block-container {
+        padding-top: 1.5rem;
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# ── Sidebar navigation ───────────────────────────────────────
+st.sidebar.markdown("""
+<div style="padding: 20px 12px 8px 12px;">
+    <div style="font-size:20px; font-weight:800; color:white; letter-spacing:1px;">🌍 MBM</div>
+    <div style="font-size:11px; color:#aab4c8; margin-top:2px;">Market-Based Mechanisms</div>
+</div>
+<hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0 16px 0;">
+<div style="padding: 0 12px; font-size:11px; color:#6b7a99; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Navigation</div>
+""", unsafe_allow_html=True)
+
+pages = {
+    "🗺️  Global Overview": "main",
+    "🏭  MBM National": "national",
+    "✈️  CORSIA": "corsia",
+    "🌱  CDM": "cdm",
+    "🚢  IMO": "imo",
+}
+for label in pages:
+    st.sidebar.button(label, use_container_width=True, disabled=(label == "🗺️  Global Overview"))
+
+st.sidebar.markdown("<hr style='border-color: rgba(255,255,255,0.1); margin: 16px 0 8px 0;'>", unsafe_allow_html=True)
+st.sidebar.markdown("<div style='padding: 0 12px; font-size:11px; color:#6b7a99;'>Global MBM Dashboard v1.0</div>", unsafe_allow_html=True)
 
 FILE_PATH = "data/Global Market Based Mechanism.xlsx"
 
@@ -283,9 +356,6 @@ wide, long = tidy_long(raw)
 
 # ===== Header
 st.title("Global Market-Based Mechanisms Dashboard")
-st.caption(
-    "Coverage: 194 countries and territories. Click a country on the map to see details."
-)
 
 # ===== KPIs (di bawah title)
 wide_view = wide.copy()
