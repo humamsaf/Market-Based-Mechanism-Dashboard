@@ -129,7 +129,10 @@ CENTROIDS: dict[str, tuple[float, float]] = {
 }
 
 MANUAL_ISO3 = {
-    "Côte d'Ivoire": "CIV", "São Tomé and Príncipe": "STP",
+    "Côte d'Ivoire": "CIV",
+    "Cote d'Ivoire": "CIV",
+    "Côte d'Ivoire": "CIV",
+    "São Tomé and Príncipe": "STP",
     "Democratic Republic of the Congo": "COD", "Republic of the Congo": "COG",
     "United States": "USA", "Russia": "RUS", "Iran": "IRN", "Syria": "SYR",
     "Vatican City": "VAT", "North Korea": "PRK", "South Korea": "KOR",
@@ -332,12 +335,7 @@ base["hover_mechs"]= base["Country"].apply(
 )
 base["n_mechs"] = base["Country"].apply(lambda c: len(country_mechs_map.get(c, set())))
 
-missing_iso = base[base["iso3"].isna()]["Country"].tolist()
-if missing_iso:
-    st.warning(
-        f"ISO3 not found for {len(missing_iso)} countries/territories (not shown on map). "
-        f"Examples: {', '.join(missing_iso[:10])}"
-    )
+
 
 m_plot = base.dropna(subset=["iso3"]).copy()
 
