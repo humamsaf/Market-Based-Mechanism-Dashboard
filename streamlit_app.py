@@ -318,186 +318,171 @@ k4.metric("VCM projects (sum)", 0 if pd.isna(vcm_sum) else int(vcm_sum))
 
 st.divider()
 
-# ===== Map + Detail side-by-side
-col_map, col_detail = st.columns([3, 1])
+# ===== Map
+st.subheader("World Map")
+st.caption("🖱️ Click on a country to view its detail")
 
-with col_map:
-    st.subheader("World Map")
-    st.caption("🖱️ Click on a country to view its detail")
+country_mechs_map = f.groupby("Country")["mechanism_type"].apply(set).to_dict()
 
-    country_mechs_map = f.groupby("Country")["mechanism_type"].apply(set).to_dict()
+base = wide_view[["Country", "Region"]].drop_duplicates().copy()
+base["iso3"]       = base["Country"].apply(to_iso3)
+base["cp_type"]    = base["Country"].apply(lambda c: get_carbon_pricing_type(country_mechs_map.get(c, set())))
+base["hover_mechs"]= base["Country"].apply(
+    lambda c: "<br>".join(sorted(country_mechs_map.get(c, {"No recorded mechanisms"})))
+)
+base["n_mechs"] = base["Country"].apply(lambda c: len(country_mechs_map.get(c, set())))
 
-    base = wide_view[["Country", "Region"]].drop_duplicates().copy()
-    base["iso3"]       = base["Country"].apply(to_iso3)
-    base["cp_type"]    = base["Country"].apply(lambda c: get_carbon_pricing_type(country_mechs_map.get(c, set())))
-    base["hover_mechs"]= base["Country"].apply(
-        lambda c: "<br>".join(sorted(country_mechs_map.get(c, {"No recorded mechanisms"})))
+missing_iso = base[base["iso3"].isna()]["Country"].tolist()
+if missing_iso:
+    st.warning(
+        f"ISO3 not found for {len(missing_iso)} countries/territories (not shown on map). "
+        f"Examples: {', '.join(missing_iso[:10])}"
     )
-    base["n_mechs"] = base["Country"].apply(lambda c: len(country_mechs_map.get(c, set())))
 
-    missing_iso = base[base["iso3"].isna()]["Country"].tolist()
-    if missing_iso:
-        st.warning(
-            f"ISO3 not found for {len(missing_iso)} countries/territories (not shown on map). "
-            f"Examples: {', '.join(missing_iso[:10])}"
-        )
+m_plot = base.dropna(subset=["iso3"]).copy()
 
-    m_plot = base.dropna(subset=["iso3"]).copy()
+fig_map = go.Figure()
 
-    fig_map = go.Figure()
-
-    for cp_type, color in CARBON_PRICING_COLORS.items():
-        subset = m_plot[m_plot["cp_type"] == cp_type]
-        if subset.empty:
-            continue
-        n_mechs_list = subset["Country"].apply(lambda c: len(country_mechs_map.get(c, set())))
-        fig_map.add_trace(go.Choropleth(
-            locations=subset["iso3"],
-            z=[1] * len(subset),
-            colorscale=[[0, color], [1, color]],
-            showscale=False,
-            hovertemplate=(
-                "<b>%{customdata[0]}</b><br>"
-                "%{customdata[1]} mechanisms<br>"
-                "──────────<br>"
-                "%{customdata[2]}"
-                "<extra></extra>"
-            ),
-            customdata=subset[["Country", "n_mechs", "hover_mechs"]].values,
-            name=cp_type,
-            showlegend=True,
-            marker_line_color="#333333",
-            marker_line_width=0.7,
-            legendgroup="cp",
-            legendgrouptitle_text="Carbon Pricing",
-        ))
-
-    OTHER_MECHS = ["CBAM", "Tax Incentives", "Fuel Mandates", "Feebates", "VCM project", "AMC"]
-
-    for i, mech in enumerate(OTHER_MECHS):
-        style = MARKER_STYLES[mech]
-        dlat, dlon = MECH_OFFSETS[mech]
-        mech_countries = f[f["mechanism_type"] == mech]["Country"].unique()
-        rows = []
-        for country in mech_countries:
-            iso3 = to_iso3(country)
-            if iso3 and iso3 in CENTROIDS:
-                lat, lon = CENTROIDS[iso3]
-                rows.append({"country": country, "lat": lat + dlat, "lon": lon + dlon})
-        if not rows:
-            continue
-        df_m = pd.DataFrame(rows)
-        # Tambah hover semua mekanisme negara
-        df_m["all_mechs"] = df_m["country"].apply(
-            lambda c: "<br>".join(sorted(country_mechs_map.get(c, {mech})))
-        )
-        fig_map.add_trace(go.Scattergeo(
-            lat=df_m["lat"],
-            lon=df_m["lon"],
-            mode="markers",
-            marker=dict(
-                symbol=style["symbol"],
-                color=style["color"],
-                size=style["size"],
-                line=dict(width=1.0, color="#111111"),  # outline hitam tipis
-                opacity=0.95,
-            ),
-            text=df_m["country"],
-            customdata=df_m[["all_mechs"]].values,
-            hovertemplate=(
-                "<b>%{text}</b><br>"
-                "──────────<br>"
-                "%{customdata[0]}"
-                "<extra></extra>"
-            ),
-            name=mech,
-            showlegend=True,
-            legendgroup="other",
-            legendgrouptitle_text="Other mechanisms" if i == 0 else "",
-        ))
-
-    fig_map.update_layout(
-        height=540,
-        margin=dict(l=0, r=0, t=5, b=0),
-        paper_bgcolor="white",
-        uirevision="map_fixed",   # zoom/pan tetap saat state berubah
-        geo=dict(
-            projection_type="equirectangular",
-            showframe=True,
-            framecolor="#333333",
-            framewidth=1,
-            showcoastlines=True,
-            coastlinecolor="#333333",
-            coastlinewidth=0.8,
-            showcountries=True,
-            countrycolor="#333333",
-            countrywidth=0.6,
-            showland=True,
-            landcolor="#f5f5f5",
-            showocean=False,
-            showlakes=False,
-            bgcolor="white",
-            lataxis_range=[-60, 85],
-            lonaxis_range=[-180, 180],
+for cp_type, color in CARBON_PRICING_COLORS.items():
+    subset = m_plot[m_plot["cp_type"] == cp_type]
+    if subset.empty:
+        continue
+    fig_map.add_trace(go.Choropleth(
+        locations=subset["iso3"],
+        z=[1] * len(subset),
+        colorscale=[[0, color], [1, color]],
+        showscale=False,
+        hovertemplate=(
+            "<b>%{customdata[0]}</b><br>"
+            "%{customdata[1]} mechanisms<br>"
+            "──────────<br>"
+            "%{customdata[2]}"
+            "<extra></extra>"
         ),
-        legend=dict(
-            title="<b>Legend</b>",
-            bgcolor="white",
-            bordercolor="#333333",
-            borderwidth=1,
-            x=0.01,
-            y=0.40,
-            font=dict(size=11),
-            tracegroupgap=5,
-            itemsizing="constant",
+        customdata=subset[["Country", "n_mechs", "hover_mechs"]].values,
+        name=cp_type,
+        showlegend=True,
+        marker_line_color="#111111",
+        marker_line_width=0.8,
+        legendgroup="cp",
+        legendgrouptitle_text="Carbon Pricing",
+    ))
+
+OTHER_MECHS = ["CBAM", "Tax Incentives", "Fuel Mandates", "Feebates", "VCM project", "AMC"]
+
+for i, mech in enumerate(OTHER_MECHS):
+    style = MARKER_STYLES[mech]
+    dlat, dlon = MECH_OFFSETS[mech]
+    mech_countries = f[f["mechanism_type"] == mech]["Country"].unique()
+    rows = []
+    for country in mech_countries:
+        iso3 = to_iso3(country)
+        if iso3 and iso3 in CENTROIDS:
+            lat, lon = CENTROIDS[iso3]
+            rows.append({"country": country, "lat": lat + dlat, "lon": lon + dlon})
+    if not rows:
+        continue
+    df_m = pd.DataFrame(rows)
+    df_m["all_mechs"] = df_m["country"].apply(
+        lambda c: "<br>".join(sorted(country_mechs_map.get(c, {mech})))
+    )
+    fig_map.add_trace(go.Scattergeo(
+        lat=df_m["lat"],
+        lon=df_m["lon"],
+        mode="markers",
+        marker=dict(
+            symbol=style["symbol"],
+            color=style["color"],
+            size=style["size"],
+            line=dict(width=1.0, color="#111111"),
+            opacity=0.95,
         ),
-        clickmode="event+select",
-    )
+        text=df_m["country"],
+        hoverinfo="skip",
+        name=mech,
+        showlegend=True,
+        legendgroup="other",
+        legendgrouptitle_text="Other mechanisms" if i == 0 else "",
+    ))
 
-    clicked = st.plotly_chart(
-        fig_map,
-        use_container_width=True,
-        key="map_qgis",
-        on_select="rerun",
-        selection_mode="points",
-    )
+fig_map.update_layout(
+    height=540,
+    margin=dict(l=0, r=0, t=5, b=0),
+    paper_bgcolor="white",
+    uirevision="map_fixed",
+    geo=dict(
+        projection_type="equirectangular",
+        showframe=True,
+        framecolor="#333333",
+        framewidth=1,
+        showcoastlines=True,
+        coastlinecolor="#333333",
+        coastlinewidth=0.8,
+        showcountries=True,
+        countrycolor="#333333",
+        countrywidth=0.6,
+        showland=True,
+        landcolor="#f5f5f5",
+        showocean=False,
+        showlakes=False,
+        bgcolor="white",
+        lataxis_range=[-60, 85],
+        lonaxis_range=[-180, 180],
+    ),
+    legend=dict(
+        title="<b>Legend</b>",
+        bgcolor="white",
+        bordercolor="#333333",
+        borderwidth=1,
+        x=0.01,
+        y=0.40,
+        font=dict(size=11),
+        tracegroupgap=5,
+        itemsizing="constant",
+    ),
+    clickmode="event+select",
+)
 
-with col_detail:
-    st.subheader("Country Detail")
+clicked = st.plotly_chart(
+    fig_map,
+    use_container_width=True,
+    key="map_qgis",
+    on_select="rerun",
+    selection_mode="points",
+)
 
-    # Try to get clicked country from choropleth click
-    selected_country = None
-    if clicked and clicked.get("selection") and clicked["selection"].get("points"):
-        pts = clicked["selection"]["points"]
-        if pts:
-            pt = pts[0]
-            # customdata[0] = Country name (from choropleth)
-            cd = pt.get("customdata")
-            txt = pt.get("text")
-            if cd and isinstance(cd, (list, tuple)) and len(cd) > 0:
-                selected_country = cd[0]
-            elif txt:
-                selected_country = txt
+# ===== Detail card di bawah peta
+# Try to get clicked country
+selected_country = None
+if clicked and clicked.get("selection") and clicked["selection"].get("points"):
+    pts = clicked["selection"]["points"]
+    if pts:
+        pt = pts[0]
+        cd = pt.get("customdata")
+        txt = pt.get("text")
+        if cd and isinstance(cd, (list, tuple)) and len(cd) > 0:
+            selected_country = cd[0]
+        elif txt:
+            selected_country = txt
 
-    if selected_country:
-        region_val = wide[wide["Country"] == selected_country]["Region"].iloc[0] \
-            if selected_country in wide["Country"].values else "—"
-        render_country_card(selected_country, region_val, long)
-    else:
-        st.markdown("""
-        <div style="
-            background:#f8f9fa;
-            border: 2px dashed #ccc;
-            border-radius: 12px;
-            padding: 40px 24px;
-            text-align: center;
-            color: #999;
-        ">
-            <div style="font-size:40px; margin-bottom:12px;">🗺️</div>
-            <div style="font-size:15px; font-weight:600;">Click a country</div>
-            <div style="font-size:13px; margin-top:8px;">on the map to see its mechanism details</div>
-        </div>
-        """, unsafe_allow_html=True)
+if selected_country:
+    region_val = wide[wide["Country"] == selected_country]["Region"].iloc[0] \
+        if selected_country in wide["Country"].values else "—"
+    render_country_card(selected_country, region_val, long)
+else:
+    st.markdown("""
+    <div style="
+        background:#f8f9fa;
+        border: 2px dashed #ccc;
+        border-radius: 10px;
+        padding: 20px 24px;
+        text-align: center;
+        color: #aaa;
+        margin-top: 8px;
+    ">
+        🗺️ &nbsp;<b>Click a country</b> on the map to see its mechanisms
+    </div>
+    """, unsafe_allow_html=True)
 
 st.divider()
 
