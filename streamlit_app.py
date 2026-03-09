@@ -857,9 +857,25 @@ def page_mbm():
     with c1:
         st.subheader("Countries by mechanism type")
         by_type = f.groupby("mechanism_type")["Country"].nunique().reset_index(name="countries").sort_values("countries", ascending=False)
-        st.plotly_chart(px.bar(by_type, x="mechanism_type", y="countries",
-            color="mechanism_type", color_discrete_sequence=px.colors.qualitative.Set2),
-            use_container_width=True, key="bar_type")
+        bar_colors = [MECH_BOX_COLORS.get(m, "#888") for m in by_type["mechanism_type"]]
+        fig_bar = go.Figure(go.Bar(
+            x=by_type["mechanism_type"],
+            y=by_type["countries"],
+            marker_color=bar_colors,
+            marker_line_color="#222", marker_line_width=1,
+            text=by_type["countries"],
+            textposition="outside",
+            textfont=dict(size=12, color="#1a1a2e", family="Inter, sans-serif"),
+        ))
+        fig_bar.update_layout(
+            margin=dict(l=0, r=0, t=20, b=0),
+            paper_bgcolor="white", plot_bgcolor="white",
+            showlegend=False,
+            xaxis=dict(title="", tickfont=dict(size=11), showgrid=False),
+            yaxis=dict(title="Countries", showgrid=True, gridcolor="#f0f0f0"),
+            hoverlabel=dict(bgcolor="white", bordercolor="#ccc", font=dict(size=12)),
+        )
+        st.plotly_chart(fig_bar, use_container_width=True, key="bar_type", config={"displayModeBar": False})
     with c2:
         st.subheader("Countries by Carbon Pricing type")
         cp_counts = m_plot["cp_type"].value_counts().reset_index()
