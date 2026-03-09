@@ -123,12 +123,12 @@ CARBON_PRICING_COLORS = {
 }
 
 MARKER_STYLES = {
-    "CBAM":           {"symbol": "square",      "color": "#4a90d9", "size": 6},
-    "Tax Incentives": {"symbol": "diamond",     "color": "#9b59b6", "size": 7},
-    "Fuel Mandates":  {"symbol": "triangle-up", "color": "#e07b00", "size": 7},
-    "Feebates":       {"symbol": "circle",      "color": "#e63946", "size": 6},
-    "VCM project":    {"symbol": "star",        "color": "#2a9d8f", "size": 8},
-    "AMC":            {"symbol": "cross",       "color": "#5b9bd5", "size": 7},
+    "CBAM":           {"symbol": "square",      "color": "#4a90d9", "size": 4},
+    "Tax Incentives": {"symbol": "diamond",     "color": "#9b59b6", "size": 5},
+    "Fuel Mandates":  {"symbol": "triangle-up", "color": "#e07b00", "size": 5},
+    "Feebates":       {"symbol": "circle",      "color": "#e63946", "size": 4},
+    "VCM project":    {"symbol": "star",        "color": "#2a9d8f", "size": 6},
+    "AMC":            {"symbol": "cross",       "color": "#5b9bd5", "size": 5},
 }
 
 MECH_BOX_COLORS = {
