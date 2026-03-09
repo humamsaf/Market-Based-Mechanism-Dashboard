@@ -438,7 +438,7 @@ def render_mechanism_details(country, mechs):
 
     if rows:
         html = '<div style="margin-top:12px;">'
-        html += '<div style="font-size:13px;font-weight:700;color:#555;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Mechanism Details</div>'
+        html += '<div style="font-size:13px;font-weight:700;color:#555;margin-bottom:8px;letter-spacing:0.5px;">Mechanism Details</div>'
         html += rows
         html += '</div>'
         st.markdown(html, unsafe_allow_html=True)
@@ -549,27 +549,27 @@ def page_mbm():
         <div style="display:flex; justify-content:center; gap:48px; flex-wrap:wrap; margin-bottom:48px; align-items:center;">
             <div>
                 <div style="font-size:56px; font-weight:900; color:#1a1a2e; line-height:1;">{n_countries}</div>
-                <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">Countries Covered</div>
+                <div style="font-size:11px; color:#999; font-weight:600; letter-spacing:1px; margin-top:6px;">Countries Covered</div>
             </div>
             <div style="width:1px; height:60px; background:#e0e0e0;"></div>
             <div>
                 <div style="font-size:56px; font-weight:900; color:#1a1a2e; line-height:1;">{n_mechs}</div>
-                <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">Mechanism Types</div>
+                <div style="font-size:11px; color:#999; font-weight:600; letter-spacing:1px; margin-top:6px;">Mechanism Types</div>
             </div>
             <div style="width:1px; height:60px; background:#e0e0e0;"></div>
             <div>
                 <div style="font-size:56px; font-weight:900; color:#457b9d; line-height:1;">{n_ets}</div>
-                <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">Countries with ETS</div>
+                <div style="font-size:11px; color:#999; font-weight:600; letter-spacing:1px; margin-top:6px;">Countries with ETS</div>
             </div>
             <div style="width:1px; height:60px; background:#e0e0e0;"></div>
             <div>
                 <div style="font-size:56px; font-weight:900; color:#5a8a3a; line-height:1;">{n_ctx}</div>
-                <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">Countries with Carbon Tax</div>
+                <div style="font-size:11px; color:#999; font-weight:600; letter-spacing:1px; margin-top:6px;">Countries with Carbon Tax</div>
             </div>
             <div style="width:1px; height:60px; background:#e0e0e0;"></div>
             <div>
                 <div style="font-size:56px; font-weight:900; color:#c97a3a; line-height:1;">{n_both}</div>
-                <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">Countries with Both</div>
+                <div style="font-size:11px; color:#999; font-weight:600; letter-spacing:1px; margin-top:6px;">ETS + Carbon Tax</div>
             </div>
         </div>
         <a onclick="
