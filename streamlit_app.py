@@ -479,7 +479,12 @@ def get_carbon_pricing_type(mechs: set) -> str:
     elif has_tax: return "Carbon Tax"
     return "No Carbon Pricing"
 
-def render_country_card(country, region, long_df):
+    CP_DISPLAY = {
+        "ETS + Carbon Tax": "ETS and Carbon Tax",
+        "Carbon Tax": "Carbon Tax",
+        "ETS": "ETS",
+        "No Carbon Pricing": "No Carbon Pricing",
+    }
     cf = long_df[long_df["Country"] == country]
     mechs = sorted(cf["mechanism_type"].unique()) if len(cf) else []
     cp_type = get_carbon_pricing_type(set(mechs))
@@ -499,7 +504,7 @@ def render_country_card(country, region, long_df):
         <div style="font-size:22px;font-weight:800;color:#1a1a2e;letter-spacing:1px;margin-bottom:4px;">{country.upper()}</div>
         <div style="font-size:12px;color:#888;margin-bottom:14px;">{region}</div>
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
-            <div style="background:{cp_color};color:white;padding:5px 14px;border-radius:6px;font-weight:700;font-size:12px;border:1.5px solid #222;">{cp_type}</div>
+            <div style="background:{cp_color};color:white;padding:5px 14px;border-radius:6px;font-weight:700;font-size:12px;border:1.5px solid #222;">{CP_DISPLAY.get(cp_type, cp_type)}</div>
         </div>
         {f'<div style="display:flex;gap:6px;flex-wrap:wrap;"><div style="font-size:11px;color:#aaa;width:100%;margin-bottom:4px;">Other mechanisms:</div>{boxes}</div>' if boxes else ''}
     </div>
@@ -569,7 +574,7 @@ def page_mbm():
             <div style="width:1px; height:60px; background:#e0e0e0;"></div>
             <div>
                 <div style="font-size:56px; font-weight:900; color:#c97a3a; line-height:1;">{n_both}</div>
-                <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">ETS + Carbon Tax</div>
+                <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">ETS and Carbon Tax</div>
             </div>
         </div>
         <a onclick="
@@ -657,25 +662,31 @@ def page_mbm():
         "AMC":            "#5b9bd5",
     }
 
+    CP_DISPLAY = {
+        "ETS + Carbon Tax": "ETS and Carbon Tax",
+        "Carbon Tax": "Carbon Tax",
+        "ETS": "ETS",
+        "No Carbon Pricing": "No Carbon Pricing",
+    }
+
     def build_hover(c, cp, n, region):
         mechs = sorted(country_mechs_map.get(c, set()))
         cp_color = CARBON_PRICING_COLORS.get(cp, "#888")
-        # Exclude CP mechanisms from other list
+        cp_label = CP_DISPLAY.get(cp, cp)
         other = [m for m in mechs if m not in {"ETS", "Carbon Tax"}]
         other_lines = "".join(
             f"<br><span style='color:{MECH_COLORS_HEX.get(m,'#888')}'><b>■</b></span> {m}"
             for m in other
         ) if other else "<br>  —"
-        hover = (
+        return (
             f"<b>{c}</b>"
             f"<br><span style='color:#999'>{region}</span>"
             f"<br>─────────────"
-            f"<br><span style='color:{cp_color}'><b>■</b></span> <b>{cp}</b>"
+            f"<br><span style='color:{cp_color}'><b>■</b></span> <b>{cp_label}</b>"
             f"<br>─────────────"
             f"<br><b>Other mechanisms</b>"
             f"{other_lines}"
         )
-        return hover
 
     base["hover_text"] = base.apply(
         lambda r: build_hover(r["Country"], r["cp_type"], r["n_mechs"], r["region_val"]), axis=1
