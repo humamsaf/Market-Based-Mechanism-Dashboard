@@ -660,20 +660,22 @@ def page_mbm():
     def build_hover(c, cp, n, region):
         mechs = sorted(country_mechs_map.get(c, set()))
         cp_color = CARBON_PRICING_COLORS.get(cp, "#888")
-        # Build mech list with colored squares
-        mech_lines = "".join(
+        # Exclude CP mechanisms from other list
+        other = [m for m in mechs if m not in {"ETS", "Carbon Tax"}]
+        other_lines = "".join(
             f"<br><span style='color:{MECH_COLORS_HEX.get(m,'#888')}'><b>■</b></span> {m}"
-            for m in mechs
-        ) if mechs else "<br>  No recorded mechanisms"
-        return (
+            for m in other
+        ) if other else "<br>  —"
+        hover = (
             f"<b>{c}</b>"
             f"<br><span style='color:#999'>{region}</span>"
             f"<br>─────────────"
             f"<br><span style='color:{cp_color}'><b>■</b></span> <b>{cp}</b>"
             f"<br>─────────────"
-            f"<br><b>{n} mechanism{'s' if n!=1 else ''}</b>"
-            f"{mech_lines}"
+            f"<br><b>Other mechanisms</b>"
+            f"{other_lines}"
         )
+        return hover
 
     base["hover_text"] = base.apply(
         lambda r: build_hover(r["Country"], r["cp_type"], r["n_mechs"], r["region_val"]), axis=1
@@ -742,6 +744,7 @@ def page_mbm():
             bgcolor="white",
             bordercolor="#cccccc",
             font=dict(size=12, color="#1a1a2e", family="Inter, sans-serif"),
+            align="left",
         ),
         geo=dict(
             projection_type="equirectangular",
