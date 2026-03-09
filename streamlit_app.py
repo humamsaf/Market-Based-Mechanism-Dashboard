@@ -127,7 +127,7 @@ MARKER_STYLES = {
     "Tax Incentives": {"symbol": "diamond",     "color": "#9b59b6", "size": 5},
     "Fuel Mandates":  {"symbol": "triangle-up", "color": "#e07b00", "size": 5},
     "Feebates":       {"symbol": "circle",      "color": "#e63946", "size": 4},
-    "VCM project":    {"symbol": "star",        "color": "#2a9d8f", "size": 6},
+    "VCM project":    {"symbol": "asterisk",    "color": "#2a9d8f", "size": 7},
     "AMC":            {"symbol": "cross",       "color": "#5b9bd5", "size": 5},
 }
 
