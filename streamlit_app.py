@@ -287,7 +287,18 @@ st.caption(
     "Coverage: 194 countries and territories. Click a country on the map to see details."
 )
 
-# ===== Filters (di atas peta)
+# ===== KPIs (di bawah title)
+wide_view = wide.copy()
+k1, k2, k3, k4 = st.columns(4)
+k1.metric("Countries covered", int(wide["Country"].nunique()))
+k2.metric("Countries in view", int(wide_view["Country"].nunique()))
+k3.metric("Mechanism types in view", int(long["mechanism_type"].nunique()))
+vcm_sum_all = long.loc[long["mechanism_type"] == "VCM project", "vcm_projects"].sum(min_count=1)
+k4.metric("VCM projects (sum)", 0 if pd.isna(vcm_sum_all) else int(vcm_sum_all))
+
+st.divider()
+
+# ===== Filters
 fc1, fc2, fc3, fc4 = st.columns([2, 2, 2, 1])
 with fc1:
     region_sel  = st.multiselect("Region",         sorted(long["Region"].dropna().unique()), key="f_region")
@@ -296,9 +307,10 @@ with fc2:
 with fc3:
     country_sel = st.multiselect("Country",        sorted(long["Country"].dropna().unique()), key="f_country")
 with fc4:
-    keyword     = st.text_input("Search in details", value="", key="f_kw").strip()
+    st.write("")
+    st.write("")
     if st.button("Reset filters", use_container_width=True):
-        for k in ["f_region", "f_type", "f_country", "f_kw"]:
+        for k in ["f_region", "f_type", "f_country"]:
             st.session_state.pop(k, None)
         st.rerun()
 
@@ -306,7 +318,6 @@ f = long.copy()
 if region_sel:   f = f[f["Region"].isin(region_sel)]
 if type_sel:     f = f[f["mechanism_type"].isin(type_sel)]
 if country_sel:  f = f[f["Country"].isin(country_sel)]
-if keyword:      f = f[f["mechanism_detail"].str.contains(keyword, case=False, na=False)]
 
 # ===== Map
 
@@ -493,19 +504,6 @@ else:
         🗺️ &nbsp;<b>Click a country</b> on the map to see its mechanisms
     </div>
     """, unsafe_allow_html=True)
-
-st.divider()
-
-# ===== KPIs
-wide_view = wide.copy()
-if region_sel:   wide_view = wide_view[wide_view["Region"].isin(region_sel)]
-if country_sel:  wide_view = wide_view[wide_view["Country"].isin(country_sel)]
-k1, k2, k3, k4 = st.columns(4)
-k1.metric("Countries covered", int(wide["Country"].nunique()))
-k2.metric("Countries in view", int(wide_view["Country"].nunique()))
-k3.metric("Mechanism types in view", int(f["mechanism_type"].nunique()))
-vcm_sum = f.loc[f["mechanism_type"] == "VCM project", "vcm_projects"].sum(min_count=1)
-k4.metric("VCM projects (sum)", 0 if pd.isna(vcm_sum) else int(vcm_sum))
 
 st.divider()
 
