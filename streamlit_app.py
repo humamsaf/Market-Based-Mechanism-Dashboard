@@ -322,8 +322,7 @@ k4.metric("VCM projects (sum)", 0 if pd.isna(vcm_sum) else int(vcm_sum))
 st.divider()
 
 # ===== Map
-st.subheader("World Map")
-st.caption("🖱️ Click on a country to view its detail")
+
 
 country_mechs_map = f.groupby("Country")["mechanism_type"].apply(set).to_dict()
 
