@@ -996,14 +996,14 @@ def page_ets():
 
     # ── Hero ──────────────────────────────────────────────────────
     def divv():
-        return '<div style="width:1px;height:60px;background:#e0e0e0;"></div>'
+        return '<div style="width:1px;height:50px;background:#e0e0e0;align-self:center;"></div>'
 
     def stat(number, label, sub=None):
-        sub_html = f'<div style="font-size:12px;color:#aaa;margin-top:6px;">{sub}</div>' if sub else ""
+        sub_html = f'<div style="font-size:11px;color:#aaa;margin-top:5px;">{sub}</div>' if sub else ""
         return (
             f'<div style="text-align:center;">'
-            f'<div style="font-size:56px;font-weight:900;color:#1a1a2e;line-height:1;white-space:nowrap;">{number}</div>'
-            f'<div style="font-size:11px;color:#999;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-top:8px;white-space:nowrap;">{label}</div>'
+            f'<div style="font-size:44px;font-weight:900;color:#1a1a2e;line-height:1;white-space:nowrap;">{number}</div>'
+            f'<div style="font-size:10px;color:#999;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-top:7px;white-space:nowrap;">{label}</div>'
             f'{sub_html}</div>'
         )
 
@@ -1011,12 +1011,12 @@ def page_ets():
     <div style="padding:56px 0 48px 0;border-bottom:1px solid #e8e8e8;margin-bottom:40px;text-align:center;">
         <div style="font-size:11px;font-weight:700;color:#457b9d;letter-spacing:3px;text-transform:uppercase;margin-bottom:16px;">Carbon Pricing Instrument</div>
         <div style="font-size:56px;font-weight:900;color:#1a1a2e;line-height:1.05;margin-bottom:20px;white-space:nowrap;">Emissions Trading Systems (ETS)</div>
-        <div style="font-size:16px;color:#666;max-width:780px;margin:0 auto 48px auto;line-height:1.9;">
+        <div style="font-size:16px;color:#666;max-width:780px;margin:0 auto 40px auto;line-height:1.9;">
             An Emissions Trading System is a market-based approach to controlling pollution by providing economic incentives
             for reducing emissions. Governments set a cap on total emissions and issue allowances. Companies must hold
             allowances equal to their emissions — they can trade these allowances, creating a carbon price signal.
         </div>
-        <div style="display:flex;justify-content:center;align-items:center;gap:48px;flex-wrap:nowrap;">
+        <div style="display:flex;justify-content:center;align-items:center;gap:40px;flex-wrap:nowrap;margin-bottom:40px;">
             {stat(n_schemes, "Active Schemes")}
             {divv()}
             {stat(n_countries, "Jurisdictions")}
@@ -1031,10 +1031,35 @@ def page_ets():
             {divv()}
             {stat(n_funding, "Funding Programs")}
         </div>
+        <a onclick="
+            var el = document.getElementById('ets-map-section');
+            var container = window.parent.document.querySelector('.main');
+            if (!container) container = window.parent.document.querySelector('[data-testid=stAppViewContainer]');
+            if (container) {{
+                var y = el.getBoundingClientRect().top + container.scrollTop - 120;
+                container.scrollTo({{top: y, behavior: 'smooth'}});
+            }} else {{
+                window.parent.scrollTo({{top: el.getBoundingClientRect().top + window.parent.scrollY - 120, behavior: 'smooth'}});
+            }}
+            return false;"
+           href="#ets-map-section"
+           style="
+               display:inline-flex; align-items:center; gap:10px;
+               background:#1a1a2e; color:white;
+               padding:16px 40px; border-radius:999px;
+               font-size:16px; font-weight:700;
+               text-decoration:none; letter-spacing:0.5px;
+               box-shadow: 0 6px 24px rgba(26,26,46,0.3);
+           "
+           onmouseover="this.style.background='#2d2d50'"
+           onmouseout="this.style.background='#1a1a2e'">
+            ▶ &nbsp;Get Started
+        </a>
     </div>
     """, unsafe_allow_html=True)
 
-        # ── Map + Detail────────────────────────
+    # ── Map + Detail────────────────────────
+    st.markdown('<div id="ets-map-section"></div>', unsafe_allow_html=True)
     st.markdown("""
     <div style="margin-bottom:16px;">
         <div style="font-size:28px;font-weight:900;color:#1a1a2e;margin-bottom:4px;">ETS Global Map</div>
