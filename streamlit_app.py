@@ -1009,9 +1009,9 @@ def page_ets():
 
     st.markdown(f"""
     <div style="padding:56px 0 48px 0;border-bottom:1px solid #e8e8e8;margin-bottom:40px;text-align:center;">
-        <div style="font-size:11px;font-weight:700;color:#457b9d;letter-spacing:3px;text-transform:uppercase;margin-bottom:16px;">Carbon Pricing Instrument</div>
-        <div style="font-size:56px;font-weight:900;color:#1a1a2e;line-height:1.05;margin-bottom:20px;white-space:nowrap;">Emissions Trading Systems (ETS)</div>
-        <div style="font-size:16px;color:#666;max-width:780px;margin:0 auto 40px auto;line-height:1.9;">
+        <div style="font-size:11px;font-weight:700;color:#457b9d;letter-spacing:3px;text-transform:uppercase;margin-bottom:24px;">Carbon Pricing Instrument</div>
+        <div style="font-size:56px;font-weight:900;color:#1a1a2e;line-height:1.05;margin-bottom:32px;white-space:nowrap;">Emissions Trading Systems (ETS)</div>
+        <div style="font-size:16px;color:#666;max-width:780px;margin:0 auto 48px auto;line-height:1.9;">
             An Emissions Trading System is a market-based approach to controlling pollution by providing economic incentives
             for reducing emissions. Governments set a cap on total emissions and issue allowances. Companies must hold
             allowances equal to their emissions — they can trade these allowances, creating a carbon price signal.
