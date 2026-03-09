@@ -360,7 +360,7 @@ for cp_type, color in CARBON_PRICING_COLORS.items():
         name=cp_type,
         showlegend=False,          # sembunyikan dari legend (diganti dummy di bawah)
         marker_line_color="#111111",
-        marker_line_width=2,
+        marker_line_width=1.5,
     ))
 
 # Dummy legend untuk Carbon Pricing — kotak dengan outline hitam
@@ -419,8 +419,8 @@ for i, mech in enumerate(OTHER_MECHS):
     ))
 
 fig_map.update_layout(
-    height=540,
-    margin=dict(l=0, r=0, t=5, b=0),
+    height=560,
+    margin=dict(l=0, r=0, t=0, b=0),
     paper_bgcolor="white",
     uirevision="map_fixed",
     geo=dict(
@@ -430,27 +430,27 @@ fig_map.update_layout(
         framewidth=1,
         showcoastlines=True,
         coastlinecolor="#333333",
-        coastlinewidth=2,
+        coastlinewidth=1.5,
         showcountries=True,
         countrycolor="#333333",
-        countrywidth=2,
+        countrywidth=1.5,
         showland=True,
         landcolor="#f5f5f5",
         showocean=False,
         showlakes=False,
         bgcolor="white",
-        lataxis_range=[-60, 85],
-        lonaxis_range=[-180, 180],
+        lataxis=dict(range=[-60, 85]),
+        lonaxis=dict(range=[-180, 180]),
     ),
     legend=dict(
         title="<b>Legend</b>",
-        bgcolor="white",
-        bordercolor="#333333",
-        borderwidth=1,
+        bgcolor="rgba(255,255,255,0.75)",  # semi-transparan, menyatu dengan peta
+        bordercolor="rgba(0,0,0,0)",       # tidak ada border kotak
+        borderwidth=0,
         x=0.01,
-        y=0.40,
+        y=0.38,
         font=dict(size=11),
-        tracegroupgap=5,
+        tracegroupgap=4,
         itemsizing="constant",
     ),
     clickmode="event+select",
@@ -462,6 +462,7 @@ clicked = st.plotly_chart(
     key="map_qgis",
     on_select="rerun",
     selection_mode="points",
+    config={"scrollZoom": True, "doubleClick": False},
 )
 
 # ===== Detail card di bawah peta
