@@ -953,15 +953,29 @@ def page_ets():
     max_price_v = prices.max()
     total_rev   = "USD 69B+"
 
+    # GHG types — normalised to canonical names
+    GHG_NORM = {
+        "co2": "CO₂", "co₂": "CO₂", "co₂e": "CO₂", "co₂ only": "CO₂",
+        "including co₂": "CO₂", "carbon dioxide": "CO₂",
+        "ch4": "CH₄", "methane": "CH₄", "ch4 and n2o": "CH₄",
+        "n2o": "N₂O", "nitrous oxide": "N₂O",
+        "hfcs": "HFCs", "hydrofluorocarbons": "HFCs",
+        "pfcs": "PFCs", "perfluorocarbons": "PFCs",
+        "sf6": "SF₆", "sulfur hexafluoride": "SF₆", "sf6 nf3": "SF₆",
+        "nf3": "NF₃", "nitrogen trifluoride": "NF₃",
+        "other fluorinated ghgs": "Other F-gases",
+        "and other fluorinated ghgs": "Other F-gases",
+    }
     ghg_set = set()
     for v in ets["ghg"].dropna():
         for g in str(v).split(","):
-            g = g.strip().split("(")[0].strip()
-            if g and g not in ("nan",""):
-                g = g.replace("carbon dioxide","CO₂").replace("CO2","CO₂")
-                ghg_set.add(g)
+            g = g.strip().split("(")[0].strip().lower()
+            canonical = GHG_NORM.get(g)
+            if canonical:
+                ghg_set.add(canonical)
     n_ghg = len(ghg_set)
 
+    # Sector types
     sec_set = set()
     for v in ets["sectors"].dropna():
         for s in str(v).split(","):
@@ -969,88 +983,50 @@ def page_ets():
             if s and s not in ("nan",""): sec_set.add(s.split(":")[0].strip())
     n_sectors = len(sec_set)
 
-    n_funding = int(ets["funding_program"].apply(
-        lambda x: str(x).strip() not in ("-","—","nan","NaN","")).sum()) if "funding_program" in ets.columns else 0
+    # Funding programs — count real ones only
+    INVALID_FP = {"-","—","nan","NaN","","not defined","under development by SEMARAT"}
+    n_funding = 0
+    if "funding_program" in ets.columns:
+        n_funding = int(ets["funding_program"].apply(lambda x: str(x).strip() not in INVALID_FP).sum())
 
-    def stat_box(number, label, color="#457b9d", sub=None):
-        sub_html = f'<div style="font-size:10px;color:#aaa;margin-top:3px;">{sub}</div>' if sub else ""
+    # ── Hero ──────────────────────────────────────────────────────
+    def stat(number, label, sub=None):
+        sub_html = f'<div style="font-size:11px;color:#6b8099;margin-top:6px;letter-spacing:0.5px;">{sub}</div>' if sub else ""
         return (
-            f'<div style="text-align:center;padding:24px 20px;flex:1;min-width:100px;">'            f'<div style="font-size:36px;font-weight:900;color:{color};line-height:1;white-space:nowrap;">{number}</div>'            f'<div style="font-size:10px;color:#999;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-top:7px;white-space:nowrap;">{label}</div>'            f'{sub_html}</div>'
+            f'<div style="text-align:center;padding:32px 28px;flex:1;min-width:110px;">'            f'<div style="font-size:44px;font-weight:900;color:#1a3a5e;line-height:1;white-space:nowrap;">{number}</div>'            f'<div style="font-size:10px;color:#7a9ab5;font-weight:700;text-transform:uppercase;letter-spacing:2.5px;margin-top:9px;white-space:nowrap;">{label}</div>'            f'{sub_html}</div>'
         )
 
-    def divider_v():
-        return '<div style="width:1px;background:#e8e8e8;align-self:stretch;margin:12px 0;"></div>'
+    def div_v():
+        return '<div style="width:1px;background:#d0dce8;margin:20px 0;"></div>'
 
     st.markdown(f"""
-    <div style="padding:52px 0 44px 0;border-bottom:1px solid #e8e8e8;margin-bottom:40px;text-align:center;">
-        <div style="font-size:11px;font-weight:700;color:#457b9d;letter-spacing:3px;text-transform:uppercase;margin-bottom:14px;">Carbon Pricing Instrument</div>
-        <div style="font-size:52px;font-weight:900;color:#1a1a2e;line-height:1.05;margin-bottom:18px;white-space:nowrap;">Emissions Trading Systems (ETS)</div>
-        <div style="font-size:14px;color:#666;max-width:680px;margin:0 auto 44px auto;line-height:1.9;">
+    <div style="padding:56px 0 48px 0;border-bottom:1px solid #dde6ef;margin-bottom:44px;text-align:center;">
+        <div style="font-size:11px;font-weight:700;color:#4a7fa0;letter-spacing:3px;text-transform:uppercase;margin-bottom:16px;">Carbon Pricing Instrument</div>
+        <div style="font-size:52px;font-weight:900;color:#1a3a5e;line-height:1.05;margin-bottom:18px;white-space:nowrap;">Emissions Trading Systems (ETS)</div>
+        <div style="font-size:14px;color:#5a7a90;max-width:680px;margin:0 auto 48px auto;line-height:1.9;">
             An Emissions Trading System is a market-based approach to controlling pollution by providing economic incentives
             for reducing emissions. Governments set a cap on total emissions and issue allowances. Companies must hold
             allowances equal to their emissions — they can trade these allowances, creating a carbon price signal.
         </div>
-        <div style="display:flex;justify-content:center;align-items:stretch;border:1px solid #e8e8e8;border-radius:14px;overflow:hidden;max-width:980px;margin:0 auto;">
-            {stat_box(n_schemes, "Active Schemes", "#457b9d")}
-            {divider_v()}
-            {stat_box(n_countries, "Jurisdictions", "#1a1a2e")}
-            {divider_v()}
-            {stat_box(f"USD {avg_price:.0f}", "Avg. Carbon Price", "#2a7a2a", sub=f"Range USD {min_price:.0f}–{max_price_v:.0f}")}
-            {divider_v()}
-            {stat_box(total_rev, "Revenue (2024)", "#1a1a2e")}
-            {divider_v()}
-            {stat_box(n_ghg, "GHG Types Covered", "#7b4a9e")}
-            {divider_v()}
-            {stat_box(n_sectors, "Sector Types", "#c97a3a")}
-            {divider_v()}
-            {stat_box(n_funding, "Funding Programs", "#2a9d8f")}
+        <div style="display:flex;justify-content:center;align-items:stretch;border:1.5px solid #d0dce8;border-radius:16px;overflow:hidden;max-width:1060px;margin:0 auto;background:#f7fafd;">
+            {stat(n_schemes, "Active Schemes")}
+            {div_v()}
+            {stat(n_countries, "Jurisdictions")}
+            {div_v()}
+            {stat(f"USD {avg_price:.0f}", "Avg. Carbon Price", sub=f"Range USD {min_price:.0f} – {max_price_v:.0f}")}
+            {div_v()}
+            {stat(total_rev, "Revenue (2024)")}
+            {div_v()}
+            {stat(n_ghg, "GHG Types Covered")}
+            {div_v()}
+            {stat(n_sectors, "Sector Types")}
+            {div_v()}
+            {stat(n_funding, "Funding Programs")}
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Timeline ──────────────────────────────────────────────────
-    st.markdown("""
-    <div style="font-size:28px;font-weight:900;color:#1a1a2e;margin-bottom:4px;">ETS Timeline</div>
-    <div style="font-size:13px;color:#999;margin-bottom:16px;">Year each ETS scheme was established.</div>
-    """, unsafe_allow_html=True)
-
-    timeline_df = ets[ets["start_date"].notna()].sort_values("start_date").copy()
-    REGION_COLORS = {
-        "North America":              "#4a90d9",
-        "East Asia & Pacific":        "#2a9d8f",
-        "Europe & Central Asia":      "#457b9d",
-        "Latin America & Caribbean":  "#e07b00",
-    }
-    tl_colors = [REGION_COLORS.get(r, "#888") for r in timeline_df["region"]]
-    fig_tl = go.Figure()
-    for region, color in REGION_COLORS.items():
-        sub = timeline_df[timeline_df["region"] == region]
-        if sub.empty: continue
-        fig_tl.add_trace(go.Scatter(
-            x=sub["start_date"], y=sub["name"],
-            mode="markers+text",
-            marker=dict(size=12, color=color, line=dict(width=1, color="#222")),
-            text=sub["price"].fillna("N/A"),
-            textposition="middle right",
-            textfont=dict(size=9, color="#555"),
-            name=region,
-            hovertemplate="<b>%{y}</b><br>%{x}<br>Price: %{text}<extra></extra>",
-        ))
-    fig_tl.update_layout(
-        height=520, margin=dict(l=0, r=120, t=10, b=0),
-        paper_bgcolor="white", plot_bgcolor="white",
-        xaxis=dict(title="Year", showgrid=True, gridcolor="#f0f0f0", dtick=2),
-        yaxis=dict(title="", showgrid=False, tickfont=dict(size=10)),
-        legend=dict(bgcolor="rgba(255,255,255,0.9)", bordercolor="#e0e0e0",
-                    borderwidth=1, font=dict(size=11)),
-        hoverlabel=dict(bgcolor="white", bordercolor="#ccc", font=dict(size=12), align="left"),
-    )
-    st.plotly_chart(fig_tl, use_container_width=True, key="ets_timeline",
-                    config={"displayModeBar": False})
-
-    st.divider()
-
-    # ── Map + Detail Card ─────────────────────────────────────────
+        # ── Map + Detail────────────────────────
     st.markdown("""
     <div style="margin-bottom:16px;">
         <div style="font-size:28px;font-weight:900;color:#1a1a2e;margin-bottom:4px;">ETS Global Map</div>
@@ -1283,7 +1259,53 @@ def page_ets():
 
     st.divider()
 
-    # ── Charts ────────────────────────────────────────────────────
+    # ── Timeline ──────────────────────────────────────────────────
+    st.markdown("""
+    <div style="font-size:28px;font-weight:900;color:#1a1a2e;margin-bottom:4px;">ETS Timeline</div>
+    <div style="font-size:13px;color:#999;margin-bottom:16px;">Year each ETS scheme was established.</div>
+    """, unsafe_allow_html=True)
+
+    timeline_df = ets[ets["start_date"].notna()].sort_values("start_date").copy()
+    REGION_COLORS = {
+        "North America":              "#4a90d9",
+        "East Asia & Pacific":        "#2a9d8f",
+        "Europe & Central Asia":      "#457b9d",
+        "Latin America & Caribbean":  "#e07b00",
+    }
+    tl_colors = [REGION_COLORS.get(r, "#888") for r in timeline_df["region"]]
+    fig_tl = go.Figure()
+    for region, color in REGION_COLORS.items():
+        sub = timeline_df[timeline_df["region"] == region]
+        if sub.empty: continue
+        fig_tl.add_trace(go.Scatter(
+            x=sub["start_date"], y=sub["name"],
+            mode="markers+text",
+            marker=dict(size=12, color=color, line=dict(width=1, color="#222")),
+            text=sub["price"].fillna("N/A"),
+            textposition="middle right",
+            textfont=dict(size=9, color="#555"),
+            name=region,
+            hovertemplate="<b>%{y}</b><br>%{x}<br>Price: %{text}<extra></extra>",
+        ))
+    fig_tl.update_layout(
+        height=520, margin=dict(l=0, r=120, t=10, b=0),
+        paper_bgcolor="white", plot_bgcolor="white",
+        xaxis=dict(title="Year", showgrid=True, gridcolor="#f0f0f0", dtick=2),
+        yaxis=dict(title="", showgrid=False, tickfont=dict(size=10)),
+        legend=dict(bgcolor="rgba(255,255,255,0.9)", bordercolor="#e0e0e0",
+                    borderwidth=1, font=dict(size=11)),
+        hoverlabel=dict(bgcolor="white", bordercolor="#ccc", font=dict(size=12), align="left"),
+    )
+    st.plotly_chart(fig_tl, use_container_width=True, key="ets_timeline",
+                    config={"displayModeBar": False})
+
+    st.divider()
+
+    # ── Map + Detail
+
+    
+
+        # ── Charts ────────────────────────────────────────────────────
     st.markdown("""
     <div style="font-size:28px;font-weight:900;color:#1a1a2e;margin-bottom:4px;">Summary</div>
     <div style="font-size:13px;color:#999;margin-bottom:20px;">Distribution of ETS schemes by region and price.</div>
