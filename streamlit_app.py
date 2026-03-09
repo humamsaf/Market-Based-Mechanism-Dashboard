@@ -378,6 +378,13 @@ def page_mbm():
         st.session_state["f_country"] = []
         st.session_state["_do_reset"] = False
 
+    st.markdown("""
+    <div style="margin-bottom:8px;">
+        <div style="font-size:16px; font-weight:800; color:#1a1a2e; margin-bottom:2px;">Explore the Map</div>
+        <div style="font-size:12px; color:#999;">Filter countries by region, mechanism type, or search by name.</div>
+    </div>
+    """, unsafe_allow_html=True)
+
     fc1, fc2, fc3, fc4 = st.columns([2, 2, 2, 0.7])
     with fc1:
         region_sel = st.multiselect("Region", sorted(long["Region"].dropna().unique()), key="f_region", placeholder="All regions")
