@@ -312,6 +312,14 @@ def page_mbm():
     n_countries = int(wide["Country"].nunique())
     n_mechs = int(long["mechanism_type"].nunique())
 
+    cp_wide = wide.copy()
+    cp_wide["cp_type"] = cp_wide["Country"].apply(
+        lambda c: get_carbon_pricing_type(set(long[long["Country"] == c]["mechanism_type"].tolist()))
+    )
+    n_ets = int((cp_wide["cp_type"] == "ETS").sum())
+    n_ctx = int((cp_wide["cp_type"] == "Carbon Tax").sum())
+    n_both = int((cp_wide["cp_type"] == "ETS + Carbon Tax").sum())
+
     st.markdown(f"""
     <div style="
         text-align:center;
@@ -335,20 +343,30 @@ def page_mbm():
             create economic incentives for reducing greenhouse gas emissions by allowing the trading or
             valuation of emission reductions or emission rights.
         </div>
-        <div style="display:flex; justify-content:center; gap:64px; flex-wrap:wrap; margin-bottom:48px;">
+        <div style="display:flex; justify-content:center; gap:48px; flex-wrap:wrap; margin-bottom:48px; align-items:center;">
             <div>
                 <div style="font-size:56px; font-weight:900; color:#1a1a2e; line-height:1;">{n_countries}</div>
                 <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">Countries Covered</div>
             </div>
-            <div style="width:1px; background:#e0e0e0;"></div>
+            <div style="width:1px; height:60px; background:#e0e0e0;"></div>
             <div>
                 <div style="font-size:56px; font-weight:900; color:#1a1a2e; line-height:1;">{n_mechs}</div>
                 <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">Mechanism Types</div>
             </div>
-            <div style="width:1px; background:#e0e0e0;"></div>
+            <div style="width:1px; height:60px; background:#e0e0e0;"></div>
             <div>
-                <div style="font-size:56px; font-weight:900; color:#1a1a2e; line-height:1;">{vcm_total:,}</div>
-                <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">VCM Projects</div>
+                <div style="font-size:56px; font-weight:900; color:#457b9d; line-height:1;">{n_ets}</div>
+                <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">ETS Only</div>
+            </div>
+            <div style="width:1px; height:60px; background:#e0e0e0;"></div>
+            <div>
+                <div style="font-size:56px; font-weight:900; color:#90be6d; line-height:1;">{n_ctx}</div>
+                <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">Carbon Tax Only</div>
+            </div>
+            <div style="width:1px; height:60px; background:#e0e0e0;"></div>
+            <div>
+                <div style="font-size:56px; font-weight:900; color:#f4a261; line-height:1;">{n_both}</div>
+                <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">ETS + Carbon Tax</div>
             </div>
         </div>
         <a onclick="document.getElementById('map-section').scrollIntoView({{behavior:'smooth'}}); return false;"
