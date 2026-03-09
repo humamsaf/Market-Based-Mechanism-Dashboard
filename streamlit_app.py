@@ -646,24 +646,31 @@ def page_mbm():
     base["n_mechs"]     = base["Country"].apply(lambda c: len(country_mechs_map.get(c, set())))
     base["region_val"]  = base["Region"].fillna("—")
 
-    CP_EMOJI = {
-        "ETS + Carbon Tax": "🟠", "Carbon Tax": "🟢", "ETS": "🔵", "No Carbon Pricing": "⬜"
+    CP_LABEL = {
+        "ETS + Carbon Tax": "ETS + Carbon Tax",
+        "Carbon Tax": "Carbon Tax",
+        "ETS": "ETS",
+        "No Carbon Pricing": "No Carbon Pricing"
     }
-    MECH_EMOJI = {
-        "Carbon Tax": "💰", "ETS": "🏭", "Tax Incentives": "🎁",
-        "Fuel Mandates": "⛽", "VCM project": "🌿", "Feebates": "🚗",
-        "CBAM": "🛃", "AMC": "📦",
+    MECH_SYMBOL = {
+        "Carbon Tax":     "▪ Carbon Tax",
+        "ETS":            "▪ ETS",
+        "Tax Incentives": "▪ Tax Incentives",
+        "Fuel Mandates":  "▪ Fuel Mandates",
+        "VCM project":    "▪ VCM project",
+        "Feebates":       "▪ Feebates",
+        "CBAM":           "▪ CBAM",
+        "AMC":            "▪ AMC",
     }
 
     def build_hover(c, cp, n, region):
         mechs = sorted(country_mechs_map.get(c, set()))
-        mech_lines = "<br>".join(f"  {MECH_EMOJI.get(m,'•')} {m}" for m in mechs) if mechs else "  No recorded mechanisms"
-        emoji = CP_EMOJI.get(cp, "•")
-        return (f"<b style='font-size:14px'>{c}</b><br>"
+        mech_lines = "<br>".join(f"  {MECH_SYMBOL.get(m, '▪ '+m)}" for m in mechs) if mechs else "  No recorded mechanisms"
+        return (f"<b>{c}</b><br>"
                 f"<span style='color:#aaa'>{region}</span><br>"
-                f"──────────────<br>"
-                f"{emoji} <b>{cp}</b><br>"
-                f"──────────────<br>"
+                f"─────────────<br>"
+                f"Carbon Pricing: <b>{cp}</b><br>"
+                f"─────────────<br>"
                 f"<b>{n} mechanism{'s' if n!=1 else ''}</b><br>"
                 f"{mech_lines}")
 
