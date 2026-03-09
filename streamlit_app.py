@@ -604,13 +604,9 @@ def page_mbm():
     <hr style="border:none; border-top:1px solid #e0e0e0; margin:0 0 24px 0;">
     """, unsafe_allow_html=True)
 
-    # Reset handler — harus sebelum multiselect di-render
-    reset_clicked = st.session_state.get("_do_reset", False)
-    if reset_clicked:
-        st.session_state["f_region"] = []
-        st.session_state["f_type"] = []
-        st.session_state["f_country"] = []
-        st.session_state["_do_reset"] = False
+    # Reset handler — pakai counter untuk force re-render widget dengan key baru
+    if "reset_counter" not in st.session_state:
+        st.session_state["reset_counter"] = 0
 
     st.markdown("""
     <div id="map-section" style="margin-bottom:4px;">
@@ -620,19 +616,18 @@ def page_mbm():
     </div>
     """, unsafe_allow_html=True)
 
+    rc = st.session_state["reset_counter"]
     fc1, fc2, fc3, fc4 = st.columns([2, 2, 2, 0.7])
     with fc1:
-        region_sel = st.multiselect("Region", sorted(long["Region"].dropna().unique()), key="f_region", placeholder="All regions")
+        region_sel = st.multiselect("Region", sorted(long["Region"].dropna().unique()), key=f"f_region_{rc}", placeholder="All regions")
     with fc2:
-        type_sel = st.multiselect("Mechanism type", sorted(long["mechanism_type"].dropna().unique()), key="f_type", placeholder="All types")
+        type_sel = st.multiselect("Mechanism type", sorted(long["mechanism_type"].dropna().unique()), key=f"f_type_{rc}", placeholder="All types")
     with fc3:
-        country_sel = st.multiselect("Country", sorted(long["Country"].dropna().unique()), key="f_country", placeholder="All countries")
+        country_sel = st.multiselect("Country", sorted(long["Country"].dropna().unique()), key=f"f_country_{rc}", placeholder="All countries")
     with fc4:
         st.markdown('<div style="height:28px"></div>', unsafe_allow_html=True)
         if st.button("↺ Reset", use_container_width=True, key="reset_btn"):
-            st.session_state["f_region"] = []
-            st.session_state["f_type"] = []
-            st.session_state["f_country"] = []
+            st.session_state["reset_counter"] += 1
             st.rerun()
 
     f = long.copy()
