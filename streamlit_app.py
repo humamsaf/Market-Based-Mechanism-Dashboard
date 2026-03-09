@@ -975,13 +975,28 @@ def page_ets():
                 ghg_set.add(canonical)
     n_ghg = len(ghg_set)
 
-    # Sector types
+    # Sector types — deduplicated canonical names
+    SECTOR_NORM = {
+        "power": "Power", "industry": "Industry", "industry and power": "Industry & Power",
+        "buildings": "Buildings", "transport": "Transport", "aviation": "Aviation",
+        "domestic aviation": "Aviation", "maritime": "Maritime",
+        "agriculture and/or forestry fuel use": "Agriculture & Forestry",
+        "forestry": "Agriculture & Forestry", "forestry fuel use": "Agriculture & Forestry",
+        "waste": "Waste", "mining and extractives": "Mining & Extractives",
+        "domestic": "Buildings",
+        "iron and steel": "Industry", "chemical": "Industry", "paper": "Industry",
+        "nonferrous metals": "Industry", "building materials": "Industry",
+        "and ceramics": "Industry",
+    }
     sec_set = set()
     for v in ets["sectors"].dropna():
         for s in str(v).split(","):
-            s = s.strip()
-            if s and s not in ("nan",""): sec_set.add(s.split(":")[0].strip())
+            s = s.strip().split(":")[0].strip().lower()
+            if s and s not in ("nan",""):
+                canonical = SECTOR_NORM.get(s, s.title())
+                sec_set.add(canonical)
     n_sectors = len(sec_set)
+    sectors_list = sorted(sec_set)
 
     # Funding programs — count real ones only
     INVALID_FP = {"-","—","nan","NaN","","not defined","under development by SEMARAT"}
@@ -1009,9 +1024,9 @@ def page_ets():
 
     st.markdown(f"""
     <div style="padding:56px 0 48px 0;border-bottom:1px solid #e8e8e8;margin-bottom:40px;text-align:center;">
-        <div style="font-size:11px;font-weight:700;color:#457b9d;letter-spacing:3px;text-transform:uppercase;margin-bottom:24px;">Carbon Pricing Instrument</div>
-        <div style="font-size:56px;font-weight:900;color:#1a1a2e;line-height:1.05;margin-bottom:32px;white-space:nowrap;">Emissions Trading Systems (ETS)</div>
-        <div style="font-size:16px;color:#666;max-width:780px;margin:0 auto 48px auto;line-height:1.9;">
+        <div style="font-size:11px;font-weight:700;color:#457b9d;letter-spacing:3px;text-transform:uppercase;margin-bottom:32px;">Carbon Pricing Instrument</div>
+        <div style="font-size:56px;font-weight:900;color:#1a1a2e;line-height:1.05;margin-bottom:40px;white-space:nowrap;">Emissions Trading Systems (ETS)</div>
+        <div style="font-size:16px;color:#666;max-width:780px;margin:0 auto 56px auto;line-height:1.9;">
             An Emissions Trading System is a market-based approach to controlling pollution by providing economic incentives
             for reducing emissions. Governments set a cap on total emissions and issue allowances. Companies must hold
             allowances equal to their emissions — they can trade these allowances, creating a carbon price signal.
@@ -1055,6 +1070,9 @@ def page_ets():
            onmouseout="this.style.background='#1a1a2e'">
             ▶ &nbsp;Get Started
         </a>
+        <div style="margin-top:48px;padding-top:36px;border-top:1px solid #e8e8e8;max-width:780px;margin-left:auto;margin-right:auto;font-size:14px;color:#555;line-height:2;text-align:center;">
+            As of today, there are <b>{n_schemes} active ETS schemes</b> operating across <b>{n_countries} jurisdictions</b> worldwide — with <b>15 schemes in North America</b>, <b>15 in East Asia &amp; Pacific</b>, <b>7 in Europe &amp; Central Asia</b>, and <b>1 in Latin America &amp; Caribbean</b>. Carbon prices vary widely, averaging <b>USD {avg_price:.0f} per tCO₂</b> with a range from <b>USD {min_price:.0f}</b> to <b>USD {max_price_v:.0f}</b>, collectively generating over <b>USD 69 billion in government revenue</b> in 2024. These schemes cover <b>{n_sectors} sector types</b> — including Power, Industry, Buildings, Transport, Aviation, and Maritime — and regulate <b>{n_ghg} greenhouse gases</b> such as CO₂, CH₄, N₂O, HFCs, PFCs, SF₆, and NF₃.
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
