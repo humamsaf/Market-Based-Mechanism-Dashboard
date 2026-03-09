@@ -665,6 +665,15 @@ def page_mbm():
         "CBAM":           "#4a90d9",
         "AMC":            "#5b9bd5",
     }
+    # Match symbols to map markers
+    MECH_SYMBOL_HOVER = {
+        "CBAM":           "■",   # square
+        "Tax Incentives": "◆",   # diamond
+        "Fuel Mandates":  "▲",   # triangle-up
+        "Feebates":       "●",   # circle
+        "VCM project":    "✳",   # asterisk-like
+        "AMC":            "✚",   # cross
+    }
 
     CP_DISPLAY = {
         "ETS + Carbon Tax": "ETS and Carbon Tax",
