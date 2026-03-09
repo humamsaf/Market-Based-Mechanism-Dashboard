@@ -1,12 +1,6 @@
-# streamlit_app.py
-# ------------------------------------------------------------
-# Global Market-Based Mechanisms Dashboard
-# - Reads: data/Global Market Based Mechanism.xlsx
-# - QGIS-style map + click country → detail card
-# ------------------------------------------------------------
-
+# streamlit_app.py — Global MBM Dashboard
+# Single-file app with top navbar via query_params routing
 from __future__ import annotations
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -17,77 +11,97 @@ st.set_page_config(
     page_title="Global MBM Dashboard",
     page_icon="🌍",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
-# ── Custom CSS: sembunyikan default Streamlit branding, rapikan sidebar ──
 st.markdown("""
 <style>
-    /* Sembunyikan header Streamlit default */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
-
-    /* Sidebar styling */
-    section[data-testid="stSidebar"] {
-        background-color: #1a1a2e;
-        min-width: 200px !important;
-        max-width: 200px !important;
-    }
-    section[data-testid="stSidebar"] * {
-        color: white !important;
-    }
-
-    /* Nav button styling */
-    div[data-testid="stSidebar"] .stButton button {
-        background: transparent;
-        border: none;
-        color: #aab4c8 !important;
-        font-size: 14px;
-        font-weight: 500;
-        text-align: left;
-        padding: 8px 12px;
-        width: 100%;
-        border-radius: 6px;
-        cursor: pointer;
-    }
-    div[data-testid="stSidebar"] .stButton button:hover {
-        background: rgba(255,255,255,0.08);
-        color: white !important;
-    }
-
-    /* Main content padding */
+    section[data-testid="stSidebar"] {display: none !important;}
+    button[data-testid="collapsedControl"] {display: none !important;}
     .block-container {
-        padding-top: 1.5rem;
+        padding-top: 0 !important;
         padding-left: 2rem;
         padding-right: 2rem;
+    }
+    .navbar {
+        display: flex;
+        align-items: center;
+        background-color: #1a1a2e;
+        padding: 0 2rem;
+        height: 56px;
+        margin-left: -2rem;
+        margin-right: -2rem;
+        margin-bottom: 1.5rem;
+    }
+    .navbar-brand {
+        font-size: 18px;
+        font-weight: 800;
+        color: white !important;
+        text-decoration: none !important;
+        letter-spacing: 1px;
+        margin-right: 2.5rem;
+        line-height: 1.2;
+    }
+    .navbar-brand span {
+        font-size: 10px;
+        font-weight: 400;
+        color: #aab4c8;
+        display: block;
+        letter-spacing: 0.5px;
+    }
+    .nav-links { display: flex; height: 56px; align-items: stretch; }
+    .nav-link {
+        color: #aab4c8 !important;
+        text-decoration: none !important;
+        font-size: 13px;
+        font-weight: 500;
+        padding: 0 18px;
+        display: flex;
+        align-items: center;
+        border-bottom: 3px solid transparent;
+        white-space: nowrap;
+    }
+    .nav-link:hover { color: white !important; background: rgba(255,255,255,0.06); }
+    .nav-link.active { color: white !important; border-bottom: 3px solid #4a90d9; font-weight: 700; }
+
+    /* Compact filter row */
+    div[data-testid="stMultiSelect"] label p {
+        font-size: 12px !important;
+        font-weight: 600;
+        color: #555 !important;
+    }
+    div[data-testid="stButton"] button {
+        height: 38px;
+        font-size: 13px;
+        border-radius: 6px;
+        padding: 0 12px;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# ── Sidebar navigation ───────────────────────────────────────
-st.sidebar.markdown("""
-<div style="padding: 20px 12px 8px 12px;">
-    <div style="font-size:20px; font-weight:800; color:white; letter-spacing:1px;">🌍 MBM</div>
-    <div style="font-size:11px; color:#aab4c8; margin-top:2px;">Market-Based Mechanisms</div>
+params = st.query_params
+page = params.get("page", "mbm")
+
+def nav_link(label, key, icon):
+    cls = "nav-link active" if page == key else "nav-link"
+    return f'<a class="{cls}" href="?page={key}">{icon} {label}</a>'
+
+st.markdown(f"""
+<div class="navbar">
+    <a class="navbar-brand" href="?page=mbm">🌍 MBM<span>Market-Based Mechanisms</span></a>
+    <div class="nav-links">
+        {nav_link("MBM", "mbm", "🗺️")}
+        {nav_link("CORSIA", "corsia", "✈️")}
+        {nav_link("CDM", "cdm", "🌱")}
+        {nav_link("IMO", "imo", "🚢")}
+    </div>
 </div>
-<hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0 16px 0;">
-<div style="padding: 0 12px; font-size:11px; color:#6b7a99; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Navigation</div>
 """, unsafe_allow_html=True)
 
-pages = {
-    "🗺️  Global Overview": "main",
-    "🏭  MBM National": "national",
-    "✈️  CORSIA": "corsia",
-    "🌱  CDM": "cdm",
-    "🚢  IMO": "imo",
-}
-for label in pages:
-    st.sidebar.button(label, use_container_width=True, disabled=(label == "🗺️  Global Overview"))
-
-st.sidebar.markdown("<hr style='border-color: rgba(255,255,255,0.1); margin: 16px 0 8px 0;'>", unsafe_allow_html=True)
-st.sidebar.markdown("<div style='padding: 0 12px; font-size:11px; color:#6b7a99;'>Global MBM Dashboard v1.0</div>", unsafe_allow_html=True)
-
+# ── Constants ──────────────────────────────────────────────────
 FILE_PATH = "data/Global Market Based Mechanism.xlsx"
 
 MECH_COLS = {
@@ -108,7 +122,6 @@ CARBON_PRICING_COLORS = {
     "No Carbon Pricing":"#f0f0f0",
 }
 
-# ── Marker styles — outline hitam tipis ─────────────────────
 MARKER_STYLES = {
     "CBAM":           {"symbol": "square",      "color": "#4a90d9", "size": 6},
     "Tax Incentives": {"symbol": "diamond",     "color": "#9b59b6", "size": 7},
@@ -118,7 +131,6 @@ MARKER_STYLES = {
     "AMC":            {"symbol": "cross",       "color": "#5b9bd5", "size": 7},
 }
 
-# ── Warna kotak per mekanisme di card ────────────────────────
 MECH_BOX_COLORS = {
     "Carbon Tax":     "#90be6d",
     "ETS":            "#457b9d",
@@ -131,15 +143,15 @@ MECH_BOX_COLORS = {
 }
 
 MECH_OFFSETS = {
-    "CBAM":           ( 0.0,   0.0),
-    "Tax Incentives": ( 0.0,   1.5),
-    "Fuel Mandates":  ( 0.0,  -1.5),
-    "Feebates":       ( 1.5,   0.0),
-    "VCM project":    (-1.5,   0.0),
-    "AMC":            ( 1.5,   1.5),
+    "CBAM":           ( 0.0,  0.0),
+    "Tax Incentives": ( 0.0,  1.5),
+    "Fuel Mandates":  ( 0.0, -1.5),
+    "Feebates":       ( 1.5,  0.0),
+    "VCM project":    (-1.5,  0.0),
+    "AMC":            ( 1.5,  1.5),
 }
 
-CENTROIDS: dict[str, tuple[float, float]] = {
+CENTROIDS = {
     "USA": (37.09, -95.71), "CAN": (56.13, -106.35), "MEX": (23.63, -102.55),
     "BRA": (-14.24, -51.93), "ARG": (-38.42, -63.62), "CHL": (-35.68, -71.54),
     "COL": (4.57, -74.30),  "PER": (-9.19, -75.02),  "VEN": (6.42, -66.59),
@@ -202,9 +214,7 @@ CENTROIDS: dict[str, tuple[float, float]] = {
 }
 
 MANUAL_ISO3 = {
-    "Côte d'Ivoire": "CIV",
-    "Cote d'Ivoire": "CIV",
-    "Côte d'Ivoire": "CIV",
+    "Côte d'Ivoire": "CIV", "Cote d'Ivoire": "CIV",
     "São Tomé and Príncipe": "STP",
     "Democratic Republic of the Congo": "COD", "Republic of the Congo": "COG",
     "United States": "USA", "Russia": "RUS", "Iran": "IRN", "Syria": "SYR",
@@ -215,9 +225,7 @@ MANUAL_ISO3 = {
     "Vietnam": "VNM", "Moldova": "MDA",
 }
 
-
-
-
+# ── Helpers ────────────────────────────────────────────────────
 def to_iso3(name: str):
     name = (name or "").strip()
     if name in MANUAL_ISO3:
@@ -227,15 +235,13 @@ def to_iso3(name: str):
     except Exception:
         return None
 
-
 @st.cache_data
-def load_raw() -> pd.DataFrame:
+def load_raw():
     df = pd.read_excel(FILE_PATH)
     df.columns = [str(c).strip() for c in df.columns]
     return df
 
-
-def tidy_long(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+def tidy_long(df_raw):
     keep = ["No", "Country", "Region"] + [c.strip() for c in MECH_COLS.keys()] + ["Total Mechanism"]
     keep = [c for c in keep if c in df_raw.columns]
     df = df_raw[keep].copy()
@@ -259,367 +265,258 @@ def tidy_long(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     long = long[(long["mechanism_detail"] != "") & (long["mechanism_detail"].str.lower() != "nan")]
     long["vcm_projects"] = pd.NA
     mask_vcm = long["mechanism_type"] == "VCM project"
-    long.loc[mask_vcm, "vcm_projects"] = pd.to_numeric(
-        long.loc[mask_vcm, "mechanism_detail"], errors="coerce"
-    )
+    long.loc[mask_vcm, "vcm_projects"] = pd.to_numeric(long.loc[mask_vcm, "mechanism_detail"], errors="coerce")
     long = long[~((~mask_vcm) & (long["mechanism_detail"] == "0"))]
     return df, long
 
-
-def get_carbon_pricing_type(country_mechs: set) -> str:
-    has_ets = "ETS" in country_mechs
-    has_tax = "Carbon Tax" in country_mechs
-    if has_ets and has_tax:
-        return "ETS + Carbon Tax"
-    elif has_ets:
-        return "ETS"
-    elif has_tax:
-        return "Carbon Tax"
+def get_carbon_pricing_type(mechs: set) -> str:
+    has_ets = "ETS" in mechs
+    has_tax = "Carbon Tax" in mechs
+    if has_ets and has_tax: return "ETS + Carbon Tax"
+    elif has_ets: return "ETS"
+    elif has_tax: return "Carbon Tax"
     return "No Carbon Pricing"
 
-
-def render_country_card(country: str, region: str, long_df: pd.DataFrame):
-    """Render detail card — nama, region, CP type, N mechs, kotak warna per mekanisme."""
-    cf = long_df[long_df["Country"] == country].copy()
+def render_country_card(country, region, long_df):
+    cf = long_df[long_df["Country"] == country]
     mechs = sorted(cf["mechanism_type"].unique()) if len(cf) else []
-    mechs_set = set(mechs)
-    cp_type = get_carbon_pricing_type(mechs_set)
+    cp_type = get_carbon_pricing_type(set(mechs))
     cp_color = CARBON_PRICING_COLORS[cp_type]
-    n_mechs = len(mechs)
-
-    # Kotak mekanisme — warna beda per mech
-    boxes_html = ""
+    n = len(mechs)
+    boxes = ""
     for m in mechs:
         bg = MECH_BOX_COLORS.get(m, "#888")
-        # pilih warna teks: putih untuk warna gelap, hitam untuk terang
-        txt_color = "white" if bg not in ("#90be6d", "#f0f0f0") else "#333"
-        boxes_html += f"""
-        <div style="
-            background:{bg};
-            color:{txt_color};
-            padding:5px 12px;
-            border-radius:6px;
-            font-weight:700;
-            font-size:12px;
-            border: 1.5px solid #222;
-            white-space:nowrap;
-        ">{m}</div>"""
-
+        tc = "white" if bg not in ("#90be6d", "#f0f0f0") else "#333"
+        boxes += f'<div style="background:{bg};color:{tc};padding:5px 12px;border-radius:6px;font-weight:700;font-size:12px;border:1.5px solid #222;white-space:nowrap;">{m}</div>'
     st.markdown(f"""
-    <div style="
-        background: white;
-        border: 2px solid #e0e0e0;
-        border-radius: 12px;
-        padding: 20px 24px;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-        margin-bottom: 12px;
-    ">
-        <div style="font-size:22px; font-weight:800; color:#1a1a2e; letter-spacing:1px; margin-bottom:4px;">
-            {country.upper()}
+    <div style="background:white;border:2px solid #e0e0e0;border-radius:12px;padding:20px 24px;box-shadow:0 4px 16px rgba(0,0,0,0.08);margin-bottom:12px;">
+        <div style="font-size:22px;font-weight:800;color:#1a1a2e;letter-spacing:1px;margin-bottom:4px;">{country.upper()}</div>
+        <div style="font-size:12px;color:#888;margin-bottom:14px;">{region}</div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+            <div style="background:{cp_color};color:#333;padding:5px 14px;border-radius:6px;font-weight:600;font-size:12px;border:1.5px solid #222;">{cp_type}</div>
+            <div style="background:#1a1a2e;color:white;padding:5px 14px;border-radius:6px;font-weight:700;font-size:12px;border:1.5px solid #222;">{n} MECHANISM{'S' if n != 1 else ''}</div>
         </div>
-        <div style="font-size:12px; color:#888; margin-bottom:14px;">
-            {region}
-        </div>
-        <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; align-items:center;">
-            <div style="
-                background:{cp_color};
-                color:#333;
-                padding:5px 14px;
-                border-radius:6px;
-                font-weight:600;
-                font-size:12px;
-                border: 1.5px solid #222;
-            ">{cp_type}</div>
-            <div style="
-                background:#1a1a2e;
-                color:white;
-                padding:5px 14px;
-                border-radius:6px;
-                font-weight:700;
-                font-size:12px;
-                border: 1.5px solid #222;
-            ">{n_mechs} MECHANISM{'S' if n_mechs != 1 else ''}</div>
-        </div>
-        <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            {boxes_html}
-        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">{boxes}</div>
     </div>
     """, unsafe_allow_html=True)
-
-    if n_mechs == 0:
+    if n == 0:
         st.info("No recorded mechanisms for this country.")
 
+# ── Pages ──────────────────────────────────────────────────────
+def page_mbm():
+    raw = load_raw()
+    wide, long = tidy_long(raw)
 
-# ===== Load
-raw = load_raw()
-wide, long = tidy_long(raw)
+    vcm_sum_all = long.loc[long["mechanism_type"] == "VCM project", "vcm_projects"].sum(min_count=1)
+    vcm_total = 0 if pd.isna(vcm_sum_all) else int(vcm_sum_all)
+    n_countries = int(wide["Country"].nunique())
+    n_mechs = int(long["mechanism_type"].nunique())
 
-# ===== Header
-st.title("Global Market-Based Mechanisms Dashboard")
-
-# ===== KPIs (di bawah title)
-wide_view = wide.copy()
-k1, k2, k3, k4 = st.columns(4)
-k1.metric("Countries covered", int(wide["Country"].nunique()))
-k2.metric("Countries in view", int(wide_view["Country"].nunique()))
-k3.metric("Mechanism types in view", int(long["mechanism_type"].nunique()))
-vcm_sum_all = long.loc[long["mechanism_type"] == "VCM project", "vcm_projects"].sum(min_count=1)
-k4.metric("VCM projects (sum)", 0 if pd.isna(vcm_sum_all) else int(vcm_sum_all))
-
-st.divider()
-
-# ===== Filters
-fc1, fc2, fc3, fc4 = st.columns([2, 2, 2, 1])
-with fc1:
-    region_sel  = st.multiselect("Region",         sorted(long["Region"].dropna().unique()), key="f_region")
-with fc2:
-    type_sel    = st.multiselect("Mechanism type", sorted(long["mechanism_type"].dropna().unique()), key="f_type")
-with fc3:
-    country_sel = st.multiselect("Country",        sorted(long["Country"].dropna().unique()), key="f_country")
-with fc4:
-    st.write("")
-    st.write("")
-    if st.button("Reset filters", use_container_width=True):
-        for k in ["f_region", "f_type", "f_country"]:
-            st.session_state.pop(k, None)
-        st.rerun()
-
-f = long.copy()
-if region_sel:   f = f[f["Region"].isin(region_sel)]
-if type_sel:     f = f[f["mechanism_type"].isin(type_sel)]
-if country_sel:  f = f[f["Country"].isin(country_sel)]
-
-# ===== Map
-
-wide_view = wide.copy()
-if region_sel:   wide_view = wide_view[wide_view["Region"].isin(region_sel)]
-if country_sel:  wide_view = wide_view[wide_view["Country"].isin(country_sel)]
-
-country_mechs_map = f.groupby("Country")["mechanism_type"].apply(set).to_dict()
-
-base = wide_view[["Country", "Region"]].drop_duplicates().copy()
-base["iso3"]       = base["Country"].apply(to_iso3)
-base["cp_type"]    = base["Country"].apply(lambda c: get_carbon_pricing_type(country_mechs_map.get(c, set())))
-base["hover_mechs"]= base["Country"].apply(
-    lambda c: "<br>".join(sorted(country_mechs_map.get(c, {"No recorded mechanisms"})))
-)
-base["n_mechs"] = base["Country"].apply(lambda c: len(country_mechs_map.get(c, set())))
-
-
-
-m_plot = base.dropna(subset=["iso3"]).copy()
-
-fig_map = go.Figure()
-
-for cp_type, color in CARBON_PRICING_COLORS.items():
-    subset = m_plot[m_plot["cp_type"] == cp_type]
-    if subset.empty:
-        continue
-    fig_map.add_trace(go.Choropleth(
-        locations=subset["iso3"],
-        z=[1] * len(subset),
-        colorscale=[[0, color], [1, color]],
-        showscale=False,
-        hovertemplate=(
-            "<b>%{customdata[0]}</b><br>"
-            "%{customdata[1]} mechanisms<br>"
-            "──────────<br>"
-            "%{customdata[2]}"
-            "<extra></extra>"
-        ),
-        customdata=subset[["Country", "n_mechs", "hover_mechs"]].values,
-        name=cp_type,
-        showlegend=False,          # sembunyikan dari legend (diganti dummy di bawah)
-        marker_line_color="#111111",
-        marker_line_width=1.5,
-    ))
-
-# Dummy legend untuk Carbon Pricing — kotak dengan outline hitam
-for i, (cp_type, color) in enumerate(CARBON_PRICING_COLORS.items()):
-    fig_map.add_trace(go.Scattergeo(
-        lat=[None], lon=[None],
-        mode="markers",
-        marker=dict(
-            symbol="square",
-            color=color,
-            size=10,
-            line=dict(width=0.5, color="#000000"),
-        ),
-        name=cp_type,
-        showlegend=True,
-        legendgroup="cp",
-        legendgrouptitle_text="Carbon Pricing" if i == 0 else "",
-        hoverinfo="skip",
-    ))
-
-OTHER_MECHS = ["CBAM", "Tax Incentives", "Fuel Mandates", "Feebates", "VCM project", "AMC"]
-
-for i, mech in enumerate(OTHER_MECHS):
-    style = MARKER_STYLES[mech]
-    dlat, dlon = MECH_OFFSETS[mech]
-    mech_countries = f[f["mechanism_type"] == mech]["Country"].unique()
-    rows = []
-    for country in mech_countries:
-        iso3 = to_iso3(country)
-        if iso3 and iso3 in CENTROIDS:
-            lat, lon = CENTROIDS[iso3]
-            rows.append({"country": country, "lat": lat + dlat, "lon": lon + dlon})
-    if not rows:
-        continue
-    df_m = pd.DataFrame(rows)
-    df_m["all_mechs"] = df_m["country"].apply(
-        lambda c: "<br>".join(sorted(country_mechs_map.get(c, {mech})))
-    )
-    fig_map.add_trace(go.Scattergeo(
-        lat=df_m["lat"],
-        lon=df_m["lon"],
-        mode="markers",
-        marker=dict(
-            symbol=style["symbol"],
-            color=style["color"],
-            size=style["size"],
-            line=dict(width=0.5, color="#000000"),
-            opacity=1.0,
-        ),
-        text=df_m["country"],
-        hoverinfo="skip",
-        name=mech,
-        showlegend=True,
-        legendgroup="other",
-        legendgrouptitle_text="Other mechanisms" if i == 0 else "",
-    ))
-
-fig_map.update_layout(
-    height=560,
-    margin=dict(l=0, r=0, t=0, b=0),
-    paper_bgcolor="white",
-    uirevision="map_fixed",
-    dragmode=False,
-    geo=dict(
-        projection_type="equirectangular",
-        showframe=True,
-        framecolor="#333333",
-        framewidth=1,
-        showcoastlines=True,
-        coastlinecolor="#333333",
-        coastlinewidth=1.5,
-        showcountries=True,
-        countrycolor="#333333",
-        countrywidth=1.5,
-        showland=True,
-        landcolor="#f5f5f5",
-        showocean=False,
-        showlakes=False,
-        bgcolor="white",
-        lataxis=dict(range=[-60, 85], showgrid=False),
-        lonaxis=dict(range=[-180, 180], showgrid=False),
-        projection_scale=1,
-    ),
-    legend=dict(
-        title="<b>Legend</b>",
-        bgcolor="rgba(255,255,255,0.75)",
-        bordercolor="rgba(0,0,0,0)",
-        borderwidth=0,
-        x=0.01,
-        y=0.38,
-        font=dict(size=11),
-        tracegroupgap=4,
-        itemsizing="constant",
-    ),
-    clickmode="event+select",
-)
-
-clicked = st.plotly_chart(
-    fig_map,
-    use_container_width=True,
-    key="map_qgis",
-    on_select="rerun",
-    selection_mode="points",
-    config={
-        "scrollZoom": False,       # matikan scroll zoom
-        "doubleClick": False,      # matikan double click reset
-        "displayModeBar": False,   # sembunyikan toolbar (hapus tombol zoom dll)
-    },
-)
-
-# ===== Detail card di bawah peta
-# Try to get clicked country
-selected_country = None
-if clicked and clicked.get("selection") and clicked["selection"].get("points"):
-    pts = clicked["selection"]["points"]
-    if pts:
-        pt = pts[0]
-        cd = pt.get("customdata")
-        txt = pt.get("text")
-        if cd and isinstance(cd, (list, tuple)) and len(cd) > 0:
-            selected_country = cd[0]
-        elif txt:
-            selected_country = txt
-
-if selected_country:
-    region_val = wide[wide["Country"] == selected_country]["Region"].iloc[0] \
-        if selected_country in wide["Country"].values else "—"
-    render_country_card(selected_country, region_val, long)
-else:
-    st.markdown("""
-    <div style="
-        background:#f8f9fa;
-        border: 2px dashed #ccc;
-        border-radius: 10px;
-        padding: 20px 24px;
-        text-align: center;
-        color: #aaa;
-        margin-top: 8px;
-    ">
-        🗺️ &nbsp;<b>Click a country</b> on the map to see its mechanisms
+    st.markdown(f"""
+    <div style="text-align:center; padding: 32px 0 24px 0;">
+        <div style="font-size:42px; font-weight:900; color:#1a1a2e; line-height:1.1; letter-spacing:-1px; margin-bottom:12px;">
+            Global Market-Based<br>Mechanisms Dashboard
+        </div>
+        <div style="font-size:14px; color:#555; max-width:640px; margin:0 auto 28px auto; line-height:1.6;">
+            A market-based mechanism (MBM) is a climate policy instrument that uses market principles to
+            create economic incentives for reducing greenhouse gas emissions by allowing the trading or
+            valuation of emission reductions or emission rights.
+        </div>
+        <div style="display:flex; justify-content:center; gap:48px; flex-wrap:wrap;">
+            <div>
+                <div style="font-size:36px; font-weight:900; color:#1a1a2e;">{n_countries}</div>
+                <div style="font-size:12px; color:#888; font-weight:600; text-transform:uppercase; letter-spacing:1px;">Countries Covered</div>
+            </div>
+            <div style="width:1px; background:#e0e0e0;"></div>
+            <div>
+                <div style="font-size:36px; font-weight:900; color:#1a1a2e;">{n_mechs}</div>
+                <div style="font-size:12px; color:#888; font-weight:600; text-transform:uppercase; letter-spacing:1px;">Mechanism Types</div>
+            </div>
+            <div style="width:1px; background:#e0e0e0;"></div>
+            <div>
+                <div style="font-size:36px; font-weight:900; color:#1a1a2e;">{vcm_total:,}</div>
+                <div style="font-size:12px; color:#888; font-weight:600; text-transform:uppercase; letter-spacing:1px;">VCM Projects</div>
+            </div>
+        </div>
     </div>
+    <hr style="border:none; border-top:1px solid #e0e0e0; margin:0 0 20px 0;">
     """, unsafe_allow_html=True)
 
-st.divider()
+    fc1, fc2, fc3, fc4 = st.columns([2, 2, 2, 0.7])
+    with fc1:
+        region_sel = st.multiselect("Region", sorted(long["Region"].dropna().unique()), key="f_region", placeholder="All regions")
+    with fc2:
+        type_sel = st.multiselect("Mechanism type", sorted(long["mechanism_type"].dropna().unique()), key="f_type", placeholder="All types")
+    with fc3:
+        country_sel = st.multiselect("Country", sorted(long["Country"].dropna().unique()), key="f_country", placeholder="All countries")
+    with fc4:
+        # CSS trick: align button vertically with multiselects
+        st.markdown('<div style="height:28px"></div>', unsafe_allow_html=True)
+        if st.button("↺ Reset", use_container_width=True):
+            for k in ["f_region", "f_type", "f_country"]:
+                st.session_state.pop(k, None)
+            st.rerun()
 
-# ===== Tabs
-tab1, tab2, tab3 = st.tabs(["Summary charts", "Country profile", "Data table"])
+    f = long.copy()
+    if region_sel:  f = f[f["Region"].isin(region_sel)]
+    if type_sel:    f = f[f["mechanism_type"].isin(type_sel)]
+    if country_sel: f = f[f["Country"].isin(country_sel)]
 
-with tab1:
-    c1, c2 = st.columns(2)
-    with c1:
-        st.subheader("Countries by mechanism type")
-        by_type = (
-            f.groupby("mechanism_type")["Country"].nunique()
-            .reset_index(name="countries")
-            .sort_values("countries", ascending=False)
-        )
-        st.plotly_chart(
-            px.bar(by_type, x="mechanism_type", y="countries",
-                   color="mechanism_type", color_discrete_sequence=px.colors.qualitative.Set2),
-            use_container_width=True, key="bar_type"
-        )
-    with c2:
-        st.subheader("Countries by Carbon Pricing type")
-        cp_counts = m_plot["cp_type"].value_counts().reset_index()
-        cp_counts.columns = ["type", "count"]
-        st.plotly_chart(
-            px.pie(cp_counts, names="type", values="count",
-                   color="type", color_discrete_map=CARBON_PRICING_COLORS),
-            use_container_width=True, key="pie_cp"
-        )
+    wide_view = wide.copy()
+    if region_sel:  wide_view = wide_view[wide_view["Region"].isin(region_sel)]
+    if country_sel: wide_view = wide_view[wide_view["Country"].isin(country_sel)]
+    # Map
+    country_mechs_map = f.groupby("Country")["mechanism_type"].apply(set).to_dict()
+    base = wide_view[["Country", "Region"]].drop_duplicates().copy()
+    base["iso3"]        = base["Country"].apply(to_iso3)
+    base["cp_type"]     = base["Country"].apply(lambda c: get_carbon_pricing_type(country_mechs_map.get(c, set())))
+    base["hover_mechs"] = base["Country"].apply(lambda c: "<br>".join(sorted(country_mechs_map.get(c, {"No recorded mechanisms"}))))
+    base["n_mechs"]     = base["Country"].apply(lambda c: len(country_mechs_map.get(c, set())))
+    m_plot = base.dropna(subset=["iso3"]).copy()
 
-with tab2:
-    st.subheader("Country profile (dropdown)")
-    countries_all = sorted(wide["Country"].unique())
-    default_idx = countries_all.index("United Kingdom") if "United Kingdom" in countries_all else 0
-    sel = st.selectbox("Select a country", countries_all, index=default_idx, key="country_profile")
-    region_val2 = wide[wide["Country"] == sel]["Region"].iloc[0] if sel in wide["Country"].values else "—"
-    render_country_card(sel, region_val2, long)
+    fig_map = go.Figure()
 
-with tab3:
-    st.subheader("Detail table (filtered)")
-    show_cols = ["Country", "Region", "mechanism_type", "mechanism_detail", "vcm_projects"]
-    st.dataframe(
-        f[show_cols].sort_values(["Country", "mechanism_type"]),
-        use_container_width=True,
-        hide_index=True,
+    for cp_type, color in CARBON_PRICING_COLORS.items():
+        subset = m_plot[m_plot["cp_type"] == cp_type]
+        if subset.empty: continue
+        fig_map.add_trace(go.Choropleth(
+            locations=subset["iso3"], z=[1]*len(subset),
+            colorscale=[[0, color],[1, color]], showscale=False,
+            hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]} mechanisms<br>──────────<br>%{customdata[2]}<extra></extra>",
+            customdata=subset[["Country","n_mechs","hover_mechs"]].values,
+            name=cp_type, showlegend=False,
+            marker_line_color="#111111", marker_line_width=1.5,
+        ))
+
+    for i, (cp_type, color) in enumerate(CARBON_PRICING_COLORS.items()):
+        fig_map.add_trace(go.Scattergeo(
+            lat=[None], lon=[None], mode="markers",
+            marker=dict(symbol="square", color=color, size=10, line=dict(width=0.5, color="#000000")),
+            name=cp_type, showlegend=True, legendgroup="cp",
+            legendgrouptitle_text="Carbon Pricing" if i == 0 else "",
+            hoverinfo="skip",
+        ))
+
+    OTHER_MECHS = ["CBAM", "Tax Incentives", "Fuel Mandates", "Feebates", "VCM project", "AMC"]
+    for i, mech in enumerate(OTHER_MECHS):
+        style = MARKER_STYLES[mech]
+        dlat, dlon = MECH_OFFSETS[mech]
+        rows = []
+        for country in f[f["mechanism_type"] == mech]["Country"].unique():
+            iso3 = to_iso3(country)
+            if iso3 and iso3 in CENTROIDS:
+                lat, lon = CENTROIDS[iso3]
+                rows.append({"country": country, "lat": lat+dlat, "lon": lon+dlon})
+        if not rows: continue
+        df_m = pd.DataFrame(rows)
+        fig_map.add_trace(go.Scattergeo(
+            lat=df_m["lat"], lon=df_m["lon"], mode="markers",
+            marker=dict(symbol=style["symbol"], color=style["color"], size=style["size"],
+                        line=dict(width=0.5, color="#000000"), opacity=1.0),
+            text=df_m["country"], hoverinfo="skip",
+            name=mech, showlegend=True, legendgroup="other",
+            legendgrouptitle_text="Other mechanisms" if i == 0 else "",
+        ))
+
+    fig_map.update_layout(
+        height=560, margin=dict(l=0,r=0,t=0,b=0),
+        paper_bgcolor="white", uirevision="map_fixed", dragmode=False,
+        geo=dict(
+            projection_type="equirectangular",
+            showframe=True, framecolor="#333333", framewidth=1,
+            showcoastlines=True, coastlinecolor="#333333", coastlinewidth=1.5,
+            showcountries=True, countrycolor="#333333", countrywidth=1.5,
+            showland=True, landcolor="#f5f5f5",
+            showocean=False, showlakes=False, bgcolor="white",
+            lataxis=dict(range=[-60,85], showgrid=False),
+            lonaxis=dict(range=[-180,180], showgrid=False),
+            projection_scale=1,
+        ),
+        legend=dict(
+            title="<b>Legend</b>",
+            bgcolor="rgba(255,255,255,0.75)", bordercolor="rgba(0,0,0,0)", borderwidth=0,
+            x=0.01, y=0.38, font=dict(size=11), tracegroupgap=4, itemsizing="constant",
+        ),
+        clickmode="event+select",
     )
-    csv = f[["Country", "Region", "mechanism_type", "mechanism_detail"]].to_csv(index=False).encode("utf-8")
-    st.download_button("Download filtered data (CSV)", csv, "filtered_mbm.csv", "text/csv", use_container_width=True)
 
+    clicked = st.plotly_chart(
+        fig_map, use_container_width=True, key="map_qgis",
+        on_select="rerun", selection_mode="points",
+        config={"scrollZoom": False, "doubleClick": False, "displayModeBar": False},
+    )
+
+    selected_country = None
+    if clicked and clicked.get("selection") and clicked["selection"].get("points"):
+        pts = clicked["selection"]["points"]
+        if pts:
+            pt = pts[0]
+            cd = pt.get("customdata")
+            txt = pt.get("text")
+            if cd and isinstance(cd, (list, tuple)) and len(cd) > 0:
+                selected_country = cd[0]
+            elif txt:
+                selected_country = txt
+
+    if selected_country:
+        region_val = wide[wide["Country"] == selected_country]["Region"].iloc[0] \
+            if selected_country in wide["Country"].values else "—"
+        render_country_card(selected_country, region_val, long)
+    else:
+        st.markdown("""
+        <div style="background:#f8f9fa;border:2px dashed #ccc;border-radius:10px;
+            padding:20px 24px;text-align:center;color:#aaa;margin-top:8px;">
+            🗺️ &nbsp;<b>Click a country</b> on the map to see its mechanisms
+        </div>""", unsafe_allow_html=True)
+
+    st.divider()
+
+    tab1, tab2, tab3 = st.tabs(["Summary charts", "Country profile", "Data table"])
+    with tab1:
+        c1, c2 = st.columns(2)
+        with c1:
+            st.subheader("Countries by mechanism type")
+            by_type = f.groupby("mechanism_type")["Country"].nunique().reset_index(name="countries").sort_values("countries", ascending=False)
+            st.plotly_chart(px.bar(by_type, x="mechanism_type", y="countries",
+                color="mechanism_type", color_discrete_sequence=px.colors.qualitative.Set2),
+                use_container_width=True, key="bar_type")
+        with c2:
+            st.subheader("Countries by Carbon Pricing type")
+            cp_counts = m_plot["cp_type"].value_counts().reset_index()
+            cp_counts.columns = ["type", "count"]
+            st.plotly_chart(px.pie(cp_counts, names="type", values="count",
+                color="type", color_discrete_map=CARBON_PRICING_COLORS),
+                use_container_width=True, key="pie_cp")
+
+    with tab2:
+        st.subheader("Country profile (dropdown)")
+        countries_all = sorted(wide["Country"].unique())
+        default_idx = countries_all.index("United Kingdom") if "United Kingdom" in countries_all else 0
+        sel = st.selectbox("Select a country", countries_all, index=default_idx, key="country_profile")
+        region_val2 = wide[wide["Country"] == sel]["Region"].iloc[0] if sel in wide["Country"].values else "—"
+        render_country_card(sel, region_val2, long)
+
+    with tab3:
+        st.subheader("Detail table (filtered)")
+        show_cols = ["Country", "Region", "mechanism_type", "mechanism_detail", "vcm_projects"]
+        st.dataframe(f[show_cols].sort_values(["Country","mechanism_type"]), use_container_width=True, hide_index=True)
+        csv = f[["Country","Region","mechanism_type","mechanism_detail"]].to_csv(index=False).encode("utf-8")
+        st.download_button("Download filtered data (CSV)", csv, "filtered_mbm.csv", "text/csv", use_container_width=True)
+
+
+def page_placeholder(title, icon):
+    st.title(f"{icon} {title}")
+    st.info("🚧 This page is under construction.")
+
+
+# ── Router ─────────────────────────────────────────────────────
+if page == "mbm":
+    page_mbm()
+elif page == "corsia":
+    page_placeholder("CORSIA", "✈️")
+elif page == "cdm":
+    page_placeholder("CDM", "🌱")
+elif page == "imo":
+    page_placeholder("IMO", "🚢")
+else:
+    page_mbm()
