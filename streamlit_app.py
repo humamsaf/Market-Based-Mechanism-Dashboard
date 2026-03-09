@@ -327,8 +327,8 @@ def page_mbm():
         min-height: 80vh;
         display:flex; flex-direction:column; justify-content:center; align-items:center;
         background-image:
-            linear-gradient(rgba(255,255,255,0.55), rgba(255,255,255,0.55)),
-            url('https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/World_map_-_low_resolution.svg/2560px-World_map_-_low_resolution.svg.png');
+            linear-gradient(rgba(255,255,255,0.6), rgba(255,255,255,0.6)),
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 500'%3E%3Crect width='1000' height='500' fill='%23dce8f5'/%3E%3C!-- continents simplified --%3E%3C!-- North America --%3E%3Cpath d='M80 80 L200 70 L230 120 L220 200 L180 250 L140 260 L100 230 L70 180 Z' fill='%23b0c8e0' stroke='%23888' stroke-width='1'/%3E%3C!-- South America --%3E%3Cpath d='M150 270 L210 260 L240 310 L230 400 L190 440 L150 420 L130 370 L140 310 Z' fill='%23b0c8e0' stroke='%23888' stroke-width='1'/%3E%3C!-- Europe --%3E%3Cpath d='M430 60 L510 55 L520 100 L490 130 L440 125 L420 100 Z' fill='%23b0c8e0' stroke='%23888' stroke-width='1'/%3E%3C!-- Africa --%3E%3Cpath d='M440 140 L520 130 L540 200 L530 320 L490 370 L450 360 L420 290 L420 200 Z' fill='%23b0c8e0' stroke='%23888' stroke-width='1'/%3E%3C!-- Asia --%3E%3Cpath d='M520 50 L800 60 L830 100 L820 200 L750 230 L680 220 L600 200 L540 160 L510 110 Z' fill='%23b0c8e0' stroke='%23888' stroke-width='1'/%3E%3C!-- Australia --%3E%3Cpath d='M750 300 L850 290 L870 360 L830 400 L760 390 L730 340 Z' fill='%23b0c8e0' stroke='%23888' stroke-width='1'/%3E%3C/svg%3E");
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
