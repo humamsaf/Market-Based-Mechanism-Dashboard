@@ -688,7 +688,7 @@ def page_mbm():
         cp_label = CP_DISPLAY.get(cp, cp)
         other = [m for m in mechs if m not in {"ETS", "Carbon Tax"}]
         other_lines = "".join(
-            f"<br><span style='color:{MECH_COLORS_HEX.get(m,'#888')}'><b>■</b></span> {m}"
+            f"<br><span style='color:{MECH_COLORS_HEX.get(m,'#888')}'><b>{MECH_SYMBOL_HOVER.get(m,'■')}</b></span> {m}"
             for m in other
         ) if other else "<br>  —"
         return (
