@@ -370,20 +370,50 @@ def page_mbm():
     <div id="map-section"></div>
     """, unsafe_allow_html=True)
 
-    fc1, fc2, fc3, fc4 = st.columns([2, 2, 2, 0.7])
+    # Reset handler — harus sebelum multiselect di-render
+    if st.button("↺ Reset filters", key="reset_btn"):
+        st.session_state["f_region"] = []
+        st.session_state["f_type"] = []
+        st.session_state["f_country"] = []
+
+    st.markdown("""
+    <div style="background:#f0f4ff; border-left:4px solid #4a90d9; border-radius:6px;
+        padding:10px 16px; margin-bottom:16px; display:flex; gap:32px; flex-wrap:wrap;
+        font-size:13px; color:#444; align-items:center;">
+        <span>🖱️ <b>Klik negara</b> di peta untuk melihat detail mekanisme</span>
+        <span>🔍 <b>Filter</b> berdasarkan region, tipe mekanisme, atau negara tertentu</span>
+        <span>🌍 <b>Hover</b> di atas negara untuk melihat ringkasan mekanisme</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div style="display:flex; gap:24px; margin-bottom:14px; flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:8px; font-size:13px; color:#555;">
+            <span style="font-size:16px;">🖱️</span>
+            <span><b>Klik negara</b> di peta untuk melihat detail mekanisme</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; font-size:13px; color:#555;">
+            <span style="font-size:16px;">🔍</span>
+            <span><b>Filter</b> berdasarkan region, jenis mekanisme, atau negara</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; font-size:13px; color:#555;">
+            <span style="font-size:16px;">🎨</span>
+            <span><b>Warna negara</b> menunjukkan jenis carbon pricing yang diterapkan</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; font-size:13px; color:#555;">
+            <span style="font-size:16px;">📍</span>
+            <span><b>Simbol</b> di atas negara menunjukkan mekanisme lainnya</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    fc1, fc2, fc3 = st.columns([2, 2, 2])
     with fc1:
         region_sel = st.multiselect("Region", sorted(long["Region"].dropna().unique()), key="f_region", placeholder="All regions")
     with fc2:
         type_sel = st.multiselect("Mechanism type", sorted(long["mechanism_type"].dropna().unique()), key="f_type", placeholder="All types")
     with fc3:
         country_sel = st.multiselect("Country", sorted(long["Country"].dropna().unique()), key="f_country", placeholder="All countries")
-    with fc4:
-        # CSS trick: align button vertically with multiselects
-        st.markdown('<div style="height:28px"></div>', unsafe_allow_html=True)
-        if st.button("↺ Reset", use_container_width=True):
-            for k in ["f_region", "f_type", "f_country"]:
-                st.session_state.pop(k, None)
-            st.rerun()
 
     f = long.copy()
     if region_sel:  f = f[f["Region"].isin(region_sel)]
@@ -448,7 +478,7 @@ def page_mbm():
 
     fig_map.update_layout(
         height=520, margin=dict(l=0,r=0,t=0,b=0),
-        paper_bgcolor="white", uirevision="map_fixed", dragmode=False,
+        paper_bgcolor="white", uirevision=str(region_sel)+str(type_sel)+str(country_sel), dragmode=False,
         geo=dict(
             projection_type="equirectangular",
             showframe=False,
@@ -561,4 +591,3 @@ elif page == "imo":
     page_placeholder("IMO", "🚢")
 else:
     page_mbm()
-    
