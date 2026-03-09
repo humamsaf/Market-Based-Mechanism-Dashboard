@@ -339,9 +339,7 @@ def page_mbm():
             Global Market-Based Mechanisms Dashboard
         </div>
         <div style="font-size:18px; color:#666; max-width:860px; margin:0 auto 40px auto; line-height:1.8; font-weight:400;">
-            A market-based mechanism (MBM) is a climate policy instrument that uses market principles to
-            create economic incentives for reducing greenhouse gas emissions by allowing the trading or
-            valuation of emission reductions or emission rights.
+            A market-based mechanism (MBM) is a climate policy instrument that uses market principles to create economic incentives<br>for reducing greenhouse gas emissions by allowing the trading or valuation of emission reductions or emission rights.
         </div>
         <div style="display:flex; justify-content:center; gap:48px; flex-wrap:wrap; margin-bottom:48px; align-items:center;">
             <div>
@@ -383,11 +381,9 @@ def page_mbm():
            onmouseout="this.style.background='#1a1a2e'">
             ▶ &nbsp;Get Started
         </a>
-        <div style="margin-top:28px; padding-top:20px; border-top:1px solid #e8e8e8; font-size:12px; color:#aaa; max-width:860px; line-height:1.8; text-align:center;">
-            This dashboard is a product of the <span style="color:#777; font-weight:600;">Market-based Interventions for Deep Decarbonisation (MIDD) Lab</span>,
-            based at the <span style="color:#777; font-weight:600;">Grantham Institute – Climate Change and the Environment</span>
-            at <span style="color:#777; font-weight:600;">Imperial College London</span>,
-            and led by <span style="color:#777; font-weight:600;">Dr Gbemi Oluleye</span>.
+        <div style="margin-top:40px; padding-top:24px; border-top:1px solid #e8e8e8; font-size:12px; color:#aaa; max-width:860px; line-height:1.8; text-align:center;">
+            This dashboard is a product of the <span style="color:#777; font-weight:600;">Market-based Interventions for Deep Decarbonisation (MIDD) Lab</span>,<br>
+            based at the <span style="color:#777; font-weight:600;">Grantham Institute – Climate Change and the Environment</span> at <span style="color:#777; font-weight:600;">Imperial College London</span>, and led by <span style="color:#777; font-weight:600;">Dr Gbemi Oluleye</span>.
         </div>
     </div>
     <hr style="border:none; border-top:1px solid #e0e0e0; margin:0 0 24px 0;">
