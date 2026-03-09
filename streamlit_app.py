@@ -479,6 +479,7 @@ def get_carbon_pricing_type(mechs: set) -> str:
     elif has_tax: return "Carbon Tax"
     return "No Carbon Pricing"
 
+def render_country_card(country, region, long_df):
     CP_DISPLAY = {
         "ETS + Carbon Tax": "ETS and Carbon Tax",
         "Carbon Tax": "Carbon Tax",
