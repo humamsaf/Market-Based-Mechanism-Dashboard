@@ -451,7 +451,7 @@ def page_mbm():
         paper_bgcolor="white", uirevision="map_fixed", dragmode=False,
         geo=dict(
             projection_type="equirectangular",
-            showframe=True, framecolor="#333333", framewidth=1,
+            showframe=False,
             showcoastlines=True, coastlinecolor="#333333", coastlinewidth=1.5,
             showcountries=True, countrycolor="#333333", countrywidth=1.5,
             showland=True, landcolor="#f5f5f5",
@@ -463,7 +463,7 @@ def page_mbm():
         legend=dict(
             title="<b>Legend</b>",
             bgcolor="rgba(255,255,255,0.85)", bordercolor="rgba(0,0,0,0)", borderwidth=0,
-            x=0.99, y=0.01, xanchor="right", yanchor="bottom",
+            x=0.01, y=0.01, xanchor="left", yanchor="bottom",
             font=dict(size=10), tracegroupgap=3, itemsizing="constant",
         ),
         clickmode="event+select",
