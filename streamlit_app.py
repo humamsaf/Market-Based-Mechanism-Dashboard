@@ -986,18 +986,20 @@ def page_ets():
     # Funding programs — count real ones only
     INVALID_FP = {"-","—","nan","NaN","","not defined","under development by SEMARAT"}
     n_funding = 0
-    if "funding_program" in ets.columns:
-        n_funding = int(ets["funding_program"].apply(lambda x: str(x).strip() not in INVALID_FP).sum())
+    fp_col = None
+    for _c in ets.columns:
+        if "funding" in str(_c).lower():
+            fp_col = _c
+            break
+    if fp_col:
+        n_funding = int(ets[fp_col].apply(lambda x: str(x).strip() not in INVALID_FP).sum())
 
     # ── Hero ──────────────────────────────────────────────────────
     def stat(number, label, sub=None):
         sub_html = f'<div style="font-size:11px;color:#6b8099;margin-top:6px;letter-spacing:0.5px;">{sub}</div>' if sub else ""
         return (
-            f'<div style="text-align:center;padding:32px 28px;flex:1;min-width:110px;">'            f'<div style="font-size:44px;font-weight:900;color:#1a3a5e;line-height:1;white-space:nowrap;">{number}</div>'            f'<div style="font-size:10px;color:#7a9ab5;font-weight:700;text-transform:uppercase;letter-spacing:2.5px;margin-top:9px;white-space:nowrap;">{label}</div>'            f'{sub_html}</div>'
+            f'<div style="text-align:center;padding:36px 12px;border-right:1px solid #d0dce8;">'            f'<div style="font-size:42px;font-weight:900;color:#1a3a5e;line-height:1;">{number}</div>'            f'<div style="font-size:9px;color:#7a9ab5;font-weight:700;text-transform:uppercase;letter-spacing:2.5px;margin-top:10px;">{label}</div>'            f'{sub_html}</div>'
         )
-
-    def div_v():
-        return '<div style="width:1px;background:#d0dce8;margin:20px 0;"></div>'
 
     st.markdown(f"""
     <div style="padding:56px 0 48px 0;border-bottom:1px solid #dde6ef;margin-bottom:44px;text-align:center;">
@@ -1008,19 +1010,13 @@ def page_ets():
             for reducing emissions. Governments set a cap on total emissions and issue allowances. Companies must hold
             allowances equal to their emissions — they can trade these allowances, creating a carbon price signal.
         </div>
-        <div style="display:flex;justify-content:center;align-items:stretch;border:1.5px solid #d0dce8;border-radius:16px;overflow:hidden;max-width:1060px;margin:0 auto;background:#f7fafd;">
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);border:1.5px solid #d0dce8;border-radius:16px;overflow:hidden;max-width:1100px;margin:0 auto;background:#f7fafd;">
             {stat(n_schemes, "Active Schemes")}
-            {div_v()}
             {stat(n_countries, "Jurisdictions")}
-            {div_v()}
-            {stat(f"USD {avg_price:.0f}", "Avg. Carbon Price", sub=f"Range USD {min_price:.0f} – {max_price_v:.0f}")}
-            {div_v()}
+            {stat(f"USD {avg_price:.0f}", "Avg. Carbon Price", sub=f"Range USD {min_price:.0f}–{max_price_v:.0f}")}
             {stat(total_rev, "Revenue (2024)")}
-            {div_v()}
             {stat(n_ghg, "GHG Types Covered")}
-            {div_v()}
             {stat(n_sectors, "Sector Types")}
-            {div_v()}
             {stat(n_funding, "Funding Programs")}
         </div>
     </div>
