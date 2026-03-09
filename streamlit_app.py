@@ -508,7 +508,7 @@ def render_country_card(country, region, long_df):
         <div style="font-size:22px;font-weight:800;color:#1a1a2e;letter-spacing:1px;margin-bottom:4px;">{country.upper()}</div>
         <div style="font-size:12px;color:#888;margin-bottom:14px;">{region}</div>
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
-            <div style="background:{cp_color};color:white;padding:5px 14px;border-radius:6px;font-weight:700;font-size:12px;border:1.5px solid #222;">{CP_DISPLAY.get(cp_type, cp_type)}</div>
+            <div style="background:{cp_color};color:{'#1a1a2e' if cp_type == 'No Carbon Pricing' else 'white'};padding:5px 14px;border-radius:6px;font-weight:700;font-size:12px;border:1.5px solid #222;">{CP_DISPLAY.get(cp_type, cp_type)}</div>
         </div>
         {f'<div style="display:flex;gap:6px;flex-wrap:wrap;"><div style="font-size:11px;color:#aaa;width:100%;margin-bottom:4px;">Other mechanisms:</div>{boxes}</div>' if boxes else ''}
     </div>
