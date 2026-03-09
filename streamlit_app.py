@@ -691,8 +691,8 @@ def page_mbm():
         if mech == "VCM project":
             fig_map.add_trace(go.Scattergeo(
                 lat=df_m["lat"], lon=df_m["lon"], mode="markers",
-                marker=dict(symbol="asterisk", color="#2a9d8f", size=7,
-                            line=dict(width=1.5, color="#2a9d8f"), opacity=1.0),
+                marker=dict(symbol="asterisk", color="#2a9d8f", size=5,
+                            line=dict(width=1.2, color="#2a9d8f"), opacity=1.0),
                 text=df_m["country"], hoverinfo="skip",
                 name=mech, showlegend=True, legendgroup="other",
                 legendgrouptitle_text="Other mechanisms" if i == 0 else "",
