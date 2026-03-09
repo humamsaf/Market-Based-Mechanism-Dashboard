@@ -291,8 +291,20 @@ def load_detail_data():
     amc = amc[amc["country"].notna()]
     amc["country"] = amc["country"].str.strip()
 
+    # Dashboard fallback for Fuel Mandates (for countries not in detail sheet)
+    dash = xl.parse("Dashboard")
+    dash.columns = [str(c).strip() for c in dash.columns]
+    dash = dash[dash["Country"].notna()]
+    fm_col = "4. Fuel Mandates"
+    dashboard_fm = {}
+    if fm_col in dash.columns:
+        for _, r in dash.iterrows():
+            if pd.notna(r.get(fm_col)):
+                dashboard_fm[str(r["Country"]).strip()] = r[fm_col]
+
     return {"ets": ets, "ctx": ctx, "fm": fm, "vcm": vcm,
-            "feebates": fb, "tax_incentives": ti, "amc": amc}
+            "feebates": fb, "tax_incentives": ti, "amc": amc,
+            "dashboard_fm": dashboard_fm}
 
 
 def render_mechanism_details(country, mechs):
@@ -354,17 +366,27 @@ def render_mechanism_details(country, mechs):
     # Fuel Mandates
     if "Fuel Mandates" in mechs:
         fm_rows = details["fm"][details["fm"]["country"] == country]
-        for _, r in fm_rows.iterrows():
-            desc = str(r["description"])[:120] + "…" if pd.notna(r["description"]) and len(str(r["description"])) > 120 else (str(r["description"]) if pd.notna(r["description"]) else "—")
-            pct = str(r["pct_fuel"]) if pd.notna(r["pct_fuel"]) else "—"
-            # Shorten pct_fuel if too long
-            pct_short = pct[:40] + "…" if len(pct) > 40 else pct
-            rows += f"""
-            <div style="border-left:3px solid #e07b00;padding:10px 12px;margin-bottom:10px;background:#fff8f0;border-radius:0 8px 8px 0;">
-                <div style="font-size:12px;font-weight:800;color:#e07b00;margin-bottom:6px;">⛽ Fuel Mandate — {r['mandate_type']}</div>
-                <div>{tag("Requirement", pct_short, "#fde8c8", "#5a2a00")}</div>
-                <div style="font-size:11px;color:#777;margin-top:4px;">{desc}</div>
-            </div>"""
+        if not fm_rows.empty:
+            for _, r in fm_rows.iterrows():
+                desc = str(r["description"])[:120] + "…" if pd.notna(r["description"]) and len(str(r["description"])) > 120 else (str(r["description"]) if pd.notna(r["description"]) else "—")
+                pct = str(r["pct_fuel"]) if pd.notna(r["pct_fuel"]) else "—"
+                pct_short = pct[:40] + "…" if len(pct) > 40 else pct
+                rows += f"""
+                <div style="border-left:3px solid #e07b00;padding:10px 12px;margin-bottom:10px;background:#fff8f0;border-radius:0 8px 8px 0;">
+                    <div style="font-size:12px;font-weight:800;color:#e07b00;margin-bottom:6px;">⛽ Fuel Mandate — {r['mandate_type']}</div>
+                    <div>{tag("Requirement", pct_short, "#fde8c8", "#5a2a00")}</div>
+                    <div style="font-size:11px;color:#777;margin-top:4px;">{desc}</div>
+                </div>"""
+        else:
+            # Fallback: use Dashboard column value
+            dashboard_val = details.get("dashboard_fm", {}).get(country, None)
+            if dashboard_val:
+                short = str(dashboard_val)[:60] + "…" if len(str(dashboard_val)) > 60 else str(dashboard_val)
+                rows += f"""
+                <div style="border-left:3px solid #e07b00;padding:10px 12px;margin-bottom:10px;background:#fff8f0;border-radius:0 8px 8px 0;">
+                    <div style="font-size:12px;font-weight:800;color:#e07b00;margin-bottom:6px;">⛽ Fuel Mandate</div>
+                    <div style="font-size:11px;color:#777;">{short}</div>
+                </div>"""
 
     # VCM
     if "VCM project" in mechs:
