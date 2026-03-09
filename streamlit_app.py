@@ -435,7 +435,7 @@ def page_mbm():
         legend=dict(
             title="<b>Legend</b>",
             bgcolor="rgba(255,255,255,0.85)", bordercolor="rgba(0,0,0,0)", borderwidth=0,
-            x=0.01, y=0.99, xanchor="left", yanchor="top",
+            x=0.01, y=0.01, xanchor="left", yanchor="bottom",
             font=dict(size=11), tracegroupgap=4, itemsizing="constant",
         ),
         clickmode="event+select",
