@@ -847,37 +847,20 @@ def page_mbm():
 
     st.divider()
 
-    tab1, tab2, tab3 = st.tabs(["Summary charts", "Country profile", "Data table"])
-    with tab1:
-        c1, c2 = st.columns(2)
-        with c1:
-            st.subheader("Countries by mechanism type")
-            by_type = f.groupby("mechanism_type")["Country"].nunique().reset_index(name="countries").sort_values("countries", ascending=False)
-            st.plotly_chart(px.bar(by_type, x="mechanism_type", y="countries",
-                color="mechanism_type", color_discrete_sequence=px.colors.qualitative.Set2),
-                use_container_width=True, key="bar_type")
-        with c2:
-            st.subheader("Countries by Carbon Pricing type")
-            cp_counts = m_plot["cp_type"].value_counts().reset_index()
-            cp_counts.columns = ["type", "count"]
-            st.plotly_chart(px.pie(cp_counts, names="type", values="count",
-                color="type", color_discrete_map=CARBON_PRICING_COLORS),
-                use_container_width=True, key="pie_cp")
-
-    with tab2:
-        st.subheader("Country profile (dropdown)")
-        countries_all = sorted(wide["Country"].unique())
-        default_idx = countries_all.index("United Kingdom") if "United Kingdom" in countries_all else 0
-        sel = st.selectbox("Select a country", countries_all, index=default_idx, key="country_profile")
-        region_val2 = wide[wide["Country"] == sel]["Region"].iloc[0] if sel in wide["Country"].values else "—"
-        render_country_card(sel, region_val2, long)
-
-    with tab3:
-        st.subheader("Detail table (filtered)")
-        show_cols = ["Country", "Region", "mechanism_type", "mechanism_detail", "vcm_projects"]
-        st.dataframe(f[show_cols].sort_values(["Country","mechanism_type"]), use_container_width=True, hide_index=True)
-        csv = f[["Country","Region","mechanism_type","mechanism_detail"]].to_csv(index=False).encode("utf-8")
-        st.download_button("Download filtered data (CSV)", csv, "filtered_mbm.csv", "text/csv", use_container_width=True)
+    c1, c2 = st.columns(2)
+    with c1:
+        st.subheader("Countries by mechanism type")
+        by_type = f.groupby("mechanism_type")["Country"].nunique().reset_index(name="countries").sort_values("countries", ascending=False)
+        st.plotly_chart(px.bar(by_type, x="mechanism_type", y="countries",
+            color="mechanism_type", color_discrete_sequence=px.colors.qualitative.Set2),
+            use_container_width=True, key="bar_type")
+    with c2:
+        st.subheader("Countries by Carbon Pricing type")
+        cp_counts = m_plot["cp_type"].value_counts().reset_index()
+        cp_counts.columns = ["type", "count"]
+        st.plotly_chart(px.pie(cp_counts, names="type", values="count",
+            color="type", color_discrete_map=CARBON_PRICING_COLORS),
+            use_container_width=True, key="pie_cp")
 
 
 def page_placeholder(title, icon):
