@@ -905,26 +905,33 @@ def page_placeholder(title, icon):
 
 @st.cache_data
 def load_ets_data():
+    import re
     xl = pd.ExcelFile(FILE_PATH)
     ets = xl.parse("1.a ETS")
-    # Strip all column names first
     ets.columns = [str(c).strip() for c in ets.columns]
-    ets = ets.rename(columns={
-        "Instrument name": "name",
-        "Jurisdiction": "country",
-        "Region": "region",
-        "Start date": "start_date",
-        "Price rate": "price",
-        "Sector coverage": "sectors",
-        "Allocation method": "allocation",
-        "Government revenue (2024)": "revenue",
-        "Cap Emission": "cap",
-        "Description": "description",
-        "GHG": "ghg",
-        "Share of jurisdiction's": "share",
-    })
+    col_map = {}
+    for c in ets.columns:
+        cl = c.lower()
+        if "instrument name" in cl:           col_map[c] = "name"
+        elif cl == "jurisdiction":            col_map[c] = "country"
+        elif cl == "region":                  col_map[c] = "region"
+        elif "start date" in cl:              col_map[c] = "start_date"
+        elif "price rate" in cl:              col_map[c] = "price"
+        elif "sector coverage" in cl:         col_map[c] = "sectors"
+        elif "allocation method" in cl:       col_map[c] = "allocation"
+        elif "government revenue" in cl:      col_map[c] = "revenue"
+        elif "cap emission" in cl:            col_map[c] = "cap"
+        elif cl == "description":             col_map[c] = "description"
+        elif "additional information" in cl:  col_map[c] = "additional_info"
+        elif cl in ("ghg", "ghg coverage"):  col_map[c] = "ghg"
+        elif "share of" in cl:               col_map[c] = "share"
+        elif "tighten" in cl:                col_map[c] = "tightening_rate"
+        elif "threshold" in cl:              col_map[c] = "threshold"
+        elif "revenue recycling" in cl:      col_map[c] = "revenue_recycling"
+        elif "funding program" in cl:        col_map[c] = "funding_program"
+        elif cl == "source":                  col_map[c] = "source"
+    ets = ets.rename(columns=col_map)
     ets = ets[ets["country"].notna()].copy()
-    import re
     def parse_price(p):
         if pd.isna(p): return None
         m = re.search(r"[\d]+\.?\d*", str(p))
@@ -1140,27 +1147,67 @@ def page_ets():
             <div style="background:white;border:2px solid #e0e0e0;border-radius:12px;
                         padding:16px;box-shadow:0 2px 12px rgba(0,0,0,0.06);margin-bottom:12px;">
                 <div style="font-size:20px;font-weight:800;color:#1a1a2e;margin-bottom:2px;">{selected.upper()}</div>
-                <div style="font-size:12px;color:#888;margin-bottom:12px;">{schemes["region"].iloc[0] if not schemes.empty else "—"}</div>
-                <div style="font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">{len(schemes)} ETS Scheme(s)</div>
+                <div style="font-size:12px;color:#888;margin-bottom:6px;">{schemes["region"].iloc[0] if not schemes.empty else "—"}</div>
+                <div style="font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:1px;">{len(schemes)} ETS Scheme(s)</div>
             </div>
             """, unsafe_allow_html=True)
 
+            def val(v, truncate=None):
+                if pd.isna(v) or str(v).strip() in ("", "nan", "NaN"): return "—"
+                s = str(v).strip()
+                if truncate and len(s) > truncate: return s[:truncate] + "…"
+                return s
+
+            def pill(label, v, bg="#f0f4ff", tc="#1a1a2e"):
+                return f'<span style="background:{bg};color:{tc};padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;margin-right:6px;margin-bottom:4px;display:inline-block;white-space:nowrap;">{label}: <b>{v}</b></span>'
+
+            def row_field(label, v):
+                if v == "—": return ""
+                return (f'<div style="margin-bottom:8px;">'
+                        f'<div style="font-size:10px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">{label}</div>'
+                        f'<div style="font-size:12px;color:#1a1a2e;line-height:1.6;">{v}</div>'
+                        f'</div>')
+
             for _, r in schemes.iterrows():
-                price = str(r["price"]).strip() if pd.notna(r["price"]) else "N/A"
-                start = int(r["start_date"]) if pd.notna(r["start_date"]) else "—"
-                sectors = (str(r["sectors"])[:80] + "…") if pd.notna(r["sectors"]) and len(str(r["sectors"])) > 80 else (str(r["sectors"]) if pd.notna(r["sectors"]) else "—")
-                alloc = (str(r["allocation"])[:60] + "…") if pd.notna(r["allocation"]) and len(str(r["allocation"])) > 60 else (str(r["allocation"]) if pd.notna(r["allocation"]) else "—")
-                rev = str(r["revenue"]) if pd.notna(r["revenue"]) else "—"
-                html_card = (
-                    f'<div style="border-left:4px solid #457b9d;padding:14px 16px;margin-bottom:10px;background:#f7fafd;border-radius:0 8px 8px 0;">'
-                    f'<div style="font-size:14px;font-weight:800;color:#457b9d;margin-bottom:8px;">{r["name"]}</div>'
-                    f'<span style="background:#ddeef8;color:#1a3a4a;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;margin-right:6px;display:inline-block;">Price: <b>{price}</b></span>'
-                    f'<span style="background:#e8f0fe;color:#1a2a5e;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;margin-right:6px;display:inline-block;">Est.: <b>{start}</b></span>'
-                    f'<span style="background:#e8f5e9;color:#1a4a1a;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;display:inline-block;">Revenue: <b>{rev}</b></span>'
-                    f'<div style="font-size:11px;color:#888;margin-top:6px;">Sectors: {sectors}</div>'
-                    f'<div style="font-size:11px;color:#888;margin-top:3px;">Allocation: {alloc}</div>'
-                    f'</div>'
-                )
+                price   = val(r.get("price"))
+                start   = str(int(r["start_date"])) if pd.notna(r.get("start_date")) else "—"
+                rev     = val(r.get("revenue"))
+                share   = val(r.get("share"))
+                ghg     = val(r.get("ghg"))
+                sectors = val(r.get("sectors"))
+                alloc   = val(r.get("allocation"))
+                cap     = val(r.get("cap"))
+                tighten = val(r.get("tightening_rate"))
+                thresh  = val(r.get("threshold"))
+                desc    = val(r.get("description"))
+                addinfo = val(r.get("additional_info"))
+                rev_rec = val(r.get("revenue_recycling"))
+                fund    = val(r.get("funding_program"))
+                source  = val(r.get("source"))
+
+                html_card = f"""
+                <div style="border-left:4px solid #457b9d;padding:16px 16px;margin-bottom:14px;background:#f7fafd;border-radius:0 8px 8px 0;">
+                    <div style="font-size:14px;font-weight:800;color:#457b9d;margin-bottom:10px;">{r["name"]}</div>
+                    <div style="margin-bottom:10px;">
+                        {pill("Price", price, "#ddeef8", "#1a3a4a")}
+                        {pill("Est.", start, "#e8f0fe", "#1a2a5e")}
+                        {pill("Revenue", rev, "#e8f5e9", "#1a4a1a")}
+                        {pill("Share", share, "#f5f0ff", "#3a1a5e") if share != "—" else ""}
+                    </div>
+                    <div style="border-top:1px solid #dde8f5;padding-top:10px;margin-top:4px;">
+                        {row_field("GHG Coverage", ghg)}
+                        {row_field("Sector Coverage", sectors)}
+                        {row_field("Threshold", thresh)}
+                        {row_field("Allocation Method", alloc)}
+                        {row_field("Cap Emissions", cap)}
+                        {row_field("Tightening Rate", tighten)}
+                        {row_field("Revenue Recycling", rev_rec)}
+                        {row_field("Funding Program", fund)}
+                        {row_field("Description", desc)}
+                        {row_field("Additional Information", addinfo)}
+                        {row_field("Source", source)}
+                    </div>
+                </div>"""
                 st.markdown(html_card, unsafe_allow_html=True)
         else:
             st.markdown("""
@@ -1201,15 +1248,13 @@ def page_ets():
 
     with c2:
         st.subheader("Carbon Price Distribution")
-        price_df = f_ets[f_ets["price_num"].notna()].copy()
+        price_df = f_ets[f_ets["price_num"].notna()].copy().sort_values("price_num", ascending=False)
         fig_p = go.Figure(go.Bar(
-            x=price_df["name"],
-            y=price_df["price_num"],
+            x=price_df["name"], y=price_df["price_num"],
             marker_color=[REGION_COLORS.get(r, "#888") for r in price_df["region"]],
             marker_line_color="#222", marker_line_width=1,
             text=price_df["price"].fillna("N/A"),
-            textposition="outside",
-            textfont=dict(size=8),
+            textposition="outside", textfont=dict(size=8),
             hovertemplate="<b>%{x}</b><br>Price: %{text}<extra></extra>",
         ))
         fig_p.update_layout(
@@ -1229,10 +1274,35 @@ def page_ets():
     <div style="font-size:13px;color:#999;margin-bottom:16px;">Complete list of tracked ETS schemes worldwide.</div>
     """, unsafe_allow_html=True)
 
-    table_df = f_ets[["name", "country", "region", "start_date", "price", "sectors", "revenue"]].copy()
-    table_df.columns = ["Scheme", "Jurisdiction", "Region", "Est.", "Price", "Sector Coverage", "Revenue (2024)"]
-    table_df["Est."] = table_df["Est."].apply(lambda x: int(x) if pd.notna(x) else "—")
-    st.dataframe(table_df, use_container_width=True, hide_index=True)
+    # Search + filter
+    ts1, ts2 = st.columns([2, 2])
+    with ts1:
+        search_q = st.text_input("Search by scheme or country name", placeholder="e.g. EU ETS, China...", key="ets_search")
+    with ts2:
+        region_tbl = st.multiselect("Filter by region", regions_all, key="ets_tbl_region", placeholder="All regions")
+
+    # Get all original columns for display
+    display_cols = {
+        "name": "Scheme", "country": "Jurisdiction", "region": "Region",
+        "start_date": "Est.", "price": "Price Rate", "share": "Share of Jurisdiction",
+        "revenue": "Revenue (2024)", "ghg": "GHG Coverage", "sectors": "Sector Coverage",
+        "allocation": "Allocation Method", "cap": "Cap Emissions", "revenue_recycling": "Revenue Recycling",
+    }
+
+    tbl = ets.copy()
+
+    if search_q:
+        mask = (tbl["name"].str.contains(search_q, case=False, na=False) |
+                tbl["country"].str.contains(search_q, case=False, na=False))
+        tbl = tbl[mask]
+    if region_tbl:
+        tbl = tbl[tbl["region"].isin(region_tbl)]
+
+    show_cols = [c for c in display_cols if c in tbl.columns]
+    tbl_show = tbl[show_cols].copy()
+    tbl_show.columns = [display_cols[c] for c in show_cols]
+    tbl_show["Est."] = tbl_show["Est."].apply(lambda x: int(x) if pd.notna(x) else "—")
+    st.dataframe(tbl_show, use_container_width=True, hide_index=True)
 
 
 # ── Router ─────────────────────────────────────────────────────
