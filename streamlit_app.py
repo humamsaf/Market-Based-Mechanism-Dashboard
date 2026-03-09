@@ -536,16 +536,19 @@ def page_mbm():
                 elif txt:
                     selected_country = txt
 
+        st.markdown("""
+        <div style="margin-bottom:12px;">
+            <div style="font-size:16px; font-weight:800; color:#1a1a2e; margin-bottom:4px;">Country Detail</div>
+            <div style="font-size:12px; color:#999;">Select a country on the map to explore its market-based mechanisms and carbon pricing policies.</div>
+        </div>
+        """, unsafe_allow_html=True)
+
         if selected_country:
             region_val = wide[wide["Country"] == selected_country]["Region"].iloc[0] \
                 if selected_country in wide["Country"].values else "—"
             render_country_card(selected_country, region_val, long)
         else:
             st.markdown("""
-            <div style="margin-bottom:12px;">
-                <div style="font-size:16px; font-weight:800; color:#1a1a2e; margin-bottom:4px;">Country Detail</div>
-                <div style="font-size:12px; color:#999;">Select a country on the map to explore its market-based mechanisms and carbon pricing policies.</div>
-            </div>
             <div style="
                 background:#f8f9fa; border:2px dashed #ddd;
                 border-radius:12px;
@@ -610,5 +613,3 @@ elif page == "imo":
     page_placeholder("IMO", "🚢")
 else:
     page_mbm()
-
-    
