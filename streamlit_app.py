@@ -1026,8 +1026,13 @@ def page_ets():
     <div style="padding:56px 0 48px 0;border-bottom:1px solid #e8e8e8;margin-bottom:40px;text-align:center;">
         <div style="font-size:11px;font-weight:700;color:#457b9d;letter-spacing:3px;text-transform:uppercase;margin-bottom:32px;">Carbon Pricing Instrument</div>
         <div style="font-size:56px;font-weight:900;color:#1a1a2e;line-height:1.05;margin-bottom:40px;white-space:nowrap;">Emissions Trading Systems (ETS)</div>
-        <div style="font-size:14px;color:#666;max-width:960px;margin:0 auto 56px auto;line-height:2;">
-            An Emissions Trading System is a market-based approach to controlling pollution by providing economic incentives for reducing emissions. Governments set a cap on total emissions and issue allowances — companies must hold allowances equal to their emissions and can trade them, creating a carbon price signal. Today, <b>{n_schemes} active ETS schemes</b> operate across <b>{n_countries} jurisdictions</b> — <b>15 in North America</b>, <b>15 in East Asia &amp; Pacific</b>, <b>7 in Europe &amp; Central Asia</b>, and <b>1 in Latin America</b> — with carbon prices ranging from <b>USD {min_price:.0f} to USD {max_price_v:.0f}</b> (avg. <b>USD {avg_price:.0f}/tCO₂</b>), covering sectors including Power, Industry, Buildings, Transport, and Aviation, and regulating gases such as CO₂, CH₄, N₂O, HFCs, PFCs, SF₆, and NF₃.
+        <div style="max-width:960px;margin:0 auto 56px auto;">
+            <div style="font-size:16px;color:#666;line-height:1.9;margin-bottom:16px;">
+                An Emissions Trading System is a market-based approach to controlling pollution by providing economic incentives for reducing emissions. Governments set a cap on total emissions and issue allowances — companies must hold allowances equal to their emissions and can trade them, creating a carbon price signal.
+            </div>
+            <div style="font-size:13px;color:#888;line-height:2;">
+                Today, <b>{n_schemes} active ETS schemes</b> operate across <b>{n_countries} jurisdictions</b> — <b>15 in North America</b>, <b>15 in East Asia &amp; Pacific</b>, <b>7 in Europe &amp; Central Asia</b>, and <b>1 in Latin America</b> — with carbon prices ranging from <b>USD {min_price:.0f} to USD {max_price_v:.0f}</b> (avg. <b>USD {avg_price:.0f}/tCO₂</b>), covering sectors including Power, Industry, Buildings, Transport, and Aviation, and regulating gases such as CO₂, CH₄, N₂O, HFCs, PFCs, SF₆, and NF₃.
+            </div>
         </div>
         <div style="display:flex;justify-content:center;align-items:center;gap:40px;flex-wrap:nowrap;margin-bottom:40px;">
             {stat(n_schemes, "Active Schemes")}
