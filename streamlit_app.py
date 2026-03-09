@@ -907,23 +907,23 @@ def page_placeholder(title, icon):
 def load_ets_data():
     xl = pd.ExcelFile(FILE_PATH)
     ets = xl.parse("1.a ETS")
+    # Strip all column names first
     ets.columns = [str(c).strip() for c in ets.columns]
     ets = ets.rename(columns={
         "Instrument name": "name",
         "Jurisdiction": "country",
         "Region": "region",
         "Start date": "start_date",
-        "Price rate ": "price",
+        "Price rate": "price",
         "Sector coverage": "sectors",
         "Allocation method": "allocation",
         "Government revenue (2024)": "revenue",
-        "Cap Emission ": "cap",
+        "Cap Emission": "cap",
         "Description": "description",
         "GHG": "ghg",
         "Share of jurisdiction's": "share",
     })
     ets = ets[ets["country"].notna()].copy()
-    # Parse numeric price (extract first USD number)
     import re
     def parse_price(p):
         if pd.isna(p): return None
