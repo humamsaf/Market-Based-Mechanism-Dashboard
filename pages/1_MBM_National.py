@@ -2,11 +2,7 @@
 # ------------------------------------------------------------
 # Global Market-Based Mechanisms Dashboard
 # - Reads: data/Global Market Based Mechanism.xlsx
-# - QGIS-exact style map:
-#     Projection  : equirectangular (kotak)
-#     Country fill: Carbon Pricing type
-#     Markers     : per mechanism, no overlap (fixed offsets)
-#     Background  : white, dark borders
+# - QGIS-style map + click country → detail card
 # ------------------------------------------------------------
 
 from __future__ import annotations
@@ -32,7 +28,6 @@ MECH_COLS = {
     "8. AMC": "AMC",
 }
 
-# ── QGIS exact colour scheme ────────────────────────────────
 CARBON_PRICING_COLORS = {
     "ETS + Carbon Tax": "#f4a261",
     "Carbon Tax":       "#90be6d",
@@ -40,28 +35,25 @@ CARBON_PRICING_COLORS = {
     "No Carbon Pricing":"#f0f0f0",
 }
 
-# ── QGIS exact marker styles ─────────────────────────────────
+# ── Marker styles — ukuran kecil ─────────────────────────────
 MARKER_STYLES = {
-    "CBAM":           {"symbol": "square",      "color": "#1d3557", "size": 11},
-    "Tax Incentives": {"symbol": "diamond",     "color": "#7b2d8b", "size": 12},
-    "Fuel Mandates":  {"symbol": "triangle-up", "color": "#e07b00", "size": 13},
-    "Feebates":       {"symbol": "circle",      "color": "#e63946", "size": 11},
-    "VCM project":    {"symbol": "star",        "color": "#2a9d8f", "size": 15},
-    "AMC":            {"symbol": "cross",       "color": "#457b9d", "size": 12},
+    "CBAM":           {"symbol": "square",      "color": "#1d3557", "size": 6},
+    "Tax Incentives": {"symbol": "diamond",     "color": "#7b2d8b", "size": 7},
+    "Fuel Mandates":  {"symbol": "triangle-up", "color": "#e07b00", "size": 7},
+    "Feebates":       {"symbol": "circle",      "color": "#e63946", "size": 6},
+    "VCM project":    {"symbol": "star",        "color": "#2a9d8f", "size": 8},
+    "AMC":            {"symbol": "cross",       "color": "#457b9d", "size": 7},
 }
 
-# ── Fixed offsets per mechanism so markers don't overlap ────
-# (lat_offset, lon_offset) — small nudge in degrees
 MECH_OFFSETS = {
     "CBAM":           ( 0.0,   0.0),
-    "Tax Incentives": ( 0.0,   2.2),
-    "Fuel Mandates":  ( 0.0,  -2.2),
-    "Feebates":       ( 2.2,   0.0),
-    "VCM project":    (-2.2,   0.0),
-    "AMC":            ( 2.2,   2.2),
+    "Tax Incentives": ( 0.0,   1.5),
+    "Fuel Mandates":  ( 0.0,  -1.5),
+    "Feebates":       ( 1.5,   0.0),
+    "VCM project":    (-1.5,   0.0),
+    "AMC":            ( 1.5,   1.5),
 }
 
-# ── Country centroids ────────────────────────────────────────
 CENTROIDS: dict[str, tuple[float, float]] = {
     "USA": (37.09, -95.71), "CAN": (56.13, -106.35), "MEX": (23.63, -102.55),
     "BRA": (-14.24, -51.93), "ARG": (-38.42, -63.62), "CHL": (-35.68, -71.54),
@@ -135,6 +127,17 @@ MANUAL_ISO3 = {
     "Vietnam": "VNM", "Moldova": "MDA",
 }
 
+MECH_EMOJI = {
+    "Carbon Tax":     "💚",
+    "ETS":            "🔵",
+    "Tax Incentives": "💜",
+    "Fuel Mandates":  "🔶",
+    "Feebates":       "🔴",
+    "VCM project":    "⭐",
+    "CBAM":           "🟦",
+    "AMC":            "✚",
+}
+
 
 def to_iso3(name: str):
     name = (name or "").strip()
@@ -160,7 +163,6 @@ def tidy_long(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     df = df[df["Country"].notna()]
     df["Country"] = df["Country"].astype(str).str.strip()
     df = df[df["Country"].str.lower() != "country"]
-
     value_cols = [c.strip() for c in MECH_COLS.keys() if c.strip() in df.columns]
     long = df.melt(
         id_vars=["No", "Country", "Region"],
@@ -176,7 +178,6 @@ def tidy_long(df_raw: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     long = long.drop(columns=["mechanism_type_raw"])
     long["mechanism_detail"] = long["mechanism_detail"].astype(str).str.strip()
     long = long[(long["mechanism_detail"] != "") & (long["mechanism_detail"].str.lower() != "nan")]
-
     long["vcm_projects"] = pd.NA
     mask_vcm = long["mechanism_type"] == "VCM project"
     long.loc[mask_vcm, "vcm_projects"] = pd.to_numeric(
@@ -198,6 +199,89 @@ def get_carbon_pricing_type(country_mechs: set) -> str:
     return "No Carbon Pricing"
 
 
+def render_country_card(country: str, region: str, long_df: pd.DataFrame):
+    """Render a big detail card for the selected country."""
+    cf = long_df[long_df["Country"] == country].copy()
+    mechs = set(cf["mechanism_type"].unique()) if len(cf) else set()
+    cp_type = get_carbon_pricing_type(mechs)
+    cp_color = CARBON_PRICING_COLORS[cp_type]
+    n_mechs = len(mechs)
+
+    st.markdown(f"""
+    <div style="
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 24px 32px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        margin-bottom: 16px;
+    ">
+        <div style="display:flex; align-items:center; gap:16px; margin-bottom:12px;">
+            <div>
+                <div style="font-size:26px; font-weight:800; color:#1a1a2e; letter-spacing:1px;">
+                    {country.upper()}
+                </div>
+                <div style="font-size:13px; color:#888; margin-top:2px;">
+                    {region}
+                </div>
+            </div>
+        </div>
+        <div style="display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap;">
+            <div style="
+                background:{cp_color};
+                color:#333;
+                padding:6px 16px;
+                border-radius:20px;
+                font-weight:600;
+                font-size:13px;
+            ">{cp_type}</div>
+            <div style="
+                background:#1a1a2e;
+                color:white;
+                padding:6px 16px;
+                border-radius:20px;
+                font-weight:700;
+                font-size:13px;
+            ">{n_mechs} MECHANISM{'S' if n_mechs != 1 else ''}</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if n_mechs == 0:
+        st.info("No recorded mechanisms for this country.")
+        return
+
+    # Mechanism detail cards
+    prof = (
+        cf.groupby("mechanism_type")["mechanism_detail"]
+        .apply(lambda s: sorted({v.strip() for v in s.astype(str) if v and v.lower() != "nan"}))
+        .reset_index()
+        .sort_values("mechanism_type")
+    )
+
+    cols = st.columns(min(n_mechs, 3))
+    for idx, (_, row) in enumerate(prof.iterrows()):
+        mtype = row["mechanism_type"]
+        details = row["mechanism_detail"]
+        emoji = MECH_EMOJI.get(mtype, "•")
+        detail_html = "".join(f'<div style="margin-top:4px; font-size:13px; color:#555;">• {d}</div>' for d in details)
+        with cols[idx % min(n_mechs, 3)]:
+            st.markdown(f"""
+            <div style="
+                background:#f8f9fa;
+                border-left: 4px solid #457b9d;
+                border-radius: 8px;
+                padding: 14px 16px;
+                margin-bottom: 10px;
+            ">
+                <div style="font-weight:700; font-size:14px; color:#1a1a2e;">
+                    {emoji} {mtype}
+                </div>
+                {detail_html}
+            </div>
+            """, unsafe_allow_html=True)
+
+
 # ===== Load
 raw = load_raw()
 wide, long = tidy_long(raw)
@@ -205,8 +289,7 @@ wide, long = tidy_long(raw)
 # ===== Header
 st.title("Global Market-Based Mechanisms Dashboard")
 st.caption(
-    "Coverage: 194 countries and territories, including UN member states, microstates, and UN observer entities "
-    "(e.g. Vatican City and Palestine). Kosovo is not included."
+    "Coverage: 194 countries and territories. Click a country on the map to see details."
 )
 
 # ===== Sidebar
@@ -233,11 +316,9 @@ if keyword:      f = f[f["mechanism_detail"].str.contains(keyword, case=False, n
 # ===== KPIs
 k1, k2, k3, k4 = st.columns(4)
 k1.metric("Countries covered", int(wide["Country"].nunique()))
-
 wide_view = wide.copy()
 if region_sel:   wide_view = wide_view[wide_view["Region"].isin(region_sel)]
 if country_sel:  wide_view = wide_view[wide_view["Country"].isin(country_sel)]
-
 k2.metric("Countries in view", int(wide_view["Country"].nunique()))
 k3.metric("Mechanism types in view", int(f["mechanism_type"].nunique()))
 vcm_sum = f.loc[f["mechanism_type"] == "VCM project", "vcm_projects"].sum(min_count=1)
@@ -245,136 +326,179 @@ k4.metric("VCM projects (sum)", 0 if pd.isna(vcm_sum) else int(vcm_sum))
 
 st.divider()
 
-# ===== QGIS-Style World Map =================================
-st.subheader("World Map")
+# ===== Map + Detail side-by-side
+col_map, col_detail = st.columns([3, 1])
 
-country_mechs_map = f.groupby("Country")["mechanism_type"].apply(set).to_dict()
+with col_map:
+    st.subheader("World Map")
+    st.caption("🖱️ Click on a country to view its detail")
 
-base = wide_view[["Country", "Region"]].drop_duplicates().copy()
-base["iso3"]    = base["Country"].apply(to_iso3)
-base["cp_type"] = base["Country"].apply(lambda c: get_carbon_pricing_type(country_mechs_map.get(c, set())))
-base["hover_mechs"] = base["Country"].apply(
-    lambda c: "<br>".join(sorted(country_mechs_map.get(c, {"No recorded mechanisms"})))
-)
+    country_mechs_map = f.groupby("Country")["mechanism_type"].apply(set).to_dict()
 
-missing_iso = base[base["iso3"].isna()]["Country"].tolist()
-if missing_iso:
-    st.warning(
-        f"ISO3 not found for {len(missing_iso)} countries/territories (not shown on map). "
-        f"Examples: {', '.join(missing_iso[:10])}"
+    base = wide_view[["Country", "Region"]].drop_duplicates().copy()
+    base["iso3"]       = base["Country"].apply(to_iso3)
+    base["cp_type"]    = base["Country"].apply(lambda c: get_carbon_pricing_type(country_mechs_map.get(c, set())))
+    base["hover_mechs"]= base["Country"].apply(
+        lambda c: "<br>".join(sorted(country_mechs_map.get(c, {"No recorded mechanisms"})))
     )
 
-m_plot = base.dropna(subset=["iso3"]).copy()
+    missing_iso = base[base["iso3"].isna()]["Country"].tolist()
+    if missing_iso:
+        st.warning(
+            f"ISO3 not found for {len(missing_iso)} countries/territories (not shown on map). "
+            f"Examples: {', '.join(missing_iso[:10])}"
+        )
 
-fig_map = go.Figure()
+    m_plot = base.dropna(subset=["iso3"]).copy()
 
-# ── Layer 1: Choropleth fill ─────────────────────────────────
-for cp_type, color in CARBON_PRICING_COLORS.items():
-    subset = m_plot[m_plot["cp_type"] == cp_type]
-    if subset.empty:
-        continue
-    fig_map.add_trace(go.Choropleth(
-        locations=subset["iso3"],
-        z=[1] * len(subset),
-        colorscale=[[0, color], [1, color]],
-        showscale=False,
-        hovertemplate=(
-            "<b>%{customdata[0]}</b><br>"
-            "Carbon Pricing: %{customdata[1]}<br><br>"
-            "Mechanisms:<br>%{customdata[2]}"
-            "<extra></extra>"
+    fig_map = go.Figure()
+
+    for cp_type, color in CARBON_PRICING_COLORS.items():
+        subset = m_plot[m_plot["cp_type"] == cp_type]
+        if subset.empty:
+            continue
+        n_mechs_list = subset["Country"].apply(lambda c: len(country_mechs_map.get(c, set())))
+        fig_map.add_trace(go.Choropleth(
+            locations=subset["iso3"],
+            z=[1] * len(subset),
+            colorscale=[[0, color], [1, color]],
+            showscale=False,
+            hovertemplate=(
+                "<b>%{customdata[0]}</b><br>"
+                "Carbon Pricing: %{customdata[1]}<br>"
+                "Mechanisms: %{customdata[3]}<br>"
+                "─────────────<br>"
+                "%{customdata[2]}"
+                "<extra></extra>"
+            ),
+            customdata=subset[["Country", "cp_type", "hover_mechs"]].assign(
+                n=n_mechs_list
+            )[["Country", "cp_type", "hover_mechs", "n"]].values,
+            name=cp_type,
+            showlegend=True,
+            marker_line_color="#333333",
+            marker_line_width=0.7,
+            legendgroup="cp",
+            legendgrouptitle_text="Carbon Pricing",
+        ))
+
+    OTHER_MECHS = ["CBAM", "Tax Incentives", "Fuel Mandates", "Feebates", "VCM project", "AMC"]
+
+    for i, mech in enumerate(OTHER_MECHS):
+        style = MARKER_STYLES[mech]
+        dlat, dlon = MECH_OFFSETS[mech]
+        mech_countries = f[f["mechanism_type"] == mech]["Country"].unique()
+        rows = []
+        for country in mech_countries:
+            iso3 = to_iso3(country)
+            if iso3 and iso3 in CENTROIDS:
+                lat, lon = CENTROIDS[iso3]
+                rows.append({"country": country, "lat": lat + dlat, "lon": lon + dlon})
+        if not rows:
+            continue
+        df_m = pd.DataFrame(rows)
+        fig_map.add_trace(go.Scattergeo(
+            lat=df_m["lat"],
+            lon=df_m["lon"],
+            mode="markers",
+            marker=dict(
+                symbol=style["symbol"],
+                color=style["color"],
+                size=style["size"],
+                line=dict(width=0.5, color="white"),
+                opacity=0.9,
+            ),
+            text=df_m["country"],
+            hovertemplate="<b>%{text}</b><br>" + mech + "<extra></extra>",
+            name=mech,
+            showlegend=True,
+            legendgroup="other",
+            legendgrouptitle_text="Other mechanisms" if i == 0 else "",
+        ))
+
+    fig_map.update_layout(
+        height=540,
+        margin=dict(l=0, r=0, t=5, b=0),
+        paper_bgcolor="white",
+        geo=dict(
+            projection_type="equirectangular",
+            showframe=True,
+            framecolor="#333333",
+            framewidth=1,
+            showcoastlines=True,
+            coastlinecolor="#333333",
+            coastlinewidth=0.8,
+            showcountries=True,
+            countrycolor="#333333",
+            countrywidth=0.6,
+            showland=True,
+            landcolor="#f5f5f5",
+            showocean=False,
+            showlakes=False,
+            bgcolor="white",
+            lataxis_range=[-60, 85],
+            lonaxis_range=[-180, 180],
         ),
-        customdata=subset[["Country", "cp_type", "hover_mechs"]].values,
-        name=cp_type,
-        showlegend=True,
-        marker_line_color="#333333",
-        marker_line_width=0.7,
-        legendgroup="cp",
-        legendgrouptitle_text="Carbon Pricing",
-    ))
-
-# ── Layer 2: Scatter markers ─────────────────────────────────
-OTHER_MECHS = ["CBAM", "Tax Incentives", "Fuel Mandates", "Feebates", "VCM project", "AMC"]
-
-for i, mech in enumerate(OTHER_MECHS):
-    style  = MARKER_STYLES[mech]
-    dlat, dlon = MECH_OFFSETS[mech]
-
-    mech_countries = f[f["mechanism_type"] == mech]["Country"].unique()
-    rows = []
-    for country in mech_countries:
-        iso3 = to_iso3(country)
-        if iso3 and iso3 in CENTROIDS:
-            lat, lon = CENTROIDS[iso3]
-            all_mechs = "<br>".join(sorted(country_mechs_map.get(country, {mech})))
-            rows.append({
-                "country": country,
-                "lat":  lat + dlat,
-                "lon":  lon + dlon,
-                "hover": f"<b>{country}</b><br>Mechanisms:<br>{all_mechs}",
-            })
-
-    if not rows:
-        continue
-
-    df_m = pd.DataFrame(rows)
-    fig_map.add_trace(go.Scattergeo(
-        lat=df_m["lat"],
-        lon=df_m["lon"],
-        mode="markers",
-        marker=dict(
-            symbol=style["symbol"],
-            color=style["color"],
-            size=style["size"],
-            line=dict(width=1.0, color="white"),
-            opacity=0.95,
+        legend=dict(
+            title="<b>Legend</b>",
+            bgcolor="white",
+            bordercolor="#333333",
+            borderwidth=1,
+            x=0.01,
+            y=0.40,
+            font=dict(size=11),
+            tracegroupgap=5,
+            itemsizing="constant",
         ),
-        text=df_m["hover"],
-        hovertemplate="%{text}<extra></extra>",
-        name=mech,
-        showlegend=True,
-        legendgroup="other",
-        legendgrouptitle_text="Other mechanisms" if i == 0 else "",
-    ))
+        clickmode="event+select",
+    )
 
-# ── Layout: equirectangular (kotak), putih, dark border ──────
-fig_map.update_layout(
-    height=600,
-    margin=dict(l=0, r=0, t=5, b=0),
-    paper_bgcolor="white",
-    geo=dict(
-        projection_type="equirectangular",
-        showframe=True,
-        framecolor="#333333",
-        framewidth=1,
-        showcoastlines=True,
-        coastlinecolor="#333333",
-        coastlinewidth=0.8,
-        showcountries=True,
-        countrycolor="#333333",
-        countrywidth=0.6,
-        showland=True,
-        landcolor="#f5f5f5",
-        showocean=False,
-        showlakes=False,
-        bgcolor="white",
-        lataxis_range=[-60, 85],
-        lonaxis_range=[-180, 180],
-    ),
-    legend=dict(
-        title="<b>Legend</b>",
-        bgcolor="white",
-        bordercolor="#333333",
-        borderwidth=1,
-        x=0.01,
-        y=0.40,
-        font=dict(size=12),
-        tracegroupgap=5,
-        itemsizing="constant",
-    ),
-)
+    clicked = st.plotly_chart(
+        fig_map,
+        use_container_width=True,
+        key="map_qgis",
+        on_select="rerun",
+        selection_mode="points",
+    )
 
-st.plotly_chart(fig_map, use_container_width=True, key="map_qgis")
+with col_detail:
+    st.subheader("Country Detail")
+
+    # Try to get clicked country from choropleth click
+    selected_country = None
+    if clicked and clicked.get("selection") and clicked["selection"].get("points"):
+        pts = clicked["selection"]["points"]
+        if pts:
+            pt = pts[0]
+            # customdata[0] = Country name (from choropleth)
+            cd = pt.get("customdata")
+            txt = pt.get("text")
+            if cd and isinstance(cd, (list, tuple)) and len(cd) > 0:
+                selected_country = cd[0]
+            elif txt:
+                selected_country = txt
+
+    if selected_country:
+        region_val = wide[wide["Country"] == selected_country]["Region"].iloc[0] \
+            if selected_country in wide["Country"].values else "—"
+        render_country_card(selected_country, region_val, long)
+    else:
+        st.markdown("""
+        <div style="
+            background:#f8f9fa;
+            border: 2px dashed #ccc;
+            border-radius: 12px;
+            padding: 40px 24px;
+            text-align: center;
+            color: #999;
+        ">
+            <div style="font-size:40px; margin-bottom:12px;">🗺️</div>
+            <div style="font-size:15px; font-weight:600;">Click a country</div>
+            <div style="font-size:13px; margin-top:8px;">on the map to see its mechanism details</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+st.divider()
 
 # ===== Tabs
 tab1, tab2, tab3 = st.tabs(["Summary charts", "Country profile", "Data table"])
@@ -404,36 +528,12 @@ with tab1:
         )
 
 with tab2:
-    st.subheader("Country profile")
+    st.subheader("Country profile (dropdown)")
     countries_all = sorted(wide["Country"].unique())
     default_idx = countries_all.index("United Kingdom") if "United Kingdom" in countries_all else 0
     sel = st.selectbox("Select a country", countries_all, index=default_idx, key="country_profile")
-
-    cf = long[long["Country"] == sel].copy()
-    if len(cf):
-        st.write("Region:", cf["Region"].iloc[0])
-        cp_type = get_carbon_pricing_type(set(cf["mechanism_type"].unique()))
-        color = CARBON_PRICING_COLORS[cp_type]
-        st.markdown(
-            f"**Carbon Pricing:** <span style='background:{color};padding:2px 8px;"
-            f"border-radius:4px;color:#333'>{cp_type}</span>",
-            unsafe_allow_html=True
-        )
-        st.write("---")
-    else:
-        st.write("Region: —")
-
-    prof = (
-        cf.groupby("mechanism_type")["mechanism_detail"]
-        .apply(lambda s: "\n".join(
-            f"- {x}" for x in sorted({v.strip() for v in s.astype(str) if v and v.lower() != "nan"})
-        ))
-        .reset_index()
-        .sort_values("mechanism_type")
-    )
-    for _, r in prof.iterrows():
-        st.markdown(f"**{r['mechanism_type']}**")
-        st.markdown(r["mechanism_detail"])
+    region_val2 = wide[wide["Country"] == sel]["Region"].iloc[0] if sel in wide["Country"].values else "—"
+    render_country_card(sel, region_val2, long)
 
 with tab3:
     st.subheader("Detail table (filtered)")
