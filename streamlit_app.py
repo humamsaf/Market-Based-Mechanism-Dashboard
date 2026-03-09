@@ -361,11 +361,27 @@ for cp_type, color in CARBON_PRICING_COLORS.items():
         ),
         customdata=subset[["Country", "n_mechs", "hover_mechs"]].values,
         name=cp_type,
-        showlegend=True,
+        showlegend=False,          # sembunyikan dari legend (diganti dummy di bawah)
         marker_line_color="#111111",
         marker_line_width=0.8,
+    ))
+
+# Dummy legend untuk Carbon Pricing — kotak dengan outline hitam
+for i, (cp_type, color) in enumerate(CARBON_PRICING_COLORS.items()):
+    fig_map.add_trace(go.Scattergeo(
+        lat=[None], lon=[None],
+        mode="markers",
+        marker=dict(
+            symbol="square",
+            color=color,
+            size=10,
+            line=dict(width=2.0, color="#000000"),
+        ),
+        name=cp_type,
+        showlegend=True,
         legendgroup="cp",
-        legendgrouptitle_text="Carbon Pricing",
+        legendgrouptitle_text="Carbon Pricing" if i == 0 else "",
+        hoverinfo="skip",
     ))
 
 OTHER_MECHS = ["CBAM", "Tax Incentives", "Fuel Mandates", "Feebates", "VCM project", "AMC"]
