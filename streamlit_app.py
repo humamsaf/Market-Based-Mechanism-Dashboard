@@ -298,7 +298,6 @@ def render_country_card(country, region, long_df):
         <div style="font-size:12px;color:#888;margin-bottom:14px;">{region}</div>
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
             <div style="background:{cp_color};color:#333;padding:5px 14px;border-radius:6px;font-weight:600;font-size:12px;border:1.5px solid #222;">{cp_type}</div>
-            <div style="background:#1a1a2e;color:white;padding:5px 14px;border-radius:6px;font-weight:700;font-size:12px;border:1.5px solid #222;">{n} MECHANISM{'S' if n != 1 else ''}</div>
         </div>
         {f'<div style="display:flex;gap:6px;flex-wrap:wrap;"><div style="font-size:11px;color:#aaa;width:100%;margin-bottom:4px;">Other mechanisms:</div>{boxes}</div>' if boxes else ''}
     </div>
