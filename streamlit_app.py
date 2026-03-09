@@ -846,6 +846,12 @@ def page_mbm():
             </div>""", unsafe_allow_html=True)
 
     st.divider()
+    st.markdown("""
+    <div style="margin-bottom:20px;">
+        <div style="font-size:28px;font-weight:900;color:#1a1a2e;margin-bottom:4px;">Summary</div>
+        <div style="font-size:13px;color:#999;">Overview of market-based mechanism distribution across countries.</div>
+    </div>
+    """, unsafe_allow_html=True)
 
     c1, c2 = st.columns(2)
     with c1:
