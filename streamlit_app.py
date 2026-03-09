@@ -289,7 +289,7 @@ def render_country_card(country, region, long_df):
         tc = "white" if bg not in ("#90be6d", "#f0f0f0") else "#333"
         boxes += f'<div style="background:{bg};color:{tc};padding:5px 12px;border-radius:6px;font-weight:700;font-size:12px;border:1.5px solid #222;white-space:nowrap;">{m}</div>'
     st.markdown(f"""
-    <div style="background:white; border-radius:8px; padding:12px 4px; margin-bottom:12px;">
+    <div style="background:white;border:2px solid #e0e0e0;border-radius:12px;padding:20px 16px;box-shadow:0 2px 12px rgba(0,0,0,0.06);margin-bottom:12px;">
         <div style="font-size:22px;font-weight:800;color:#1a1a2e;letter-spacing:1px;margin-bottom:4px;">{country.upper()}</div>
         <div style="font-size:12px;color:#888;margin-bottom:14px;">{region}</div>
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
@@ -463,7 +463,7 @@ def page_mbm():
         legend=dict(
             title="<b>Legend</b>",
             bgcolor="rgba(255,255,255,0.85)", bordercolor="rgba(0,0,0,0)", borderwidth=0,
-            x=0.01, y=0.01, xanchor="left", yanchor="bottom",
+            x=0.99, y=0.01, xanchor="right", yanchor="bottom",
             font=dict(size=10), tracegroupgap=3, itemsizing="constant",
         ),
         clickmode="event+select",
@@ -491,7 +491,6 @@ def page_mbm():
                 elif txt:
                     selected_country = txt
 
-        st.markdown('<div style="height:520px; overflow-y:auto; border:2px solid #e0e0e0; border-radius:12px; padding:16px; background:white;">', unsafe_allow_html=True)
         if selected_country:
             region_val = wide[wide["Country"] == selected_country]["Region"].iloc[0] \
                 if selected_country in wide["Country"].values else "—"
@@ -499,15 +498,17 @@ def page_mbm():
         else:
             st.markdown("""
             <div style="
-                height:100%; display:flex; flex-direction:column;
+                background:#f8f9fa; border:2px dashed #ddd;
+                border-radius:12px;
+                text-align:center; color:#bbb;
+                height:520px;
+                display:flex; flex-direction:column;
                 justify-content:center; align-items:center;
-                text-align:center; color:#bbb; padding:40px 0;
             ">
                 <div style="font-size:36px; margin-bottom:12px;">🗺️</div>
                 <div style="font-size:14px; font-weight:600; color:#999;">Click a country</div>
                 <div style="font-size:12px; margin-top:6px; color:#bbb;">to see its mechanisms</div>
             </div>""", unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
 
     st.divider()
 
