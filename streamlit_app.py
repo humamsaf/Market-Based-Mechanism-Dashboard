@@ -689,19 +689,10 @@ def page_mbm():
         df_m = pd.DataFrame(rows)
 
         if mech == "VCM project":
-            # Layer 1: filled circle (green background)
             fig_map.add_trace(go.Scattergeo(
                 lat=df_m["lat"], lon=df_m["lon"], mode="markers",
-                marker=dict(symbol="circle", color="#2a9d8f", size=style["size"]+1,
-                            line=dict(width=0, color="#000000"), opacity=1.0),
-                text=df_m["country"], hoverinfo="skip",
-                name=mech, showlegend=False, legendgroup="vcm",
-            ))
-            # Layer 2: asterisk on top (black lines, no fill)
-            fig_map.add_trace(go.Scattergeo(
-                lat=df_m["lat"], lon=df_m["lon"], mode="markers",
-                marker=dict(symbol="asterisk", color="#000000", size=style["size"]+2,
-                            line=dict(width=1.2, color="#000000"), opacity=1.0),
+                marker=dict(symbol="asterisk", color="#2a9d8f", size=style["size"],
+                            line=dict(width=1.0, color="#000000"), opacity=1.0),
                 text=df_m["country"], hoverinfo="skip",
                 name=mech, showlegend=True, legendgroup="other",
                 legendgrouptitle_text="Other mechanisms" if i == 0 else "",
