@@ -308,21 +308,11 @@ if type_sel:     f = f[f["mechanism_type"].isin(type_sel)]
 if country_sel:  f = f[f["Country"].isin(country_sel)]
 if keyword:      f = f[f["mechanism_detail"].str.contains(keyword, case=False, na=False)]
 
-# ===== KPIs
-k1, k2, k3, k4 = st.columns(4)
-k1.metric("Countries covered", int(wide["Country"].nunique()))
+# ===== Map
+
 wide_view = wide.copy()
 if region_sel:   wide_view = wide_view[wide_view["Region"].isin(region_sel)]
 if country_sel:  wide_view = wide_view[wide_view["Country"].isin(country_sel)]
-k2.metric("Countries in view", int(wide_view["Country"].nunique()))
-k3.metric("Mechanism types in view", int(f["mechanism_type"].nunique()))
-vcm_sum = f.loc[f["mechanism_type"] == "VCM project", "vcm_projects"].sum(min_count=1)
-k4.metric("VCM projects (sum)", 0 if pd.isna(vcm_sum) else int(vcm_sum))
-
-st.divider()
-
-# ===== Map
-
 
 country_mechs_map = f.groupby("Country")["mechanism_type"].apply(set).to_dict()
 
@@ -503,6 +493,19 @@ else:
         🗺️ &nbsp;<b>Click a country</b> on the map to see its mechanisms
     </div>
     """, unsafe_allow_html=True)
+
+st.divider()
+
+# ===== KPIs
+wide_view = wide.copy()
+if region_sel:   wide_view = wide_view[wide_view["Region"].isin(region_sel)]
+if country_sel:  wide_view = wide_view[wide_view["Country"].isin(country_sel)]
+k1, k2, k3, k4 = st.columns(4)
+k1.metric("Countries covered", int(wide["Country"].nunique()))
+k2.metric("Countries in view", int(wide_view["Country"].nunique()))
+k3.metric("Mechanism types in view", int(f["mechanism_type"].nunique()))
+vcm_sum = f.loc[f["mechanism_type"] == "VCM project", "vcm_projects"].sum(min_count=1)
+k4.metric("VCM projects (sum)", 0 if pd.isna(vcm_sum) else int(vcm_sum))
 
 st.divider()
 
