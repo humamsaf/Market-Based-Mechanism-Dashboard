@@ -367,7 +367,17 @@ def page_mbm():
                 <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">Countries with Both</div>
             </div>
         </div>
-        <a onclick="var el=document.getElementById('map-section'); var y=el.getBoundingClientRect().top+window.scrollY-120; window.scrollTo({{top:y,behavior:'smooth'}}); return false;"
+        <a onclick="
+            var el = document.getElementById('map-section');
+            var container = window.parent.document.querySelector('.main');
+            if (!container) container = window.parent.document.querySelector('[data-testid=stAppViewContainer]');
+            if (container) {{
+                var y = el.getBoundingClientRect().top + container.scrollTop - 120;
+                container.scrollTo({{top: y, behavior: 'smooth'}});
+            }} else {{
+                window.parent.scrollTo({{top: el.getBoundingClientRect().top + window.parent.scrollY - 120, behavior: 'smooth'}});
+            }}
+            return false;"
            href="#map-section"
            style="
                display:inline-flex; align-items:center; gap:10px;
