@@ -419,7 +419,7 @@ def page_mbm():
         ))
 
     fig_map.update_layout(
-        height=560, margin=dict(l=0,r=0,t=0,b=0),
+        height=620, margin=dict(l=0,r=0,t=0,b=0),
         paper_bgcolor="white", uirevision="map_fixed", dragmode=False,
         geo=dict(
             projection_type="equirectangular",
@@ -434,8 +434,9 @@ def page_mbm():
         ),
         legend=dict(
             title="<b>Legend</b>",
-            bgcolor="rgba(255,255,255,0.75)", bordercolor="rgba(0,0,0,0)", borderwidth=0,
-            x=0.01, y=0.38, font=dict(size=11), tracegroupgap=4, itemsizing="constant",
+            bgcolor="rgba(255,255,255,0.85)", bordercolor="rgba(0,0,0,0)", borderwidth=0,
+            x=0.01, y=0.99, xanchor="left", yanchor="top",
+            font=dict(size=11), tracegroupgap=4, itemsizing="constant",
         ),
         clickmode="event+select",
     )
