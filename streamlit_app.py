@@ -350,23 +350,23 @@ def page_mbm():
             </div>
             <div style="width:1px; height:60px; background:#e0e0e0;"></div>
             <div>
-                <div style="font-size:56px; font-weight:900; color:#1a1a2e; line-height:1;">{n_mechs}</div>
+                <div style="font-size:56px; font-weight:900; color:#2d4a6b; line-height:1;">{n_mechs}</div>
                 <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">Mechanism Types</div>
             </div>
             <div style="width:1px; height:60px; background:#e0e0e0;"></div>
             <div>
                 <div style="font-size:56px; font-weight:900; color:#457b9d; line-height:1;">{n_ets}</div>
-                <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">ETS Only</div>
+                <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">Countries with ETS</div>
             </div>
             <div style="width:1px; height:60px; background:#e0e0e0;"></div>
             <div>
-                <div style="font-size:56px; font-weight:900; color:#90be6d; line-height:1;">{n_ctx}</div>
-                <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">Carbon Tax Only</div>
+                <div style="font-size:56px; font-weight:900; color:#5a8a3a; line-height:1;">{n_ctx}</div>
+                <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">Countries with Carbon Tax</div>
             </div>
             <div style="width:1px; height:60px; background:#e0e0e0;"></div>
             <div>
-                <div style="font-size:56px; font-weight:900; color:#f4a261; line-height:1;">{n_both}</div>
-                <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">ETS + Carbon Tax</div>
+                <div style="font-size:56px; font-weight:900; color:#c97a3a; line-height:1;">{n_both}</div>
+                <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">Countries with Both</div>
             </div>
         </div>
         <a onclick="document.getElementById('map-section').scrollIntoView({{behavior:'smooth'}}); return false;"
