@@ -367,7 +367,7 @@ def page_mbm():
                 <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">Countries with Both</div>
             </div>
         </div>
-        <a onclick="document.getElementById('map-section').scrollIntoView({{behavior:'smooth'}}); return false;"
+        <a onclick="var el=document.getElementById('map-section'); var y=el.getBoundingClientRect().top+window.scrollY-70; window.scrollTo({{top:y,behavior:'smooth'}}); return false;"
            href="#map-section"
            style="
                display:inline-flex; align-items:center; gap:10px;
