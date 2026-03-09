@@ -307,30 +307,49 @@ def render_mechanism_details(country, mechs):
     # ETS
     if "ETS" in mechs:
         ets_rows = details["ets"][details["ets"]["country"] == country]
-        for _, r in ets_rows.iterrows():
-            price = str(r["price"]).strip() if pd.notna(r["price"]) else "N/A"
-            start = int(r["start_date"]) if pd.notna(r["start_date"]) else "—"
-            sectors = str(r["sectors"])[:80] + "…" if pd.notna(r["sectors"]) and len(str(r["sectors"])) > 80 else str(r["sectors"]) if pd.notna(r["sectors"]) else "—"
-            rows += f"""
-            <div style="border-left:3px solid #457b9d;padding:10px 12px;margin-bottom:10px;background:#f7fafd;border-radius:0 8px 8px 0;">
-                <div style="font-size:12px;font-weight:800;color:#457b9d;margin-bottom:6px;">🏭 ETS — {r['name']}</div>
-                <div>{tag("Price", price, "#ddeef8", "#1a3a4a")} {tag("Since", start, "#e8f0fe", "#1a2a5e")}</div>
-                <div style="font-size:11px;color:#777;margin-top:4px;">Sectors: {sectors}</div>
-            </div>"""
+        if not ets_rows.empty:
+            if len(ets_rows) == 1:
+                r = ets_rows.iloc[0]
+                price = str(r["price"]).strip() if pd.notna(r["price"]) else "N/A"
+                start = int(r["start_date"]) if pd.notna(r["start_date"]) else "—"
+                sectors = str(r["sectors"])[:80] + "…" if pd.notna(r["sectors"]) and len(str(r["sectors"])) > 80 else (str(r["sectors"]) if pd.notna(r["sectors"]) else "—")
+                rows += f"""
+                <div style="border-left:3px solid #457b9d;padding:10px 12px;margin-bottom:10px;background:#f7fafd;border-radius:0 8px 8px 0;">
+                    <div style="font-size:12px;font-weight:800;color:#457b9d;margin-bottom:6px;">🏭 ETS — {r['name']}</div>
+                    <div>{tag("Price", price, "#ddeef8", "#1a3a4a")} {tag("Since", start, "#e8f0fe", "#1a2a5e")}</div>
+                    <div style="font-size:11px;color:#777;margin-top:4px;">Sectors: {sectors}</div>
+                </div>"""
+            else:
+                # Multiple ETS — collapse into one card
+                names_html = "".join(f'<div style="font-size:11px;color:#444;padding:4px 0;border-bottom:1px solid #e8f0f8;"><b>{r["name"]}</b> <span style="color:#888;font-size:10px;">({int(r["start_date"]) if pd.notna(r["start_date"]) else "—"})</span> — <span style="color:#457b9d;">{str(r["price"]).strip() if pd.notna(r["price"]) else "N/A"}</span></div>' for _, r in ets_rows.iterrows())
+                rows += f"""
+                <div style="border-left:3px solid #457b9d;padding:10px 12px;margin-bottom:10px;background:#f7fafd;border-radius:0 8px 8px 0;">
+                    <div style="font-size:12px;font-weight:800;color:#457b9d;margin-bottom:8px;">🏭 ETS — {len(ets_rows)} schemes</div>
+                    {names_html}
+                </div>"""
 
     # Carbon Tax
     if "Carbon Tax" in mechs:
         ctx_rows = details["ctx"][details["ctx"]["country"] == country]
-        for _, r in ctx_rows.iterrows():
-            price = str(r["price"]).strip() if pd.notna(r["price"]) else "N/A"
-            start = int(r["start_date"]) if pd.notna(r["start_date"]) else "—"
-            sectors = str(r["sectors"])[:80] + "…" if pd.notna(r["sectors"]) and len(str(r["sectors"])) > 80 else str(r["sectors"]) if pd.notna(r["sectors"]) else "—"
-            rows += f"""
-            <div style="border-left:3px solid #5a8a3a;padding:10px 12px;margin-bottom:10px;background:#f7fdf4;border-radius:0 8px 8px 0;">
-                <div style="font-size:12px;font-weight:800;color:#5a8a3a;margin-bottom:6px;">💰 Carbon Tax — {r['name']}</div>
-                <div>{tag("Price", price, "#e0f0d8", "#2a4a1a")} {tag("Since", start, "#e8f0fe", "#1a2a5e")}</div>
-                <div style="font-size:11px;color:#777;margin-top:4px;">Sectors: {sectors}</div>
-            </div>"""
+        if not ctx_rows.empty:
+            if len(ctx_rows) == 1:
+                r = ctx_rows.iloc[0]
+                price = str(r["price"]).strip() if pd.notna(r["price"]) else "N/A"
+                start = int(r["start_date"]) if pd.notna(r["start_date"]) else "—"
+                sectors = str(r["sectors"])[:80] + "…" if pd.notna(r["sectors"]) and len(str(r["sectors"])) > 80 else (str(r["sectors"]) if pd.notna(r["sectors"]) else "—")
+                rows += f"""
+                <div style="border-left:3px solid #5a8a3a;padding:10px 12px;margin-bottom:10px;background:#f7fdf4;border-radius:0 8px 8px 0;">
+                    <div style="font-size:12px;font-weight:800;color:#5a8a3a;margin-bottom:6px;">💰 Carbon Tax — {r['name']}</div>
+                    <div>{tag("Price", price, "#e0f0d8", "#2a4a1a")} {tag("Since", start, "#e8f0fe", "#1a2a5e")}</div>
+                    <div style="font-size:11px;color:#777;margin-top:4px;">Sectors: {sectors}</div>
+                </div>"""
+            else:
+                names_html = "".join(f'<div style="font-size:11px;color:#444;padding:4px 0;border-bottom:1px solid #e4f0da;"><b>{r["name"]}</b> <span style="color:#888;font-size:10px;">({int(r["start_date"]) if pd.notna(r["start_date"]) else "—"})</span> — <span style="color:#5a8a3a;">{str(r["price"]).strip() if pd.notna(r["price"]) else "N/A"}</span></div>' for _, r in ctx_rows.iterrows())
+                rows += f"""
+                <div style="border-left:3px solid #5a8a3a;padding:10px 12px;margin-bottom:10px;background:#f7fdf4;border-radius:0 8px 8px 0;">
+                    <div style="font-size:12px;font-weight:800;color:#5a8a3a;margin-bottom:8px;">💰 Carbon Tax — {len(ctx_rows)} schemes</div>
+                    {names_html}
+                </div>"""
 
     # Fuel Mandates
     if "Fuel Mandates" in mechs:
