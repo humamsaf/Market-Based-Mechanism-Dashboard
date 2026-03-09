@@ -287,20 +287,20 @@ st.caption(
     "Coverage: 194 countries and territories. Click a country on the map to see details."
 )
 
-# ===== Sidebar
-st.sidebar.header("Filters")
-region_sel  = st.sidebar.multiselect("Region",         sorted(long["Region"].dropna().unique()), key="f_region")
-type_sel    = st.sidebar.multiselect("Mechanism type", sorted(long["mechanism_type"].dropna().unique()), key="f_type")
-country_sel = st.sidebar.multiselect("Country",        sorted(long["Country"].dropna().unique()), key="f_country")
-keyword     = st.sidebar.text_input("Search in details", value="", key="f_kw").strip()
-st.sidebar.caption(
-    f"Active filters → Region:{len(region_sel)} | Type:{len(type_sel)} | Country:{len(country_sel)} | Keyword:'{keyword}'"
-)
-
-if st.sidebar.button("Reset filters", use_container_width=True):
-    for k in ["f_region", "f_type", "f_country", "f_kw"]:
-        st.session_state.pop(k, None)
-    st.rerun()
+# ===== Filters (di atas peta)
+fc1, fc2, fc3, fc4 = st.columns([2, 2, 2, 1])
+with fc1:
+    region_sel  = st.multiselect("Region",         sorted(long["Region"].dropna().unique()), key="f_region")
+with fc2:
+    type_sel    = st.multiselect("Mechanism type", sorted(long["mechanism_type"].dropna().unique()), key="f_type")
+with fc3:
+    country_sel = st.multiselect("Country",        sorted(long["Country"].dropna().unique()), key="f_country")
+with fc4:
+    keyword     = st.text_input("Search in details", value="", key="f_kw").strip()
+    if st.button("Reset filters", use_container_width=True):
+        for k in ["f_region", "f_type", "f_country", "f_kw"]:
+            st.session_state.pop(k, None)
+        st.rerun()
 
 f = long.copy()
 if region_sel:   f = f[f["Region"].isin(region_sel)]
