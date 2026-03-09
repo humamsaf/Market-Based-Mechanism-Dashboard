@@ -423,6 +423,7 @@ fig_map.update_layout(
     margin=dict(l=0, r=0, t=0, b=0),
     paper_bgcolor="white",
     uirevision="map_fixed",
+    dragmode=False,
     geo=dict(
         projection_type="equirectangular",
         showframe=True,
@@ -439,13 +440,14 @@ fig_map.update_layout(
         showocean=False,
         showlakes=False,
         bgcolor="white",
-        lataxis=dict(range=[-60, 85]),
-        lonaxis=dict(range=[-180, 180]),
+        lataxis=dict(range=[-60, 85], showgrid=False),
+        lonaxis=dict(range=[-180, 180], showgrid=False),
+        projection_scale=1,
     ),
     legend=dict(
         title="<b>Legend</b>",
-        bgcolor="rgba(255,255,255,0.75)",  # semi-transparan, menyatu dengan peta
-        bordercolor="rgba(0,0,0,0)",       # tidak ada border kotak
+        bgcolor="rgba(255,255,255,0.75)",
+        bordercolor="rgba(0,0,0,0)",
         borderwidth=0,
         x=0.01,
         y=0.38,
@@ -462,7 +464,11 @@ clicked = st.plotly_chart(
     key="map_qgis",
     on_select="rerun",
     selection_mode="points",
-    config={"scrollZoom": True, "doubleClick": False},
+    config={
+        "scrollZoom": False,       # matikan scroll zoom
+        "doubleClick": False,      # matikan double click reset
+        "displayModeBar": False,   # sembunyikan toolbar (hapus tombol zoom dll)
+    },
 )
 
 # ===== Detail card di bawah peta
