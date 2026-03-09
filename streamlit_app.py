@@ -327,7 +327,7 @@ def page_mbm():
         min-height: 80vh;
         display:flex; flex-direction:column; justify-content:center; align-items:center;
         background-image:
-            linear-gradient(rgba(255,255,255,0.82), rgba(255,255,255,0.82)),
+            linear-gradient(rgba(255,255,255,0.55), rgba(255,255,255,0.55)),
             url('https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/World_map_-_low_resolution.svg/2560px-World_map_-_low_resolution.svg.png');
         background-size: cover;
         background-position: center;
