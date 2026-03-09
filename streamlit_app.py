@@ -447,7 +447,7 @@ def page_mbm():
         ))
 
     fig_map.update_layout(
-        height=620, margin=dict(l=0,r=0,t=0,b=0),
+        height=520, margin=dict(l=0,r=0,t=0,b=0),
         paper_bgcolor="white", uirevision="map_fixed", dragmode=False,
         geo=dict(
             projection_type="equirectangular",
@@ -464,39 +464,51 @@ def page_mbm():
             title="<b>Legend</b>",
             bgcolor="rgba(255,255,255,0.85)", bordercolor="rgba(0,0,0,0)", borderwidth=0,
             x=0.01, y=0.01, xanchor="left", yanchor="bottom",
-            font=dict(size=11), tracegroupgap=4, itemsizing="constant",
+            font=dict(size=10), tracegroupgap=3, itemsizing="constant",
         ),
         clickmode="event+select",
     )
 
-    clicked = st.plotly_chart(
-        fig_map, use_container_width=True, key="map_qgis",
-        on_select="rerun", selection_mode="points",
-        config={"scrollZoom": False, "doubleClick": False, "displayModeBar": False},
-    )
+    col_map, col_card = st.columns([3, 1.2])
 
-    selected_country = None
-    if clicked and clicked.get("selection") and clicked["selection"].get("points"):
-        pts = clicked["selection"]["points"]
-        if pts:
-            pt = pts[0]
-            cd = pt.get("customdata")
-            txt = pt.get("text")
-            if cd and isinstance(cd, (list, tuple)) and len(cd) > 0:
-                selected_country = cd[0]
-            elif txt:
-                selected_country = txt
+    with col_map:
+        clicked = st.plotly_chart(
+            fig_map, use_container_width=True, key="map_qgis",
+            on_select="rerun", selection_mode="points",
+            config={"scrollZoom": False, "doubleClick": False, "displayModeBar": False},
+        )
 
-    if selected_country:
-        region_val = wide[wide["Country"] == selected_country]["Region"].iloc[0] \
-            if selected_country in wide["Country"].values else "—"
-        render_country_card(selected_country, region_val, long)
-    else:
-        st.markdown("""
-        <div style="background:#f8f9fa;border:2px dashed #ccc;border-radius:10px;
-            padding:20px 24px;text-align:center;color:#aaa;margin-top:8px;">
-            🗺️ &nbsp;<b>Click a country</b> on the map to see its mechanisms
-        </div>""", unsafe_allow_html=True)
+    with col_card:
+        selected_country = None
+        if clicked and clicked.get("selection") and clicked["selection"].get("points"):
+            pts = clicked["selection"]["points"]
+            if pts:
+                pt = pts[0]
+                cd = pt.get("customdata")
+                txt = pt.get("text")
+                if cd and isinstance(cd, (list, tuple)) and len(cd) > 0:
+                    selected_country = cd[0]
+                elif txt:
+                    selected_country = txt
+
+        if selected_country:
+            region_val = wide[wide["Country"] == selected_country]["Region"].iloc[0] \
+                if selected_country in wide["Country"].values else "—"
+            render_country_card(selected_country, region_val, long)
+        else:
+            st.markdown("""
+            <div style="
+                background:#f8f9fa; border:2px dashed #ddd;
+                border-radius:12px; padding:40px 20px;
+                text-align:center; color:#bbb;
+                height:100%; min-height:300px;
+                display:flex; flex-direction:column;
+                justify-content:center; align-items:center;
+            ">
+                <div style="font-size:32px; margin-bottom:12px;">🗺️</div>
+                <div style="font-size:14px; font-weight:600; color:#999;">Click a country</div>
+                <div style="font-size:12px; margin-top:6px; color:#bbb;">to see its mechanisms</div>
+            </div>""", unsafe_allow_html=True)
 
     st.divider()
 
