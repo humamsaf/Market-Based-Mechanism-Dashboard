@@ -338,17 +338,17 @@ def page_mbm():
         <div style="font-size:72px; font-weight:900; color:#1a1a2e; line-height:1.05; letter-spacing:-2px; margin-bottom:48px; white-space:nowrap;">
             Global Market-Based Mechanisms Dashboard
         </div>
-        <div style="font-size:18px; color:#666; max-width:1100px; margin:0 auto 40px auto; line-height:1.8; font-weight:400;">
-            A market-based mechanism (MBM) is a climate policy instrument that uses market principles to create economic incentives for reducing greenhouse gas emissions<br>by allowing the trading or valuation of emission reductions or emission rights.
+        <div style="font-size:18px; color:#666; max-width:900px; margin:0 auto 40px auto; line-height:1.8; font-weight:400;">
+            A market-based mechanism (MBM) is a climate policy instrument that uses market principles<br>to create economic incentives for reducing greenhouse gas emissions by allowing the trading or valuation of emission reductions or emission rights.
         </div>
         <div style="display:flex; justify-content:center; gap:48px; flex-wrap:wrap; margin-bottom:48px; align-items:center;">
             <div>
-                <div style="font-size:56px; font-weight:900; color:#2c7bb6; line-height:1;">{n_countries}</div>
+                <div style="font-size:56px; font-weight:900; color:#1a1a2e; line-height:1;">{n_countries}</div>
                 <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">Countries Covered</div>
             </div>
             <div style="width:1px; height:60px; background:#e0e0e0;"></div>
             <div>
-                <div style="font-size:56px; font-weight:900; color:#2d4a6b; line-height:1;">{n_mechs}</div>
+                <div style="font-size:56px; font-weight:900; color:#1a1a2e; line-height:1;">{n_mechs}</div>
                 <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">Mechanism Types</div>
             </div>
             <div style="width:1px; height:60px; background:#e0e0e0;"></div>
