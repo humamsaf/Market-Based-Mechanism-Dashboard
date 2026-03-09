@@ -94,9 +94,8 @@ st.markdown(f"""
     <a class="navbar-brand" href="?page=mbm">🌍 MBM<span>Market-Based Mechanisms</span></a>
     <div class="nav-links">
         {nav_link("MBM", "mbm", "🗺️")}
-        {nav_link("CORSIA", "corsia", "✈️")}
-        {nav_link("CDM", "cdm", "🌱")}
-        {nav_link("IMO", "imo", "🚢")}
+        {nav_link("ETS", "ets", "")}
+        {nav_link("CBAM", "cbam", "")}
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -898,19 +897,350 @@ def page_mbm():
             use_container_width=True, key="pie_cp")
 
 
+
 def page_placeholder(title, icon):
     st.title(f"{icon} {title}")
     st.info("🚧 This page is under construction.")
 
 
+@st.cache_data
+def load_ets_data():
+    xl = pd.ExcelFile(FILE_PATH)
+    ets = xl.parse("1.a ETS")
+    ets.columns = [str(c).strip() for c in ets.columns]
+    ets = ets.rename(columns={
+        "Instrument name": "name",
+        "Jurisdiction": "country",
+        "Region": "region",
+        "Start date": "start_date",
+        "Price rate ": "price",
+        "Sector coverage": "sectors",
+        "Allocation method": "allocation",
+        "Government revenue (2024)": "revenue",
+        "Cap Emission ": "cap",
+        "Description": "description",
+        "GHG": "ghg",
+        "Share of jurisdiction's": "share",
+    })
+    ets = ets[ets["country"].notna()].copy()
+    # Parse numeric price (extract first USD number)
+    import re
+    def parse_price(p):
+        if pd.isna(p): return None
+        m = re.search(r"[\d]+\.?\d*", str(p))
+        return float(m.group()) if m else None
+    ets["price_num"] = ets["price"].apply(parse_price)
+    ets["start_date"] = pd.to_numeric(ets["start_date"], errors="coerce")
+    return ets
+
+
+def page_ets():
+    ets = load_ets_data()
+
+    n_schemes  = len(ets)
+    n_countries = ets["country"].nunique()
+    avg_price  = ets["price_num"].dropna().mean()
+    oldest     = int(ets["start_date"].dropna().min())
+    total_rev  = "USD 68+ billion"  # approximate from data
+
+    # ── Hero ──────────────────────────────────────────────────────
+    st.markdown(f"""
+    <div style="padding:56px 0 40px 0;border-bottom:1px solid #e8e8e8;margin-bottom:40px;">
+        <div style="font-size:13px;font-weight:700;color:#457b9d;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;">Carbon Pricing Instrument</div>
+        <div style="font-size:56px;font-weight:900;color:#1a1a2e;line-height:1.05;margin-bottom:20px;">Emissions Trading<br>Systems (ETS)</div>
+        <div style="font-size:15px;color:#555;max-width:760px;line-height:1.8;margin-bottom:36px;">
+            An Emissions Trading System is a market-based approach to controlling pollution by providing economic incentives
+            for reducing emissions. Governments set a cap on total emissions and issue allowances. Companies must hold
+            allowances equal to their emissions — they can trade these allowances, creating a carbon price signal.
+        </div>
+        <div style="display:flex;gap:48px;flex-wrap:wrap;align-items:flex-start;">
+            <div>
+                <div style="font-size:48px;font-weight:900;color:#457b9d;line-height:1;">{n_schemes}</div>
+                <div style="font-size:11px;color:#999;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-top:4px;">Active Schemes</div>
+            </div>
+            <div style="width:1px;height:50px;background:#e0e0e0;"></div>
+            <div>
+                <div style="font-size:48px;font-weight:900;color:#1a1a2e;line-height:1;">{n_countries}</div>
+                <div style="font-size:11px;color:#999;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-top:4px;">Jurisdictions</div>
+            </div>
+            <div style="width:1px;height:50px;background:#e0e0e0;"></div>
+            <div>
+                <div style="font-size:48px;font-weight:900;color:#5a8a3a;line-height:1;">USD {avg_price:.0f}</div>
+                <div style="font-size:11px;color:#999;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-top:4px;">Avg. Carbon Price</div>
+            </div>
+            <div style="width:1px;height:50px;background:#e0e0e0;"></div>
+            <div>
+                <div style="font-size:48px;font-weight:900;color:#c97a3a;line-height:1;">{oldest}</div>
+                <div style="font-size:11px;color:#999;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-top:4px;">First ETS Year</div>
+            </div>
+            <div style="width:1px;height:50px;background:#e0e0e0;"></div>
+            <div>
+                <div style="font-size:48px;font-weight:900;color:#1a1a2e;line-height:1;">{total_rev}</div>
+                <div style="font-size:11px;color:#999;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-top:4px;">Revenue (2024)</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ── Timeline ──────────────────────────────────────────────────
+    st.markdown("""
+    <div style="font-size:28px;font-weight:900;color:#1a1a2e;margin-bottom:4px;">ETS Timeline</div>
+    <div style="font-size:13px;color:#999;margin-bottom:16px;">Year each ETS scheme was established.</div>
+    """, unsafe_allow_html=True)
+
+    timeline_df = ets[ets["start_date"].notna()].sort_values("start_date").copy()
+    REGION_COLORS = {
+        "North America":              "#4a90d9",
+        "East Asia & Pacific":        "#2a9d8f",
+        "Europe & Central Asia":      "#457b9d",
+        "Latin America & Caribbean":  "#e07b00",
+    }
+    tl_colors = [REGION_COLORS.get(r, "#888") for r in timeline_df["region"]]
+    fig_tl = go.Figure()
+    for region, color in REGION_COLORS.items():
+        sub = timeline_df[timeline_df["region"] == region]
+        if sub.empty: continue
+        fig_tl.add_trace(go.Scatter(
+            x=sub["start_date"], y=sub["name"],
+            mode="markers+text",
+            marker=dict(size=12, color=color, line=dict(width=1, color="#222")),
+            text=sub["price"].fillna("N/A"),
+            textposition="middle right",
+            textfont=dict(size=9, color="#555"),
+            name=region,
+            hovertemplate="<b>%{y}</b><br>%{x}<br>Price: %{text}<extra></extra>",
+        ))
+    fig_tl.update_layout(
+        height=520, margin=dict(l=0, r=120, t=10, b=0),
+        paper_bgcolor="white", plot_bgcolor="white",
+        xaxis=dict(title="Year", showgrid=True, gridcolor="#f0f0f0", dtick=2),
+        yaxis=dict(title="", showgrid=False, tickfont=dict(size=10)),
+        legend=dict(bgcolor="rgba(255,255,255,0.9)", bordercolor="#e0e0e0",
+                    borderwidth=1, font=dict(size=11)),
+        hoverlabel=dict(bgcolor="white", bordercolor="#ccc", font=dict(size=12), align="left"),
+    )
+    st.plotly_chart(fig_tl, use_container_width=True, key="ets_timeline",
+                    config={"displayModeBar": False})
+
+    st.divider()
+
+    # ── Map + Detail Card ─────────────────────────────────────────
+    st.markdown("""
+    <div style="margin-bottom:16px;">
+        <div style="font-size:28px;font-weight:900;color:#1a1a2e;margin-bottom:4px;">ETS Global Map</div>
+        <div style="font-size:13px;color:#999;">Countries with active ETS schemes. Click a country to see details.</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Filters
+    regions_all = sorted(ets["region"].dropna().unique())
+    countries_all = sorted(ets["country"].dropna().unique())
+
+    if "ets_reset" not in st.session_state:
+        st.session_state["ets_reset"] = 0
+    rc = st.session_state["ets_reset"]
+
+    fc1, fc2, fc3 = st.columns([2, 2, 0.7])
+    with fc1:
+        region_sel = st.multiselect("Region", regions_all, key=f"ets_region_{rc}", placeholder="All regions")
+    with fc2:
+        country_sel = st.multiselect("Country", countries_all, key=f"ets_country_{rc}", placeholder="All countries")
+    with fc3:
+        st.markdown('<div style="height:28px"></div>', unsafe_allow_html=True)
+        if st.button("↺ Reset", key="ets_reset_btn", use_container_width=True):
+            st.session_state["ets_reset"] += 1
+            st.rerun()
+
+    f_ets = ets.copy()
+    if region_sel:  f_ets = f_ets[f_ets["region"].isin(region_sel)]
+    if country_sel: f_ets = f_ets[f_ets["country"].isin(country_sel)]
+
+    # Build map
+    country_ets_map = f_ets.groupby("country")["name"].apply(list).to_dict()
+    country_price_map = f_ets.groupby("country")["price_num"].mean().to_dict()
+
+    map_rows = []
+    for country, schemes in country_ets_map.items():
+        iso3 = to_iso3(country)
+        if iso3:
+            n = len(schemes)
+            avg_p = country_price_map.get(country)
+            map_rows.append({
+                "iso3": iso3, "country": country,
+                "n_schemes": n, "avg_price": avg_p,
+                "schemes_str": "<br>".join(f"  · {s}" for s in schemes),
+            })
+
+    map_df = pd.DataFrame(map_rows) if map_rows else pd.DataFrame()
+
+    fig_ets_map = go.Figure()
+    if not map_df.empty:
+        # Color by number of schemes
+        fig_ets_map.add_trace(go.Choropleth(
+            locations=map_df["iso3"],
+            z=map_df["n_schemes"],
+            colorscale=[[0, "#c6dff0"], [0.5, "#457b9d"], [1, "#1a3a5e"]],
+            showscale=True,
+            colorbar=dict(title="Schemes", thickness=12, len=0.5,
+                          tickfont=dict(size=10)),
+            hovertemplate=(
+                "<b>%{customdata[0]}</b><br>"
+                "%{customdata[1]} scheme(s)<br>"
+                "─────────────<br>"
+                "%{customdata[2]}<extra></extra>"
+            ),
+            customdata=map_df[["country", "n_schemes", "schemes_str"]].values,
+            marker_line_color="#111", marker_line_width=1.2,
+        ))
+
+    fig_ets_map.update_layout(
+        height=460, margin=dict(l=0, r=0, t=0, b=0),
+        paper_bgcolor="white",
+        hoverlabel=dict(bgcolor="white", bordercolor="#ccc",
+                        font=dict(size=12), align="left"),
+        geo=dict(
+            projection_type="equirectangular", showframe=False,
+            showcoastlines=True, coastlinecolor="#333", coastlinewidth=1.2,
+            showcountries=True, countrycolor="#333", countrywidth=1.2,
+            showland=True, landcolor="#f5f5f5",
+            showocean=False, bgcolor="white",
+            lataxis=dict(range=[-60, 85], showgrid=False),
+            lonaxis=dict(range=[-180, 180], showgrid=False),
+        ),
+    )
+
+    col_map, col_card = st.columns([3, 1.2])
+    with col_map:
+        clicked = st.plotly_chart(fig_ets_map, use_container_width=True,
+                                  key="ets_map", on_select="rerun",
+                                  selection_mode="points",
+                                  config={"scrollZoom": False, "doubleClick": False,
+                                          "displayModeBar": False})
+    with col_card:
+        selected = None
+        if clicked and clicked.get("selection") and clicked["selection"].get("points"):
+            pts = clicked["selection"]["points"]
+            if pts:
+                cd = pts[0].get("customdata")
+                if cd and len(cd) > 0:
+                    selected = cd[0]
+        if not selected and len(country_sel) == 1:
+            selected = country_sel[0]
+
+        st.markdown("""
+        <div style="margin-bottom:12px;">
+            <div style="font-size:16px;font-weight:800;color:#1a1a2e;margin-bottom:4px;">Scheme Detail</div>
+            <div style="font-size:12px;color:#999;">Click a country to explore its ETS schemes.</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        if selected:
+            schemes = f_ets[f_ets["country"] == selected]
+            st.markdown(f"""
+            <div style="background:white;border:2px solid #e0e0e0;border-radius:12px;
+                        padding:16px;box-shadow:0 2px 12px rgba(0,0,0,0.06);margin-bottom:12px;">
+                <div style="font-size:20px;font-weight:800;color:#1a1a2e;margin-bottom:2px;">{selected.upper()}</div>
+                <div style="font-size:12px;color:#888;margin-bottom:12px;">{schemes["region"].iloc[0] if not schemes.empty else "—"}</div>
+                <div style="font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">{len(schemes)} ETS Scheme(s)</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            for _, r in schemes.iterrows():
+                price = str(r["price"]).strip() if pd.notna(r["price"]) else "N/A"
+                start = int(r["start_date"]) if pd.notna(r["start_date"]) else "—"
+                sectors = (str(r["sectors"])[:80] + "…") if pd.notna(r["sectors"]) and len(str(r["sectors"])) > 80 else (str(r["sectors"]) if pd.notna(r["sectors"]) else "—")
+                alloc = (str(r["allocation"])[:60] + "…") if pd.notna(r["allocation"]) and len(str(r["allocation"])) > 60 else (str(r["allocation"]) if pd.notna(r["allocation"]) else "—")
+                rev = str(r["revenue"]) if pd.notna(r["revenue"]) else "—"
+                html_card = (
+                    f'<div style="border-left:4px solid #457b9d;padding:14px 16px;margin-bottom:10px;background:#f7fafd;border-radius:0 8px 8px 0;">'
+                    f'<div style="font-size:14px;font-weight:800;color:#457b9d;margin-bottom:8px;">{r["name"]}</div>'
+                    f'<span style="background:#ddeef8;color:#1a3a4a;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;margin-right:6px;display:inline-block;">Price: <b>{price}</b></span>'
+                    f'<span style="background:#e8f0fe;color:#1a2a5e;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;margin-right:6px;display:inline-block;">Est.: <b>{start}</b></span>'
+                    f'<span style="background:#e8f5e9;color:#1a4a1a;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;display:inline-block;">Revenue: <b>{rev}</b></span>'
+                    f'<div style="font-size:11px;color:#888;margin-top:6px;">Sectors: {sectors}</div>'
+                    f'<div style="font-size:11px;color:#888;margin-top:3px;">Allocation: {alloc}</div>'
+                    f'</div>'
+                )
+                st.markdown(html_card, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div style="background:#f8f9fa;border:2px dashed #ddd;border-radius:12px;
+                        padding:40px 20px;text-align:center;color:#bbb;">
+                <div style="font-size:32px;margin-bottom:8px;">🗺️</div>
+                <div style="font-size:13px;">Click a country on the map</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    st.divider()
+
+    # ── Charts ────────────────────────────────────────────────────
+    st.markdown("""
+    <div style="font-size:28px;font-weight:900;color:#1a1a2e;margin-bottom:4px;">Summary</div>
+    <div style="font-size:13px;color:#999;margin-bottom:20px;">Distribution of ETS schemes by region and price.</div>
+    """, unsafe_allow_html=True)
+
+    c1, c2 = st.columns(2)
+    with c1:
+        st.subheader("Schemes by Region")
+        by_region = f_ets.groupby("region")["name"].count().reset_index(name="count")
+        fig_r = go.Figure(go.Bar(
+            x=by_region["region"], y=by_region["count"],
+            marker_color=[REGION_COLORS.get(r, "#888") for r in by_region["region"]],
+            marker_line_color="#222", marker_line_width=1,
+            text=by_region["count"], textposition="outside",
+            hovertemplate="%{x}: <b>%{y} schemes</b><extra></extra>",
+        ))
+        fig_r.update_layout(
+            margin=dict(l=0, r=0, t=10, b=0), paper_bgcolor="white",
+            plot_bgcolor="white", showlegend=False,
+            xaxis=dict(tickfont=dict(size=10), showgrid=False),
+            yaxis=dict(showgrid=True, gridcolor="#f0f0f0"),
+        )
+        st.plotly_chart(fig_r, use_container_width=True, key="ets_region_bar",
+                        config={"displayModeBar": False})
+
+    with c2:
+        st.subheader("Carbon Price Distribution")
+        price_df = f_ets[f_ets["price_num"].notna()].copy()
+        fig_p = go.Figure(go.Bar(
+            x=price_df["name"],
+            y=price_df["price_num"],
+            marker_color=[REGION_COLORS.get(r, "#888") for r in price_df["region"]],
+            marker_line_color="#222", marker_line_width=1,
+            text=price_df["price"].fillna("N/A"),
+            textposition="outside",
+            textfont=dict(size=8),
+            hovertemplate="<b>%{x}</b><br>Price: %{text}<extra></extra>",
+        ))
+        fig_p.update_layout(
+            margin=dict(l=0, r=0, t=10, b=0), paper_bgcolor="white",
+            plot_bgcolor="white", showlegend=False,
+            xaxis=dict(tickfont=dict(size=8), tickangle=-45, showgrid=False),
+            yaxis=dict(title="USD", showgrid=True, gridcolor="#f0f0f0"),
+        )
+        st.plotly_chart(fig_p, use_container_width=True, key="ets_price_bar",
+                        config={"displayModeBar": False})
+
+    st.divider()
+
+    # ── Full Table ────────────────────────────────────────────────
+    st.markdown("""
+    <div style="font-size:28px;font-weight:900;color:#1a1a2e;margin-bottom:4px;">All ETS Schemes</div>
+    <div style="font-size:13px;color:#999;margin-bottom:16px;">Complete list of tracked ETS schemes worldwide.</div>
+    """, unsafe_allow_html=True)
+
+    table_df = f_ets[["name", "country", "region", "start_date", "price", "sectors", "revenue"]].copy()
+    table_df.columns = ["Scheme", "Jurisdiction", "Region", "Est.", "Price", "Sector Coverage", "Revenue (2024)"]
+    table_df["Est."] = table_df["Est."].apply(lambda x: int(x) if pd.notna(x) else "—")
+    st.dataframe(table_df, use_container_width=True, hide_index=True)
+
+
 # ── Router ─────────────────────────────────────────────────────
 if page == "mbm":
     page_mbm()
-elif page == "corsia":
-    page_placeholder("CORSIA", "✈️")
-elif page == "cdm":
-    page_placeholder("CDM", "🌱")
-elif page == "imo":
-    page_placeholder("IMO", "🚢")
+elif page == "ets":
+    page_ets()
+elif page == "cbam":
+    page_placeholder("CBAM", "")
 else:
     page_mbm()
