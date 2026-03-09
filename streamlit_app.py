@@ -942,49 +942,68 @@ def load_ets_data():
 
 
 def page_ets():
+    import re as _re
     ets = load_ets_data()
 
-    n_schemes  = len(ets)
+    n_schemes   = len(ets)
     n_countries = ets["country"].nunique()
-    avg_price  = ets["price_num"].dropna().mean()
-    oldest     = int(ets["start_date"].dropna().min())
-    total_rev  = "USD 68+ billion"  # approximate from data
+    prices      = ets["price_num"].dropna()
+    avg_price   = prices.mean()
+    min_price   = prices.min()
+    max_price_v = prices.max()
+    total_rev   = "USD 69B+"
 
-    # ── Hero ──────────────────────────────────────────────────────
+    ghg_set = set()
+    for v in ets["ghg"].dropna():
+        for g in str(v).split(","):
+            g = g.strip().split("(")[0].strip()
+            if g and g not in ("nan",""):
+                g = g.replace("carbon dioxide","CO₂").replace("CO2","CO₂")
+                ghg_set.add(g)
+    n_ghg = len(ghg_set)
+
+    sec_set = set()
+    for v in ets["sectors"].dropna():
+        for s in str(v).split(","):
+            s = s.strip()
+            if s and s not in ("nan",""): sec_set.add(s.split(":")[0].strip())
+    n_sectors = len(sec_set)
+
+    n_funding = int(ets["funding_program"].apply(
+        lambda x: str(x).strip() not in ("-","—","nan","NaN","")).sum()) if "funding_program" in ets.columns else 0
+
+    def stat_box(number, label, color="#457b9d", sub=None):
+        sub_html = f'<div style="font-size:10px;color:#aaa;margin-top:3px;">{sub}</div>' if sub else ""
+        return (
+            f'<div style="text-align:center;padding:24px 20px;flex:1;min-width:100px;">'            f'<div style="font-size:36px;font-weight:900;color:{color};line-height:1;white-space:nowrap;">{number}</div>'            f'<div style="font-size:10px;color:#999;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-top:7px;white-space:nowrap;">{label}</div>'            f'{sub_html}</div>'
+        )
+
+    def divider_v():
+        return '<div style="width:1px;background:#e8e8e8;align-self:stretch;margin:12px 0;"></div>'
+
     st.markdown(f"""
-    <div style="padding:56px 0 40px 0;border-bottom:1px solid #e8e8e8;margin-bottom:40px;">
-        <div style="font-size:13px;font-weight:700;color:#457b9d;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;">Carbon Pricing Instrument</div>
-        <div style="font-size:56px;font-weight:900;color:#1a1a2e;line-height:1.05;margin-bottom:20px;">Emissions Trading<br>Systems (ETS)</div>
-        <div style="font-size:15px;color:#555;max-width:760px;line-height:1.8;margin-bottom:36px;">
+    <div style="padding:52px 0 44px 0;border-bottom:1px solid #e8e8e8;margin-bottom:40px;text-align:center;">
+        <div style="font-size:11px;font-weight:700;color:#457b9d;letter-spacing:3px;text-transform:uppercase;margin-bottom:14px;">Carbon Pricing Instrument</div>
+        <div style="font-size:52px;font-weight:900;color:#1a1a2e;line-height:1.05;margin-bottom:18px;white-space:nowrap;">Emissions Trading Systems (ETS)</div>
+        <div style="font-size:14px;color:#666;max-width:680px;margin:0 auto 44px auto;line-height:1.9;">
             An Emissions Trading System is a market-based approach to controlling pollution by providing economic incentives
             for reducing emissions. Governments set a cap on total emissions and issue allowances. Companies must hold
             allowances equal to their emissions — they can trade these allowances, creating a carbon price signal.
         </div>
-        <div style="display:flex;gap:48px;flex-wrap:wrap;align-items:flex-start;">
-            <div>
-                <div style="font-size:48px;font-weight:900;color:#457b9d;line-height:1;">{n_schemes}</div>
-                <div style="font-size:11px;color:#999;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-top:4px;">Active Schemes</div>
-            </div>
-            <div style="width:1px;height:50px;background:#e0e0e0;"></div>
-            <div>
-                <div style="font-size:48px;font-weight:900;color:#1a1a2e;line-height:1;">{n_countries}</div>
-                <div style="font-size:11px;color:#999;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-top:4px;">Jurisdictions</div>
-            </div>
-            <div style="width:1px;height:50px;background:#e0e0e0;"></div>
-            <div>
-                <div style="font-size:48px;font-weight:900;color:#5a8a3a;line-height:1;">USD {avg_price:.0f}</div>
-                <div style="font-size:11px;color:#999;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-top:4px;">Avg. Carbon Price</div>
-            </div>
-            <div style="width:1px;height:50px;background:#e0e0e0;"></div>
-            <div>
-                <div style="font-size:48px;font-weight:900;color:#c97a3a;line-height:1;">{oldest}</div>
-                <div style="font-size:11px;color:#999;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-top:4px;">First ETS Year</div>
-            </div>
-            <div style="width:1px;height:50px;background:#e0e0e0;"></div>
-            <div>
-                <div style="font-size:48px;font-weight:900;color:#1a1a2e;line-height:1;">{total_rev}</div>
-                <div style="font-size:11px;color:#999;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-top:4px;">Revenue (2024)</div>
-            </div>
+        <div style="display:flex;justify-content:center;align-items:stretch;border:1px solid #e8e8e8;border-radius:14px;overflow:hidden;max-width:980px;margin:0 auto;">
+            {stat_box(n_schemes, "Active Schemes", "#457b9d")}
+            {divider_v()}
+            {stat_box(n_countries, "Jurisdictions", "#1a1a2e")}
+            {divider_v()}
+            {stat_box(f"USD {avg_price:.0f}", "Avg. Carbon Price", "#2a7a2a", sub=f"Range USD {min_price:.0f}–{max_price_v:.0f}")}
+            {divider_v()}
+            {stat_box(total_rev, "Revenue (2024)", "#1a1a2e")}
+            {divider_v()}
+            {stat_box(n_ghg, "GHG Types Covered", "#7b4a9e")}
+            {divider_v()}
+            {stat_box(n_sectors, "Sector Types", "#c97a3a")}
+            {divider_v()}
+            {stat_box(n_funding, "Funding Programs", "#2a9d8f")}
         </div>
     </div>
     """, unsafe_allow_html=True)
