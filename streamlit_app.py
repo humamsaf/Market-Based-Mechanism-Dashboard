@@ -360,7 +360,7 @@ for cp_type, color in CARBON_PRICING_COLORS.items():
         name=cp_type,
         showlegend=False,          # sembunyikan dari legend (diganti dummy di bawah)
         marker_line_color="#111111",
-        marker_line_width=0.8,
+        marker_line_width=2,
     ))
 
 # Dummy legend untuk Carbon Pricing — kotak dengan outline hitam
