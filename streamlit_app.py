@@ -283,8 +283,12 @@ def render_country_card(country, region, long_df):
     cp_type = get_carbon_pricing_type(set(mechs))
     cp_color = CARBON_PRICING_COLORS[cp_type]
     n = len(mechs)
+    # Remove CP mechanisms from the detail boxes to avoid duplication
+    cp_mechs = {"ETS", "Carbon Tax"}
+    other_mechs = [m for m in mechs if m not in cp_mechs]
+    n_other = len(other_mechs)
     boxes = ""
-    for m in mechs:
+    for m in other_mechs:
         bg = MECH_BOX_COLORS.get(m, "#888")
         tc = "white" if bg not in ("#90be6d", "#f0f0f0") else "#333"
         boxes += f'<div style="background:{bg};color:{tc};padding:5px 12px;border-radius:6px;font-weight:700;font-size:12px;border:1.5px solid #222;white-space:nowrap;">{m}</div>'
@@ -296,7 +300,7 @@ def render_country_card(country, region, long_df):
             <div style="background:{cp_color};color:#333;padding:5px 14px;border-radius:6px;font-weight:600;font-size:12px;border:1.5px solid #222;">{cp_type}</div>
             <div style="background:#1a1a2e;color:white;padding:5px 14px;border-radius:6px;font-weight:700;font-size:12px;border:1.5px solid #222;">{n} MECHANISM{'S' if n != 1 else ''}</div>
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">{boxes}</div>
+        {f'<div style="display:flex;gap:6px;flex-wrap:wrap;"><div style="font-size:11px;color:#aaa;width:100%;margin-bottom:4px;">Other mechanisms:</div>{boxes}</div>' if boxes else ''}
     </div>
     """, unsafe_allow_html=True)
     if n == 0:
