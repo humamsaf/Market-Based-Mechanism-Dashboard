@@ -66,6 +66,19 @@ st.markdown("""
     }
     .nav-link:hover { color: white !important; background: rgba(255,255,255,0.06); }
     .nav-link.active { color: white !important; border-bottom: 3px solid #4a90d9; font-weight: 700; }
+
+    /* Compact filter row */
+    div[data-testid="stMultiSelect"] label p {
+        font-size: 12px !important;
+        font-weight: 600;
+        color: #555 !important;
+    }
+    div[data-testid="stButton"] button {
+        height: 38px;
+        font-size: 13px;
+        border-radius: 6px;
+        padding: 0 12px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -294,26 +307,52 @@ def page_mbm():
     raw = load_raw()
     wide, long = tidy_long(raw)
 
-    st.title("Global Market-Based Mechanisms Dashboard")
-
-    k1, k2, k3, k4 = st.columns(4)
-    k1.metric("Countries covered", int(wide["Country"].nunique()))
-    k3.metric("Mechanism types", int(long["mechanism_type"].nunique()))
     vcm_sum_all = long.loc[long["mechanism_type"] == "VCM project", "vcm_projects"].sum(min_count=1)
-    k4.metric("VCM projects (sum)", 0 if pd.isna(vcm_sum_all) else int(vcm_sum_all))
+    vcm_total = 0 if pd.isna(vcm_sum_all) else int(vcm_sum_all)
+    n_countries = int(wide["Country"].nunique())
+    n_mechs = int(long["mechanism_type"].nunique())
 
-    st.divider()
+    st.markdown(f"""
+    <div style="text-align:center; padding: 32px 0 24px 0;">
+        <div style="font-size:42px; font-weight:900; color:#1a1a2e; line-height:1.1; letter-spacing:-1px; margin-bottom:12px;">
+            Global Market-Based<br>Mechanisms Dashboard
+        </div>
+        <div style="font-size:14px; color:#555; max-width:640px; margin:0 auto 28px auto; line-height:1.6;">
+            A market-based mechanism (MBM) is a climate policy instrument that uses market principles to
+            create economic incentives for reducing greenhouse gas emissions by allowing the trading or
+            valuation of emission reductions or emission rights.
+        </div>
+        <div style="display:flex; justify-content:center; gap:48px; flex-wrap:wrap;">
+            <div>
+                <div style="font-size:36px; font-weight:900; color:#1a1a2e;">{n_countries}</div>
+                <div style="font-size:12px; color:#888; font-weight:600; text-transform:uppercase; letter-spacing:1px;">Countries Covered</div>
+            </div>
+            <div style="width:1px; background:#e0e0e0;"></div>
+            <div>
+                <div style="font-size:36px; font-weight:900; color:#1a1a2e;">{n_mechs}</div>
+                <div style="font-size:12px; color:#888; font-weight:600; text-transform:uppercase; letter-spacing:1px;">Mechanism Types</div>
+            </div>
+            <div style="width:1px; background:#e0e0e0;"></div>
+            <div>
+                <div style="font-size:36px; font-weight:900; color:#1a1a2e;">{vcm_total:,}</div>
+                <div style="font-size:12px; color:#888; font-weight:600; text-transform:uppercase; letter-spacing:1px;">VCM Projects</div>
+            </div>
+        </div>
+    </div>
+    <hr style="border:none; border-top:1px solid #e0e0e0; margin:0 0 20px 0;">
+    """, unsafe_allow_html=True)
 
-    fc1, fc2, fc3, fc4 = st.columns([2, 2, 2, 1])
+    fc1, fc2, fc3, fc4 = st.columns([2, 2, 2, 0.7])
     with fc1:
-        region_sel = st.multiselect("Region", sorted(long["Region"].dropna().unique()), key="f_region")
+        region_sel = st.multiselect("Region", sorted(long["Region"].dropna().unique()), key="f_region", placeholder="All regions")
     with fc2:
-        type_sel = st.multiselect("Mechanism type", sorted(long["mechanism_type"].dropna().unique()), key="f_type")
+        type_sel = st.multiselect("Mechanism type", sorted(long["mechanism_type"].dropna().unique()), key="f_type", placeholder="All types")
     with fc3:
-        country_sel = st.multiselect("Country", sorted(long["Country"].dropna().unique()), key="f_country")
+        country_sel = st.multiselect("Country", sorted(long["Country"].dropna().unique()), key="f_country", placeholder="All countries")
     with fc4:
-        st.write(""); st.write("")
-        if st.button("Reset filters", use_container_width=True):
+        # CSS trick: align button vertically with multiselects
+        st.markdown('<div style="height:28px"></div>', unsafe_allow_html=True)
+        if st.button("↺ Reset", use_container_width=True):
             for k in ["f_region", "f_type", "f_country"]:
                 st.session_state.pop(k, None)
             st.rerun()
@@ -326,8 +365,6 @@ def page_mbm():
     wide_view = wide.copy()
     if region_sel:  wide_view = wide_view[wide_view["Region"].isin(region_sel)]
     if country_sel: wide_view = wide_view[wide_view["Country"].isin(country_sel)]
-    k2.metric("Countries in view", int(wide_view["Country"].nunique()))
-
     # Map
     country_mechs_map = f.groupby("Country")["mechanism_type"].apply(set).to_dict()
     base = wide_view[["Country", "Region"]].drop_duplicates().copy()
