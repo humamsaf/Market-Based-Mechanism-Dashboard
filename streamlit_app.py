@@ -367,7 +367,6 @@ def page_mbm():
         </a>
     </div>
     <hr style="border:none; border-top:1px solid #e0e0e0; margin:0 0 24px 0;">
-    <div id="map-section"></div>
     """, unsafe_allow_html=True)
 
     # Reset handler — harus sebelum multiselect di-render
@@ -379,7 +378,7 @@ def page_mbm():
         st.session_state["_do_reset"] = False
 
     st.markdown("""
-    <div style="margin-bottom:8px;">
+    <div id="map-section" style="margin-bottom:8px;">
         <div style="font-size:16px; font-weight:800; color:#1a1a2e; margin-bottom:2px;">Explore the Map</div>
         <div style="font-size:12px; color:#999;">Filter countries by region, mechanism type, or search by name.</div>
     </div>
