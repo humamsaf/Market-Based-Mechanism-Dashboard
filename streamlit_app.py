@@ -501,7 +501,7 @@ def page_mbm():
                 background:#f8f9fa; border:2px dashed #ddd;
                 border-radius:12px; padding:40px 20px;
                 text-align:center; color:#bbb;
-                height:100%; min-height:300px;
+                height:520px;
                 display:flex; flex-direction:column;
                 justify-content:center; align-items:center;
             ">
