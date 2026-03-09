@@ -747,6 +747,10 @@ def page_mbm():
                 elif txt:
                     selected_country = txt
 
+        # Auto-select if exactly 1 country in filter
+        if not selected_country and len(country_sel) == 1:
+            selected_country = country_sel[0]
+
         st.markdown("""
         <div style="margin-bottom:12px;">
             <div style="font-size:16px; font-weight:800; color:#1a1a2e; margin-bottom:4px;">Country Detail</div>
