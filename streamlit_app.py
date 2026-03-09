@@ -505,11 +505,15 @@ def page_mbm():
             render_country_card(selected_country, region_val, long)
         else:
             st.markdown("""
+            <div style="margin-bottom:12px;">
+                <div style="font-size:16px; font-weight:800; color:#1a1a2e; margin-bottom:4px;">Country Detail</div>
+                <div style="font-size:12px; color:#999;">Select a country on the map to explore its market-based mechanisms and carbon pricing policies.</div>
+            </div>
             <div style="
                 background:#f8f9fa; border:2px dashed #ddd;
                 border-radius:12px;
                 text-align:center; color:#bbb;
-                height:520px;
+                height:420px;
                 display:flex; flex-direction:column;
                 justify-content:center; align-items:center;
             ">
