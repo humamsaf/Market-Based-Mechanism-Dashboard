@@ -408,7 +408,8 @@ def page_mbm():
         st.session_state["_do_reset"] = False
 
     st.markdown("""
-    <div id="map-section" style="margin-bottom:8px;">
+    <div id="map-section" style="margin-bottom:4px;">
+        <div style="font-size:36px; font-weight:900; color:#1a1a2e; margin-bottom:4px;">Market-Based Mechanism Map</div>
         <div style="font-size:16px; font-weight:800; color:#1a1a2e; margin-bottom:2px;">Explore the Map</div>
         <div style="font-size:12px; color:#999;">Filter countries by region, mechanism type, or search by name.</div>
     </div>
@@ -609,3 +610,5 @@ elif page == "imo":
     page_placeholder("IMO", "🚢")
 else:
     page_mbm()
+
+    
