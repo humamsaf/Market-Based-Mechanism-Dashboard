@@ -643,8 +643,33 @@ def page_mbm():
     base = wide_view[["Country", "Region"]].drop_duplicates().copy()
     base["iso3"]        = base["Country"].apply(to_iso3)
     base["cp_type"]     = base["Country"].apply(lambda c: get_carbon_pricing_type(country_mechs_map.get(c, set())))
-    base["hover_mechs"] = base["Country"].apply(lambda c: "<br>".join(sorted(country_mechs_map.get(c, {"No recorded mechanisms"}))))
     base["n_mechs"]     = base["Country"].apply(lambda c: len(country_mechs_map.get(c, set())))
+    base["region_val"]  = base["Region"].fillna("—")
+
+    CP_EMOJI = {
+        "ETS + Carbon Tax": "🟠", "Carbon Tax": "🟢", "ETS": "🔵", "No Carbon Pricing": "⬜"
+    }
+    MECH_EMOJI = {
+        "Carbon Tax": "💰", "ETS": "🏭", "Tax Incentives": "🎁",
+        "Fuel Mandates": "⛽", "VCM project": "🌿", "Feebates": "🚗",
+        "CBAM": "🛃", "AMC": "📦",
+    }
+
+    def build_hover(c, cp, n, region):
+        mechs = sorted(country_mechs_map.get(c, set()))
+        mech_lines = "<br>".join(f"  {MECH_EMOJI.get(m,'•')} {m}" for m in mechs) if mechs else "  No recorded mechanisms"
+        emoji = CP_EMOJI.get(cp, "•")
+        return (f"<b style='font-size:14px'>{c}</b><br>"
+                f"<span style='color:#aaa'>{region}</span><br>"
+                f"──────────────<br>"
+                f"{emoji} <b>{cp}</b><br>"
+                f"──────────────<br>"
+                f"<b>{n} mechanism{'s' if n!=1 else ''}</b><br>"
+                f"{mech_lines}")
+
+    base["hover_text"] = base.apply(
+        lambda r: build_hover(r["Country"], r["cp_type"], r["n_mechs"], r["region_val"]), axis=1
+    )
     m_plot = base.dropna(subset=["iso3"]).copy()
 
     fig_map = go.Figure()
@@ -655,8 +680,8 @@ def page_mbm():
         fig_map.add_trace(go.Choropleth(
             locations=subset["iso3"], z=[1]*len(subset),
             colorscale=[[0, color],[1, color]], showscale=False,
-            hovertemplate="<b>%{customdata[0]}</b><br>%{customdata[1]} mechanisms<br>──────────<br>%{customdata[2]}<extra></extra>",
-            customdata=subset[["Country","n_mechs","hover_mechs"]].values,
+            hovertemplate="%{customdata[0]}<extra></extra>",
+            customdata=subset[["hover_text","Country","n_mechs"]].values,
             name=cp_type, showlegend=False,
             marker_line_color="#111111", marker_line_width=1.5,
         ))
@@ -742,8 +767,8 @@ def page_mbm():
                 pt = pts[0]
                 cd = pt.get("customdata")
                 txt = pt.get("text")
-                if cd and isinstance(cd, (list, tuple)) and len(cd) > 0:
-                    selected_country = cd[0]
+                if cd and isinstance(cd, (list, tuple)) and len(cd) > 1:
+                    selected_country = cd[1]
                 elif txt:
                     selected_country = txt
 
