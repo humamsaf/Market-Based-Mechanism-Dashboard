@@ -1116,12 +1116,42 @@ def page_ets():
         ),
     )
 
-    # ── Map full width ──────────────────────────────────────────
-    clicked = st.plotly_chart(fig_ets_map, use_container_width=True,
-                              key="ets_map", on_select="rerun",
-                              selection_mode="points",
-                              config={"scrollZoom": False, "doubleClick": False,
-                                      "displayModeBar": False})
+    # ── Detail helper functions ─────────────────────────────────
+    def fval(v):
+        if v is None: return "—"
+        try:
+            if pd.isna(v): return "—"
+        except: pass
+        s = str(v).strip()
+        return s if s and s not in ("nan","NaN","-","–") else "—"
+
+    def section_title(t):
+        st.markdown(f'<div style="font-size:11px;font-weight:800;color:#457b9d;text-transform:uppercase;letter-spacing:2px;margin:16px 0 8px 0;border-bottom:2px solid #e8f0f8;padding-bottom:5px;">{t}</div>', unsafe_allow_html=True)
+
+    def text_field(label, v):
+        if v == "—": return
+        lbl_html = f'<div style="font-size:9px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:3px;">{label}</div>' if label else ""
+        st.markdown(
+            f'<div style="margin-bottom:10px;">{lbl_html}'            f'<div style="font-size:11px;color:#1a1a2e;line-height:1.6;background:#f7fafd;border-radius:6px;padding:8px 10px;">{v}</div>'            f'</div>',
+            unsafe_allow_html=True
+        )
+
+    def bar_visual(label, pct, display_val, color="#457b9d"):
+        pct_w = min(max(float(pct) * 100, 2), 100)
+        st.markdown(
+            f'<div style="margin-bottom:12px;">'            f'<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">'            f'<div style="font-size:9px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:1px;">{label}</div>'            f'<div style="font-size:13px;font-weight:800;color:{color};">{display_val}</div>'            f'</div>'            f'<div style="background:#e8f0f8;border-radius:4px;height:8px;overflow:hidden;">'            f'<div style="width:{pct_w:.1f}%;background:{color};height:100%;border-radius:4px;"></div>'            f'</div></div>',
+            unsafe_allow_html=True
+        )
+
+    # ── Map + Detail side by side ───────────────────────────────
+    col_map, col_card = st.columns([3, 1.5])
+
+    with col_map:
+        clicked = st.plotly_chart(fig_ets_map, use_container_width=True,
+                                  key="ets_map", on_select="rerun",
+                                  selection_mode="points",
+                                  config={"scrollZoom": False, "doubleClick": False,
+                                          "displayModeBar": False})
 
     selected = None
     if clicked and clicked.get("selection") and clicked["selection"].get("points"):
@@ -1133,156 +1163,104 @@ def page_ets():
     if not selected and len(country_sel) == 1:
         selected = country_sel[0]
 
-    # ── Detail section below map ─────────────────────────────────
-    st.markdown("""
-    <div style="font-size:22px;font-weight:800;color:#1a1a2e;margin:24px 0 4px 0;">Scheme Detail</div>
-    <div style="font-size:13px;color:#999;margin-bottom:16px;">Click a country on the map to explore its ETS scheme data.</div>
-    """, unsafe_allow_html=True)
-
-    if not selected:
+    with col_card:
         st.markdown("""
-        <div style="background:#f8f9fa;border:2px dashed #ddd;border-radius:12px;
-                    padding:56px 20px;text-align:center;color:#bbb;">
-            <div style="font-size:40px;margin-bottom:10px;">🗺️</div>
-            <div style="font-size:14px;">Click a country on the map above to see all ETS details</div>
-        </div>
+        <div style="font-size:15px;font-weight:800;color:#1a1a2e;margin-bottom:4px;">Scheme Detail</div>
+        <div style="font-size:11px;color:#999;margin-bottom:12px;">Click a country to explore its ETS schemes.</div>
         """, unsafe_allow_html=True)
-    else:
-        schemes = f_ets[f_ets["country"] == selected]
 
-        # Country header
-        region_lbl = schemes["region"].iloc[0] if not schemes.empty else "—"
-        st.markdown(f"""
-        <div style="background:linear-gradient(135deg,#1a3a5e 0%,#457b9d 100%);
+        if not selected:
+            st.markdown("""
+            <div style="background:#f8f9fa;border:2px dashed #ddd;border-radius:12px;
+                        padding:56px 12px;text-align:center;color:#bbb;">
+                <div style="font-size:32px;margin-bottom:8px;">🗺️</div>
+                <div style="font-size:12px;">Click a country on the map</div>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            schemes = f_ets[f_ets["country"] == selected]
+
+            # Country header
+            region_lbl = schemes["region"].iloc[0] if not schemes.empty else "—"
+            st.markdown(f"""
+            <div style="background:linear-gradient(135deg,#1a3a5e 0%,#457b9d 100%);
                     border-radius:14px;padding:24px 28px;margin-bottom:20px;color:white;">
             <div style="font-size:28px;font-weight:900;letter-spacing:1px;margin-bottom:4px;">{selected.upper()}</div>
             <div style="font-size:13px;opacity:0.8;margin-bottom:12px;">{region_lbl}</div>
             <div style="display:inline-block;background:rgba(255,255,255,0.2);border-radius:6px;
                         padding:4px 14px;font-size:12px;font-weight:700;">{len(schemes)} ETS Scheme(s)</div>
-        </div>
-        """, unsafe_allow_html=True)
+            </div>
+            """, unsafe_allow_html=True)
 
-        def fval(v):
-            if v is None: return "—"
-            try:
-                if pd.isna(v): return "—"
-            except: pass
-            s = str(v).strip()
-            return s if s and s not in ("nan","NaN","-","–") else "—"
 
-        def section_title(t):
-            st.markdown(f'<div style="font-size:11px;font-weight:800;color:#457b9d;text-transform:uppercase;letter-spacing:2px;margin:20px 0 10px 0;border-bottom:2px solid #e8f0f8;padding-bottom:6px;">{t}</div>', unsafe_allow_html=True)
+            for scheme_idx, (_, r) in enumerate(schemes.iterrows()):
+                if len(schemes) > 1:
+                    st.markdown(f'<div style="background:#457b9d;color:white;font-size:12px;font-weight:800;border-radius:8px;padding:7px 14px;margin-bottom:10px;">Scheme {scheme_idx+1}: {r["name"]}</div>', unsafe_allow_html=True)
+                else:
+                    st.markdown(f'<div style="font-size:15px;font-weight:800;color:#457b9d;margin-bottom:12px;">{r["name"]}</div>', unsafe_allow_html=True)
 
-        def text_field(label, v):
-            if v == "—": return
-            st.markdown(
-                f'<div style="margin-bottom:12px;">'                f'<div style="font-size:10px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;">{label}</div>'                f'<div style="font-size:13px;color:#1a1a2e;line-height:1.7;background:#f7fafd;border-radius:6px;padding:10px 12px;">{v}</div>'                f'</div>',
-                unsafe_allow_html=True
-            )
-
-        def bar_visual(label, pct, display_val, color="#457b9d"):
-            """Render a labelled progress bar for a 0-1 value."""
-            pct_w = min(max(float(pct) * 100, 2), 100)
-            st.markdown(
-                f'<div style="margin-bottom:14px;">'                f'<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;">'                f'  <div style="font-size:10px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:1.5px;">{label}</div>'                f'  <div style="font-size:14px;font-weight:800;color:{color};">{display_val}</div>'                f'</div>'                f'<div style="background:#e8f0f8;border-radius:4px;height:10px;overflow:hidden;">'                f'  <div style="width:{pct_w:.1f}%;background:{color};height:100%;border-radius:4px;"></div>'                f'</div></div>',
-                unsafe_allow_html=True
-            )
-
-        for scheme_idx, (_, r) in enumerate(schemes.iterrows()):
-            if len(schemes) > 1:
-                st.markdown(f'<div style="background:#457b9d;color:white;font-size:13px;font-weight:800;'                            f'border-radius:8px;padding:8px 16px;margin-bottom:12px;">Scheme {scheme_idx+1}: {r["name"]}</div>',
-                            unsafe_allow_html=True)
-            else:
-                st.markdown(f'<div style="font-size:18px;font-weight:800;color:#457b9d;margin-bottom:16px;">{r["name"]}</div>',
-                            unsafe_allow_html=True)
-
-            # ── Section A: Key metrics (visual) ──
-            section_title("Key Metrics")
-
-            price_num = r.get("price_num")
-            share_num = r.get("share")
-            all_prices = f_ets["price_num"].dropna()
-            max_price  = all_prices.max() if len(all_prices) else 100
-
-            mc1, mc2, mc3 = st.columns(3)
-            with mc1:
+                # ── Key Metrics ──
+                section_title("Key Metrics")
+                price_num = r.get("price_num")
+                share_num = r.get("share")
+                all_prices = f_ets["price_num"].dropna()
+                max_price  = all_prices.max() if len(all_prices) else 100
                 pv = fval(r.get("price"))
-                st.markdown(
-                    f'<div style="background:#ddeef8;border-radius:10px;padding:14px 16px;text-align:center;">'                    f'<div style="font-size:10px;font-weight:700;color:#457b9d;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Price Rate</div>'                    f'<div style="font-size:18px;font-weight:900;color:#1a3a5e;">{pv}</div>'                    f'</div>',
-                    unsafe_allow_html=True
-                )
-            with mc2:
                 sv = int(r["start_date"]) if pd.notna(r.get("start_date")) else "—"
-                st.markdown(
-                    f'<div style="background:#e8f0fe;border-radius:10px;padding:14px 16px;text-align:center;">'                    f'<div style="font-size:10px;font-weight:700;color:#3a5a9e;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Start Date</div>'                    f'<div style="font-size:18px;font-weight:900;color:#1a2a5e;">{sv}</div>'                    f'</div>',
-                    unsafe_allow_html=True
-                )
-            with mc3:
                 rv = fval(r.get("revenue"))
                 st.markdown(
-                    f'<div style="background:#e8f5e9;border-radius:10px;padding:14px 16px;text-align:center;">'                    f'<div style="font-size:10px;font-weight:700;color:#3a7a3a;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Gov. Revenue (2024)</div>'                    f'<div style="font-size:16px;font-weight:900;color:#1a4a1a;">{rv}</div>'                    f'</div>',
+                    f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">'                    f'<div style="background:#ddeef8;border-radius:7px;padding:9px 10px;text-align:center;">'                    f'<div style="font-size:9px;font-weight:700;color:#457b9d;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Price Rate</div>'                    f'<div style="font-size:12px;font-weight:900;color:#1a3a5e;">{pv}</div></div>'                    f'<div style="background:#e8f0fe;border-radius:7px;padding:9px 10px;text-align:center;">'                    f'<div style="font-size:9px;font-weight:700;color:#3a5a9e;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Start Date</div>'                    f'<div style="font-size:12px;font-weight:900;color:#1a2a5e;">{sv}</div></div>'                    f'<div style="background:#e8f5e9;border-radius:7px;padding:9px 10px;text-align:center;grid-column:span 2;">'                    f'<div style="font-size:9px;font-weight:700;color:#3a7a3a;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Gov. Revenue (2024)</div>'                    f'<div style="font-size:12px;font-weight:900;color:#1a4a1a;">{rv}</div></div>'                    f'</div>',
                     unsafe_allow_html=True
                 )
+                if pd.notna(share_num) and share_num not in (None, ""):
+                    try: bar_visual("Share of Jurisdiction", float(share_num), f"{float(share_num)*100:.0f}%", "#457b9d")
+                    except: pass
+                if pd.notna(price_num) and max_price > 0:
+                    try: bar_visual("Price vs Max ETS", float(price_num)/float(max_price), f"USD {float(price_num):.2f} / {float(max_price):.0f}", "#2a9d8f")
+                    except: pass
 
-            # Share of jurisdiction bar
-            if pd.notna(share_num) and share_num not in (None, ""):
-                try:
-                    bar_visual("Share of Jurisdiction's Emissions", float(share_num),
-                               f"{float(share_num)*100:.0f}%", "#457b9d")
-                except: pass
+                # ── Coverage ──
+                section_title("Coverage")
+                text_field("GHG Coverage", fval(r.get("ghg")))
+                text_field("Sector Coverage", fval(r.get("sectors")))
 
-            # Price comparison bar vs max
-            if pd.notna(price_num) and max_price > 0:
-                try:
-                    bar_visual("Price vs. Highest ETS Price", float(price_num)/float(max_price),
-                               f"USD {float(price_num):.2f}  (max USD {float(max_price):.0f})", "#2a9d8f")
-                except: pass
+                # ── Threshold ──
+                t1 = fval(r.get("threshold"))
+                t2 = fval(r.get("description"))
+                if t1 != "—" or t2 != "—":
+                    section_title("Threshold")
+                    text_field("Threshold", t1)
+                    text_field("Description of Threshold", t2)
 
-            # ── Section B: Coverage ──
-            section_title("Coverage")
-            text_field("GHG Coverage", fval(r.get("ghg")))
-            text_field("Sector Coverage", fval(r.get("sectors")))
+                # ── Cap & Allocation ──
+                section_title("Cap & Allocation")
+                text_field("Cap Emissions", fval(r.get("cap")))
+                text_field("Tightening Rate", fval(r.get("tightening_rate")))
+                text_field("Allocation Method", fval(r.get("allocation")))
 
-            # ── Section C: Threshold ──
-            t1 = fval(r.get("threshold"))
-            t2 = fval(r.get("description"))
-            if t1 != "—" or t2 != "—":
-                section_title("Threshold")
-                text_field("Threshold", t1)
-                text_field("Description of Threshold", t2)
+                # ── Revenue & Funding ──
+                section_title("Revenue & Funding")
+                text_field("Revenue Recycling", fval(r.get("revenue_recycling")))
+                text_field("Funding Program", fval(r.get("funding_program")))
 
-            # ── Section D: Cap & Allocation ──
-            section_title("Cap & Allocation")
-            text_field("Cap Emissions", fval(r.get("cap")))
-            text_field("Tightening Rate", fval(r.get("tightening_rate")))
-            text_field("Allocation Method", fval(r.get("allocation")))
+                # ── Additional Info ──
+                ai = fval(r.get("additional_info"))
+                if ai != "—":
+                    section_title("Additional Information")
+                    text_field("", ai)
 
-            # ── Section E: Revenue & Funding ──
-            section_title("Revenue & Funding")
-            text_field("Revenue Recycling", fval(r.get("revenue_recycling")))
-            text_field("Funding Program", fval(r.get("funding_program")))
+                # ── Source ──
+                src = fval(r.get("source"))
+                if src != "—":
+                    section_title("Source")
+                    for lnk in [s.strip() for s in src.split(";") if s.strip()]:
+                        if lnk.startswith("http"):
+                            st.markdown(f'<a href="{lnk}" target="_blank" style="font-size:10px;color:#457b9d;word-break:break-all;display:block;margin-bottom:3px;">{lnk}</a>', unsafe_allow_html=True)
+                        else:
+                            st.markdown(f'<div style="font-size:11px;color:#555;">{lnk}</div>', unsafe_allow_html=True)
 
-            # ── Section F: Additional Info ──
-            ai = fval(r.get("additional_info"))
-            if ai != "—":
-                section_title("Additional Information")
-                text_field("", ai)
-
-            # ── Section G: Source ──
-            src = fval(r.get("source"))
-            if src != "—":
-                section_title("Source")
-                # Split multiple sources by semicolon
-                links = [s.strip() for s in src.split(";") if s.strip()]
-                for lnk in links:
-                    if lnk.startswith("http"):
-                        st.markdown(f'<a href="{lnk}" target="_blank" style="font-size:11px;color:#457b9d;word-break:break-all;">{lnk}</a><br>',
-                                    unsafe_allow_html=True)
-                    else:
-                        st.markdown(f'<div style="font-size:12px;color:#555;">{lnk}</div>', unsafe_allow_html=True)
-
-            if scheme_idx < len(schemes) - 1:
-                st.divider()
+                if scheme_idx < len(schemes) - 1:
+                    st.divider()
 
     st.divider()
 
