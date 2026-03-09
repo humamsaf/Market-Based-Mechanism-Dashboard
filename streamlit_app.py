@@ -646,33 +646,34 @@ def page_mbm():
     base["n_mechs"]     = base["Country"].apply(lambda c: len(country_mechs_map.get(c, set())))
     base["region_val"]  = base["Region"].fillna("—")
 
-    CP_LABEL = {
-        "ETS + Carbon Tax": "ETS + Carbon Tax",
-        "Carbon Tax": "Carbon Tax",
-        "ETS": "ETS",
-        "No Carbon Pricing": "No Carbon Pricing"
-    }
-    MECH_SYMBOL = {
-        "Carbon Tax":     "▪ Carbon Tax",
-        "ETS":            "▪ ETS",
-        "Tax Incentives": "▪ Tax Incentives",
-        "Fuel Mandates":  "▪ Fuel Mandates",
-        "VCM project":    "▪ VCM project",
-        "Feebates":       "▪ Feebates",
-        "CBAM":           "▪ CBAM",
-        "AMC":            "▪ AMC",
+    MECH_COLORS_HEX = {
+        "Carbon Tax":     "#90be6d",
+        "ETS":            "#457b9d",
+        "Tax Incentives": "#9b59b6",
+        "Fuel Mandates":  "#e07b00",
+        "VCM project":    "#2a9d8f",
+        "Feebates":       "#e63946",
+        "CBAM":           "#4a90d9",
+        "AMC":            "#5b9bd5",
     }
 
     def build_hover(c, cp, n, region):
         mechs = sorted(country_mechs_map.get(c, set()))
-        mech_lines = "<br>".join(f"  {MECH_SYMBOL.get(m, '▪ '+m)}" for m in mechs) if mechs else "  No recorded mechanisms"
-        return (f"<b>{c}</b><br>"
-                f"<span style='color:#aaa'>{region}</span><br>"
-                f"─────────────<br>"
-                f"Carbon Pricing: <b>{cp}</b><br>"
-                f"─────────────<br>"
-                f"<b>{n} mechanism{'s' if n!=1 else ''}</b><br>"
-                f"{mech_lines}")
+        cp_color = CARBON_PRICING_COLORS.get(cp, "#888")
+        # Build mech list with colored squares
+        mech_lines = "".join(
+            f"<br><span style='color:{MECH_COLORS_HEX.get(m,'#888')}'><b>■</b></span> {m}"
+            for m in mechs
+        ) if mechs else "<br>  No recorded mechanisms"
+        return (
+            f"<b>{c}</b>"
+            f"<br><span style='color:#999'>{region}</span>"
+            f"<br>─────────────"
+            f"<br><span style='color:{cp_color}'><b>■</b></span> <b>{cp}</b>"
+            f"<br>─────────────"
+            f"<br><b>{n} mechanism{'s' if n!=1 else ''}</b>"
+            f"{mech_lines}"
+        )
 
     base["hover_text"] = base.apply(
         lambda r: build_hover(r["Country"], r["cp_type"], r["n_mechs"], r["region_val"]), axis=1
@@ -737,6 +738,11 @@ def page_mbm():
     fig_map.update_layout(
         height=520, margin=dict(l=0,r=0,t=0,b=0),
         paper_bgcolor="white", uirevision=str(region_sel)+str(type_sel)+str(country_sel), dragmode=False,
+        hoverlabel=dict(
+            bgcolor="white",
+            bordercolor="#cccccc",
+            font=dict(size=12, color="#1a1a2e", family="Inter, sans-serif"),
+        ),
         geo=dict(
             projection_type="equirectangular",
             showframe=False,
