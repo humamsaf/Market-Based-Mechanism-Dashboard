@@ -345,7 +345,7 @@ def page_mbm():
         </div>
         <div style="display:flex; justify-content:center; gap:48px; flex-wrap:wrap; margin-bottom:48px; align-items:center;">
             <div>
-                <div style="font-size:56px; font-weight:900; color:#1a1a2e; line-height:1;">{n_countries}</div>
+                <div style="font-size:56px; font-weight:900; color:#2c7bb6; line-height:1;">{n_countries}</div>
                 <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">Countries Covered</div>
             </div>
             <div style="width:1px; height:60px; background:#e0e0e0;"></div>
@@ -383,6 +383,12 @@ def page_mbm():
            onmouseout="this.style.background='#1a1a2e'">
             ▶ &nbsp;Get Started
         </a>
+        <div style="margin-top:28px; padding-top:20px; border-top:1px solid #e8e8e8; font-size:12px; color:#aaa; max-width:620px; line-height:1.8; text-align:center;">
+            This dashboard is a product of the <span style="color:#777; font-weight:600;">Market-based Interventions for Deep Decarbonisation (MIDD) Lab</span>,
+            based at the <span style="color:#777; font-weight:600;">Grantham Institute – Climate Change and the Environment</span>
+            at <span style="color:#777; font-weight:600;">Imperial College London</span>,
+            and led by <span style="color:#777; font-weight:600;">Dr Gbemi Oluleye</span>.
+        </div>
     </div>
     <hr style="border:none; border-top:1px solid #e0e0e0; margin:0 0 24px 0;">
     """, unsafe_allow_html=True)
