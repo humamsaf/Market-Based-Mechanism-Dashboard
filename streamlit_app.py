@@ -433,7 +433,7 @@ fig_map.update_layout(
         coastlinewidth=0.8,
         showcountries=True,
         countrycolor="#333333",
-        countrywidth=1.5,
+        countrywidth=3.0,
         showland=True,
         landcolor="#f5f5f5",
         showocean=False,
