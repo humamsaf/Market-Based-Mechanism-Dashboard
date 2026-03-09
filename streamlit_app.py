@@ -437,12 +437,11 @@ def render_mechanism_details(country, mechs):
             </div>"""
 
     if rows:
-        st.markdown(f"""
-        <div style="margin-top:12px;">
-            <div style="font-size:13px;font-weight:700;color:#555;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Mechanism Details</div>
-            {rows}
-        </div>
-        """, unsafe_allow_html=True)
+        html = '<div style="margin-top:12px;">'
+        html += '<div style="font-size:13px;font-weight:700;color:#555;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Mechanism Details</div>'
+        html += rows
+        html += '</div>'
+        st.markdown(html, unsafe_allow_html=True)
 
 def tidy_long(df_raw):
     keep = ["No", "Country", "Region"] + [c.strip() for c in MECH_COLS.keys()] + ["Total Mechanism"]
