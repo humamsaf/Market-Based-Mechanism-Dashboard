@@ -311,12 +311,25 @@ def render_mechanism_details(country, mechs):
     """Render detail card below the main country card."""
     details = load_detail_data()
 
-    def tag(label, val, color="#f0f4ff", tc="#1a1a2e"):
-        return f'<span style="background:{color};color:{tc};padding:3px 9px;border-radius:4px;font-size:11px;font-weight:600;margin-right:6px;margin-bottom:4px;display:inline-block;">{label}: {val}</span>'
+    # Color-coded pill tag
+    def pill(label, val, bg, tc):
+        return f'<span style="background:{bg};color:{tc};padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;margin-right:6px;margin-bottom:4px;display:inline-block;white-space:nowrap;">{label}: <b>{val}</b></span>'
+
+    # Section card wrapper
+    def card(border_color, bg, content):
+        return f'<div style="border-left:4px solid {border_color};padding:14px 16px;margin-bottom:10px;background:{bg};border-radius:0 8px 8px 0;">{content}</div>'
+
+    # Section title (no emoji)
+    def title(label, color):
+        return f'<div style="font-size:14px;font-weight:800;color:{color};margin-bottom:8px;letter-spacing:0.2px;">{label}</div>'
+
+    # Subdued label row
+    def meta(text):
+        return f'<div style="font-size:11px;color:#888;margin-top:5px;">{text}</div>'
 
     rows = ""
 
-    # ETS
+    # ── ETS ──
     if "ETS" in mechs:
         ets_rows = details["ets"][details["ets"]["country"] == country]
         if not ets_rows.empty:
@@ -324,23 +337,24 @@ def render_mechanism_details(country, mechs):
                 r = ets_rows.iloc[0]
                 price = str(r["price"]).strip() if pd.notna(r["price"]) else "N/A"
                 start = int(r["start_date"]) if pd.notna(r["start_date"]) else "—"
-                sectors = str(r["sectors"])[:80] + "…" if pd.notna(r["sectors"]) and len(str(r["sectors"])) > 80 else (str(r["sectors"]) if pd.notna(r["sectors"]) else "—")
-                rows += f"""
-                <div style="border-left:3px solid #457b9d;padding:10px 12px;margin-bottom:10px;background:#f7fafd;border-radius:0 8px 8px 0;">
-                    <div style="font-size:12px;font-weight:800;color:#457b9d;margin-bottom:6px;">🏭 ETS — {r['name']}</div>
-                    <div>{tag("Price", price, "#ddeef8", "#1a3a4a")} {tag("Since", start, "#e8f0fe", "#1a2a5e")}</div>
-                    <div style="font-size:11px;color:#777;margin-top:4px;">Sectors: {sectors}</div>
-                </div>"""
+                sectors = (str(r["sectors"])[:90] + "…") if pd.notna(r["sectors"]) and len(str(r["sectors"])) > 90 else (str(r["sectors"]) if pd.notna(r["sectors"]) else "—")
+                content = (title(f'ETS — {r["name"]}', "#457b9d")
+                    + pill("Price", price, "#ddeef8", "#1a3a4a")
+                    + pill("Est.", start, "#e8f0fe", "#1a2a5e")
+                    + meta(f"Sectors: {sectors}"))
+                rows += card("#457b9d", "#f7fafd", content)
             else:
-                # Multiple ETS — collapse into one card
-                names_html = "".join(f'<div style="font-size:11px;color:#444;padding:4px 0;border-bottom:1px solid #e8f0f8;"><b>{r["name"]}</b> <span style="color:#888;font-size:10px;">({int(r["start_date"]) if pd.notna(r["start_date"]) else "—"})</span> — <span style="color:#457b9d;">{str(r["price"]).strip() if pd.notna(r["price"]) else "N/A"}</span></div>' for _, r in ets_rows.iterrows())
-                rows += f"""
-                <div style="border-left:3px solid #457b9d;padding:10px 12px;margin-bottom:10px;background:#f7fafd;border-radius:0 8px 8px 0;">
-                    <div style="font-size:12px;font-weight:800;color:#457b9d;margin-bottom:8px;">🏭 ETS — {len(ets_rows)} schemes</div>
-                    {names_html}
-                </div>"""
+                items = "".join(
+                    f'<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #dde8f0;">'
+                    f'<span style="font-size:12px;color:#1a1a2e;font-weight:600;">{r["name"]}</span>'
+                    f'<span style="font-size:11px;color:#888;">{int(r["start_date"]) if pd.notna(r["start_date"]) else "—"} &nbsp;·&nbsp; '
+                    f'<b style="color:#457b9d;">{str(r["price"]).strip() if pd.notna(r["price"]) else "N/A"}</b></span></div>'
+                    for _, r in ets_rows.iterrows()
+                )
+                content = title(f"ETS — {len(ets_rows)} schemes", "#457b9d") + items
+                rows += card("#457b9d", "#f7fafd", content)
 
-    # Carbon Tax
+    # ── Carbon Tax ──
     if "Carbon Tax" in mechs:
         ctx_rows = details["ctx"][details["ctx"]["country"] == country]
         if not ctx_rows.empty:
@@ -348,69 +362,61 @@ def render_mechanism_details(country, mechs):
                 r = ctx_rows.iloc[0]
                 price = str(r["price"]).strip() if pd.notna(r["price"]) else "N/A"
                 start = int(r["start_date"]) if pd.notna(r["start_date"]) else "—"
-                sectors = str(r["sectors"])[:80] + "…" if pd.notna(r["sectors"]) and len(str(r["sectors"])) > 80 else (str(r["sectors"]) if pd.notna(r["sectors"]) else "—")
-                rows += f"""
-                <div style="border-left:3px solid #5a8a3a;padding:10px 12px;margin-bottom:10px;background:#f7fdf4;border-radius:0 8px 8px 0;">
-                    <div style="font-size:12px;font-weight:800;color:#5a8a3a;margin-bottom:6px;">💰 Carbon Tax — {r['name']}</div>
-                    <div>{tag("Price", price, "#e0f0d8", "#2a4a1a")} {tag("Since", start, "#e8f0fe", "#1a2a5e")}</div>
-                    <div style="font-size:11px;color:#777;margin-top:4px;">Sectors: {sectors}</div>
-                </div>"""
+                sectors = (str(r["sectors"])[:90] + "…") if pd.notna(r["sectors"]) and len(str(r["sectors"])) > 90 else (str(r["sectors"]) if pd.notna(r["sectors"]) else "—")
+                content = (title(f'Carbon Tax — {r["name"]}', "#5a8a3a")
+                    + pill("Price", price, "#e0f0d8", "#2a4a1a")
+                    + pill("Est.", start, "#e8f0fe", "#1a2a5e")
+                    + meta(f"Sectors: {sectors}"))
+                rows += card("#5a8a3a", "#f7fdf4", content)
             else:
-                names_html = "".join(f'<div style="font-size:11px;color:#444;padding:4px 0;border-bottom:1px solid #e4f0da;"><b>{r["name"]}</b> <span style="color:#888;font-size:10px;">({int(r["start_date"]) if pd.notna(r["start_date"]) else "—"})</span> — <span style="color:#5a8a3a;">{str(r["price"]).strip() if pd.notna(r["price"]) else "N/A"}</span></div>' for _, r in ctx_rows.iterrows())
-                rows += f"""
-                <div style="border-left:3px solid #5a8a3a;padding:10px 12px;margin-bottom:10px;background:#f7fdf4;border-radius:0 8px 8px 0;">
-                    <div style="font-size:12px;font-weight:800;color:#5a8a3a;margin-bottom:8px;">💰 Carbon Tax — {len(ctx_rows)} schemes</div>
-                    {names_html}
-                </div>"""
+                items = "".join(
+                    f'<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #d8ecd0;">'
+                    f'<span style="font-size:12px;color:#1a1a2e;font-weight:600;">{r["name"]}</span>'
+                    f'<span style="font-size:11px;color:#888;">{int(r["start_date"]) if pd.notna(r["start_date"]) else "—"} &nbsp;·&nbsp; '
+                    f'<b style="color:#5a8a3a;">{str(r["price"]).strip() if pd.notna(r["price"]) else "N/A"}</b></span></div>'
+                    for _, r in ctx_rows.iterrows()
+                )
+                content = title(f"Carbon Tax — {len(ctx_rows)} schemes", "#5a8a3a") + items
+                rows += card("#5a8a3a", "#f7fdf4", content)
 
-    # Fuel Mandates
+    # ── Fuel Mandates ──
     if "Fuel Mandates" in mechs:
         fm_rows = details["fm"][details["fm"]["country"] == country]
         if not fm_rows.empty:
             for _, r in fm_rows.iterrows():
                 desc = str(r["description"]) if pd.notna(r["description"]) else "—"
                 pct = str(r["pct_fuel"]) if pd.notna(r["pct_fuel"]) else "—"
-                pct_short = pct
-                rows += f"""
-                <div style="border-left:3px solid #e07b00;padding:10px 12px;margin-bottom:10px;background:#fff8f0;border-radius:0 8px 8px 0;">
-                    <div style="font-size:12px;font-weight:800;color:#e07b00;margin-bottom:6px;">⛽ Fuel Mandate — {r['mandate_type']}</div>
-                    <div style="background:#fde8c8;color:#5a2a00;padding:4px 9px;border-radius:4px;font-size:11px;font-weight:600;margin-bottom:4px;white-space:normal;word-break:break-word;"><b>Requirement:</b> {pct_short}</div>
-                    <div style="font-size:11px;color:#777;margin-top:4px;">{desc}</div>
-                </div>"""
+                content = (title(f'Fuel Mandate — {r["mandate_type"]}', "#e07b00")
+                    + f'<div style="background:#fde8c8;color:#5a2a00;padding:6px 10px;border-radius:4px;font-size:11px;font-weight:600;margin-bottom:6px;white-space:normal;word-break:break-word;">Requirement: {pct}</div>'
+                    + meta(desc))
+                rows += card("#e07b00", "#fff8f0", content)
         else:
-            # Fallback: use Dashboard column value
             dashboard_val = details.get("dashboard_fm", {}).get(country, None)
             if dashboard_val:
-                short = str(dashboard_val)[:60] + "…" if len(str(dashboard_val)) > 60 else str(dashboard_val)
-                rows += f"""
-                <div style="border-left:3px solid #e07b00;padding:10px 12px;margin-bottom:10px;background:#fff8f0;border-radius:0 8px 8px 0;">
-                    <div style="font-size:12px;font-weight:800;color:#e07b00;margin-bottom:6px;">⛽ Fuel Mandate</div>
-                    <div style="font-size:11px;color:#777;">{short}</div>
-                </div>"""
+                content = title("Fuel Mandate", "#e07b00") + meta(str(dashboard_val))
+                rows += card("#e07b00", "#fff8f0", content)
 
-    # VCM
+    # ── VCM ──
     if "VCM project" in mechs:
         vcm_rows = details["vcm"][details["vcm"]["country"] == country]
         if not vcm_rows.empty:
             r = vcm_rows.iloc[0]
             credits = f"{int(r['credits']):,}" if pd.notna(r['credits']) and str(r['credits']).replace('-','').strip().isdigit() else str(r['credits'])
-            rows += f"""
-            <div style="border-left:3px solid #2a9d8f;padding:10px 12px;margin-bottom:10px;background:#f0faf9;border-radius:0 8px 8px 0;">
-                <div style="font-size:12px;font-weight:800;color:#2a9d8f;margin-bottom:6px;">🌿 VCM Projects</div>
-                <div>{tag("Projects", int(r['projects']), "#c8ede9", "#1a4a45")} {tag("Credits", credits, "#c8ede9", "#1a4a45")}</div>
-            </div>"""
+            content = (title("Voluntary Carbon Market (VCM)", "#2a9d8f")
+                + pill("Projects", int(r['projects']), "#c8ede9", "#1a4a45")
+                + pill("Credits issued", credits, "#c8ede9", "#1a4a45"))
+            rows += card("#2a9d8f", "#f0faf9", content)
 
-    # Feebates
+    # ── Feebates ──
     if "Feebates" in mechs:
         fb_rows = details["feebates"][details["feebates"]["country"] == country]
         for _, r in fb_rows.iterrows():
-            rows += f"""
-            <div style="border-left:3px solid #e63946;padding:10px 12px;margin-bottom:10px;background:#fff0f1;border-radius:0 8px 8px 0;">
-                <div style="font-size:12px;font-weight:800;color:#e63946;margin-bottom:6px;">🚗 Feebate — {r['policy_name']}</div>
-                <div>{tag("Type", r['policy_type'], "#fdd8da", "#5a0a0e")} {tag("Status", r['status'], "#fdd8da", "#5a0a0e")}</div>
-            </div>"""
+            content = (title(f'Feebate — {r["policy_name"]}', "#e63946")
+                + pill("Type", r['policy_type'], "#fdd8da", "#5a0a0e")
+                + pill("Status", r['status'], "#fdd8da", "#5a0a0e"))
+            rows += card("#e63946", "#fff0f1", content)
 
-    # Tax Incentives
+    # ── Tax Incentives ──
     if "Tax Incentives" in mechs:
         ti_rows = details["tax_incentives"][details["tax_incentives"]["country"] == country]
         if not ti_rows.empty:
@@ -420,28 +426,25 @@ def render_mechanism_details(country, mechs):
             if pd.notna(r.get("Tax benefit – Ownership")): types.append("Ownership")
             if pd.notna(r.get("Incentive – Vehicle purchase")): types.append("Vehicle purchase")
             if pd.notna(r.get("Incentive – Infrastructure")): types.append("Infrastructure")
-            rows += f"""
-            <div style="border-left:3px solid #9b59b6;padding:10px 12px;margin-bottom:10px;background:#faf0ff;border-radius:0 8px 8px 0;">
-                <div style="font-size:12px;font-weight:800;color:#9b59b6;margin-bottom:6px;">🎁 Tax Incentives</div>
-                <div>{"".join(tag(t, "✓", "#ead8f5", "#3a0a5a") for t in types) if types else tag("Status", "Present", "#ead8f5", "#3a0a5a")}</div>
-            </div>"""
+            pills = "".join(pill(t, "✓", "#ead8f5", "#3a0a5a") for t in types) if types else pill("Status", "Present", "#ead8f5", "#3a0a5a")
+            content = title("Tax Incentives", "#9b59b6") + f'<div style="margin-top:2px;">{pills}</div>'
+            rows += card("#9b59b6", "#faf0ff", content)
 
-    # AMC
+    # ── AMC ──
     if "AMC" in mechs:
         amc_rows = details["amc"][details["amc"]["country"] == country]
         for _, r in amc_rows.iterrows():
-            rows += f"""
-            <div style="border-left:3px solid #5b9bd5;padding:10px 12px;margin-bottom:10px;background:#f0f6ff;border-radius:0 8px 8px 0;">
-                <div style="font-size:12px;font-weight:800;color:#5b9bd5;margin-bottom:6px;">📦 AMC — {r['product']}</div>
-                <div>{tag("Sector", r['sector'], "#d8e8f5", "#0a2a5a")}</div>
-            </div>"""
+            content = (title(f'Advance Market Commitment — {r["product"]}', "#5b9bd5")
+                + pill("Sector", r['sector'], "#d8e8f5", "#0a2a5a"))
+            rows += card("#5b9bd5", "#f0f6ff", content)
 
     if rows:
         html = '<div style="margin-top:12px;">'
-        html += '<div style="font-size:13px;font-weight:700;color:#555;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Mechanism Details</div>'
+        html += '<div style="font-size:11px;font-weight:700;color:#999;margin-bottom:10px;text-transform:uppercase;letter-spacing:1.5px;">Mechanism Details</div>'
         html += rows
         html += '</div>'
         st.markdown(html, unsafe_allow_html=True)
+
 
 def tidy_long(df_raw):
     keep = ["No", "Country", "Region"] + [c.strip() for c in MECH_COLS.keys()] + ["Total Mechanism"]
