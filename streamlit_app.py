@@ -313,48 +313,60 @@ def page_mbm():
     n_mechs = int(long["mechanism_type"].nunique())
 
     st.markdown(f"""
-    <div style="text-align:center; padding: 56px 0 40px 0;">
-        <div style="font-size:52px; font-weight:900; color:#1a1a2e; line-height:1.1; letter-spacing:-1.5px; margin-bottom:16px; white-space:nowrap;">
-            Global Market-Based Mechanisms Dashboard
+    <div style="
+        text-align:center;
+        padding: 100px 40px 80px 40px;
+        min-height: 80vh;
+        display:flex; flex-direction:column; justify-content:center; align-items:center;
+        background-image:
+            linear-gradient(rgba(255,255,255,0.82), rgba(255,255,255,0.82)),
+            url('https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/World_map_-_low_resolution.svg/2560px-World_map_-_low_resolution.svg.png');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        border-radius: 12px;
+        margin-bottom: 0;
+    ">
+        <div style="font-size:72px; font-weight:900; color:#1a1a2e; line-height:1.05; letter-spacing:-2px; margin-bottom:20px;">
+            Global Market-Based<br>Mechanisms Dashboard
         </div>
-        <div style="font-size:16px; color:#555; max-width:660px; margin:0 auto 32px auto; line-height:1.7;">
+        <div style="font-size:18px; color:#666; max-width:680px; margin:0 auto 40px auto; line-height:1.8; font-weight:400;">
             A market-based mechanism (MBM) is a climate policy instrument that uses market principles to
             create economic incentives for reducing greenhouse gas emissions by allowing the trading or
             valuation of emission reductions or emission rights.
         </div>
-        <div style="display:flex; justify-content:center; gap:56px; flex-wrap:wrap; margin-bottom:36px;">
+        <div style="display:flex; justify-content:center; gap:64px; flex-wrap:wrap; margin-bottom:48px;">
             <div>
-                <div style="font-size:48px; font-weight:900; color:#1a1a2e; line-height:1;">{n_countries}</div>
-                <div style="font-size:11px; color:#888; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; margin-top:4px;">Countries Covered</div>
+                <div style="font-size:56px; font-weight:900; color:#1a1a2e; line-height:1;">{n_countries}</div>
+                <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">Countries Covered</div>
             </div>
             <div style="width:1px; background:#e0e0e0;"></div>
             <div>
-                <div style="font-size:48px; font-weight:900; color:#1a1a2e; line-height:1;">{n_mechs}</div>
-                <div style="font-size:11px; color:#888; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; margin-top:4px;">Mechanism Types</div>
+                <div style="font-size:56px; font-weight:900; color:#1a1a2e; line-height:1;">{n_mechs}</div>
+                <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">Mechanism Types</div>
             </div>
             <div style="width:1px; background:#e0e0e0;"></div>
             <div>
-                <div style="font-size:48px; font-weight:900; color:#1a1a2e; line-height:1;">{vcm_total:,}</div>
-                <div style="font-size:11px; color:#888; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; margin-top:4px;">VCM Projects</div>
+                <div style="font-size:56px; font-weight:900; color:#1a1a2e; line-height:1;">{vcm_total:,}</div>
+                <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">VCM Projects</div>
             </div>
         </div>
         <a onclick="document.getElementById('map-section').scrollIntoView({{behavior:'smooth'}}); return false;"
            href="#map-section"
            style="
-               display:inline-flex; align-items:center; gap:8px;
+               display:inline-flex; align-items:center; gap:10px;
                background:#1a1a2e; color:white;
-               padding:14px 32px; border-radius:999px;
-               font-size:15px; font-weight:700;
-               text-decoration:none; letter-spacing:0.3px;
-               box-shadow: 0 4px 16px rgba(26,26,46,0.25);
-               transition: opacity 0.2s;
+               padding:16px 40px; border-radius:999px;
+               font-size:16px; font-weight:700;
+               text-decoration:none; letter-spacing:0.5px;
+               box-shadow: 0 6px 24px rgba(26,26,46,0.3);
            "
-           onmouseover="this.style.opacity='0.85'"
-           onmouseout="this.style.opacity='1'">
+           onmouseover="this.style.background='#2d2d50'"
+           onmouseout="this.style.background='#1a1a2e'">
             ▶ &nbsp;Get Started
         </a>
     </div>
-    <hr style="border:none; border-top:1px solid #e0e0e0; margin:0 0 20px 0;">
+    <hr style="border:none; border-top:1px solid #e0e0e0; margin:0 0 24px 0;">
     <div id="map-section"></div>
     """, unsafe_allow_html=True)
 
