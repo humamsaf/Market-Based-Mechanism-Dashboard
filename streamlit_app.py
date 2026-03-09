@@ -1108,6 +1108,79 @@ def page_ets():
     if region_sel:  f_ets = f_ets[f_ets["region"].isin(region_sel)]
     if country_sel: f_ets = f_ets[f_ets["country"].isin(country_sel)]
 
+    # ── Sub-national scheme coords & polygons ─────────────────────
+    SCHEME_COORDS = {
+        "Beijing pilot ETS":    (39.90, 116.40),
+        "Shanghai pilot ETS":   (31.23, 121.47),
+        "Guangdong pilot ETS":  (23.13, 113.26),
+        "Shenzhen pilot ETS":   (22.54, 114.05),
+        "Tianjin pilot ETS":    (39.08, 117.20),
+        "Chongqing pilot ETS":  (29.56, 106.55),
+        "Hubei pilot ETS":      (30.60, 114.31),
+        "Fujian pilot ETS":     (26.07, 119.30),
+        "China national ETS":   (35.86, 104.20),
+        "Alberta TIER":                                          (53.93, -116.58),
+        "British Columbia OBPS":                                 (53.73, -127.65),
+        "Canada federal OBPS":                                   (60.00,  -96.00),
+        "New Brunswick OBPS":                                    (46.56,  -66.46),
+        "Newfoundland and Labrador Performance Standards System": (53.13,  -57.66),
+        "Nova Scotia OBPS":                                      (44.68,  -63.74),
+        "Ontario EPS":                                           (50.00,  -86.00),
+        "Quebec cap and trade":                                  (52.94,  -73.55),
+        "Saskatchewan Output-Based Performance Standards Program":(54.00, -106.00),
+        "California cap and trade":                 (37.35, -119.00),
+        "Colorado GHG crediting trading system":    (39.11, -105.36),
+        "Massachusetts ETS":                        (42.40,  -71.38),
+        "Oregon ETS":                               (44.00, -120.55),
+        "Regional Greenhouse Gas Initiative":       (43.50,  -73.50),
+        "Washington CCA":                           (47.40, -120.50),
+        "Saitama ETS":          (35.86, 139.65),
+        "Tokyo cap and trade":  (35.69, 139.69),
+    }
+
+    SCHEME_POLYGONS = {
+        "Beijing pilot ETS":    [[115.4,39.4],[117.5,39.4],[117.5,41.1],[115.4,41.1],[115.4,39.4]],
+        "Shanghai pilot ETS":   [[120.8,30.6],[122.2,30.6],[122.2,31.9],[120.8,31.9],[120.8,30.6]],
+        "Guangdong pilot ETS":  [[109.7,20.2],[117.3,20.2],[117.3,25.5],[109.7,25.5],[109.7,20.2]],
+        "Shenzhen pilot ETS":   [[113.7,22.4],[114.6,22.4],[114.6,22.9],[113.7,22.9],[113.7,22.4]],
+        "Tianjin pilot ETS":    [[116.7,38.5],[118.1,38.5],[118.1,40.3],[116.7,40.3],[116.7,38.5]],
+        "Chongqing pilot ETS":  [[105.2,28.1],[110.2,28.1],[110.2,32.2],[105.2,32.2],[105.2,28.1]],
+        "Hubei pilot ETS":      [[108.4,29.0],[116.1,29.0],[116.1,33.3],[108.4,33.3],[108.4,29.0]],
+        "Fujian pilot ETS":     [[115.8,23.5],[120.9,23.5],[120.9,28.3],[115.8,28.3],[115.8,23.5]],
+        "Alberta TIER":                                          [[-120.0,49.0],[-110.0,49.0],[-110.0,60.0],[-120.0,60.0],[-120.0,49.0]],
+        "British Columbia OBPS":                                 [[-139.0,48.3],[-114.0,48.3],[-114.0,60.0],[-139.0,60.0],[-139.0,48.3]],
+        "New Brunswick OBPS":                                    [[-67.8,44.5],[-63.8,44.5],[-63.8,48.1],[-67.8,48.1],[-67.8,44.5]],
+        "Newfoundland and Labrador Performance Standards System": [[-67.8,46.5],[-52.6,46.5],[-52.6,60.4],[-67.8,60.4],[-67.8,46.5]],
+        "Nova Scotia OBPS":                                      [[-66.4,43.4],[-59.7,43.4],[-59.7,47.0],[-66.4,47.0],[-66.4,43.4]],
+        "Ontario EPS":                                           [[-95.2,41.7],[-74.3,41.7],[-74.3,56.9],[-95.2,56.9],[-95.2,41.7]],
+        "Quebec cap and trade":                                  [[-79.8,44.9],[-57.1,44.9],[-57.1,62.6],[-79.8,62.6],[-79.8,44.9]],
+        "Saskatchewan Output-Based Performance Standards Program":[[-110.0,49.0],[-101.4,49.0],[-101.4,60.0],[-110.0,60.0],[-110.0,49.0]],
+        "California cap and trade":                 [[-124.4,32.5],[-114.1,32.5],[-114.1,42.0],[-124.4,42.0],[-124.4,32.5]],
+        "Colorado GHG crediting trading system":    [[-109.0,37.0],[-102.0,37.0],[-102.0,41.0],[-109.0,41.0],[-109.0,37.0]],
+        "Massachusetts ETS":                        [[-73.5,41.2],[-69.9,41.2],[-69.9,42.9],[-73.5,42.9],[-73.5,41.2]],
+        "Oregon ETS":                               [[-124.6,42.0],[-116.5,42.0],[-116.5,46.3],[-124.6,46.3],[-124.6,42.0]],
+        "Regional Greenhouse Gas Initiative":       [[-76.0,40.5],[-66.9,40.5],[-66.9,47.5],[-76.0,47.5],[-76.0,40.5]],
+        "Washington CCA":                           [[-124.7,45.5],[-116.9,45.5],[-116.9,49.0],[-124.7,49.0],[-124.7,45.5]],
+        "Saitama ETS":          [[138.9,35.7],[140.2,35.7],[140.2,36.3],[138.9,36.3],[138.9,35.7]],
+        "Tokyo cap and trade":  [[138.9,35.5],[140.0,35.5],[140.0,35.9],[138.9,35.9],[138.9,35.5]],
+    }
+
+    SCHEME_COLORS = [
+        "#e07b00","#2a9d8f","#9b59b6","#e63946",
+        "#4a90d9","#c97a3a","#5a8a3a","#457b9d",
+        "#d63031","#00b894","#6c5ce7","#fdcb6e",
+    ]
+
+    MULTI_SCHEME_COUNTRIES = {"China", "Canada", "United States", "Japan"}
+
+    def shorten(name):
+        return (name.replace(" pilot ETS","").replace(" cap and trade","")
+                    .replace(" OBPS","").replace(" ETS","").replace(" CCA","")
+                    .replace(" TIER","").replace(" EPS","")
+                    .replace(" GHG crediting trading system","")
+                    .replace(" Output-Based Performance Standards Program","")
+                    .replace(" Performance Standards System",""))
+
     # Build map
     country_ets_map = f_ets.groupby("country")["name"].apply(list).to_dict()
     country_price_map = f_ets.groupby("country")["price_num"].mean().to_dict()
@@ -1128,14 +1201,12 @@ def page_ets():
 
     fig_ets_map = go.Figure()
     if not map_df.empty:
-        # Color by number of schemes
         fig_ets_map.add_trace(go.Choropleth(
             locations=map_df["iso3"],
             z=map_df["n_schemes"],
             colorscale=[[0, "#c6dff0"], [0.5, "#457b9d"], [1, "#1a3a5e"]],
             showscale=True,
-            colorbar=dict(title="Schemes", thickness=12, len=0.5,
-                          tickfont=dict(size=10)),
+            colorbar=dict(title="Schemes", thickness=12, len=0.5, tickfont=dict(size=10)),
             hovertemplate=(
                 "<b>%{customdata[0]}</b><br>"
                 "%{customdata[1]} scheme(s)<br>"
@@ -1146,11 +1217,46 @@ def page_ets():
             marker_line_color="#111", marker_line_width=1.2,
         ))
 
+    # ── Sub-national overlays ──────────────────────────────────────
+    for country in MULTI_SCHEME_COUNTRIES:
+        country_schemes = f_ets[f_ets["country"] == country]["name"].tolist() if country in f_ets["country"].values else []
+        if not country_schemes:
+            continue
+        for ci, scheme_name in enumerate(country_schemes):
+            if scheme_name not in SCHEME_POLYGONS:
+                continue
+            coords = SCHEME_POLYGONS[scheme_name]
+            lons = [c[0] for c in coords]
+            lats = [c[1] for c in coords]
+            color = SCHEME_COLORS[ci % len(SCHEME_COLORS)]
+            scheme_row = f_ets[f_ets["name"] == scheme_name]
+            price_v = scheme_row["price"].iloc[0] if not scheme_row.empty else "N/A"
+            year_v  = int(scheme_row["start_date"].iloc[0]) if not scheme_row.empty and pd.notna(scheme_row["start_date"].iloc[0]) else "N/A"
+            fig_ets_map.add_trace(go.Scattergeo(
+                lon=lons, lat=lats, mode="lines",
+                fill="toself", fillcolor=color,
+                line=dict(color="#fff", width=1),
+                opacity=0.82, name=scheme_name,
+                hovertemplate=f"<b>{scheme_name}</b><br>Est. {year_v} · {price_v}<extra></extra>",
+                showlegend=False,
+            ))
+            if scheme_name in SCHEME_COORDS:
+                cLat, cLon = SCHEME_COORDS[scheme_name]
+                fig_ets_map.add_trace(go.Scattergeo(
+                    lon=[cLon], lat=[cLat], mode="markers+text",
+                    marker=dict(size=5, color=color, line=dict(width=1, color="#fff")),
+                    text=[shorten(scheme_name)],
+                    textposition="top center",
+                    textfont=dict(size=7, color="#1a1a2e"),
+                    hovertemplate=f"<b>{scheme_name}</b><br>Est. {year_v} · {price_v}<extra></extra>",
+                    customdata=[[scheme_name]],
+                    showlegend=False,
+                ))
+
     fig_ets_map.update_layout(
         height=460, margin=dict(l=0, r=0, t=0, b=0),
         paper_bgcolor="white",
-        hoverlabel=dict(bgcolor="white", bordercolor="#ccc",
-                        font=dict(size=12), align="left"),
+        hoverlabel=dict(bgcolor="white", bordercolor="#ccc", font=dict(size=12), align="left"),
         geo=dict(
             projection_type="equirectangular", showframe=False,
             showcoastlines=True, coastlinecolor="#333", coastlinewidth=1.2,
@@ -1162,7 +1268,7 @@ def page_ets():
         ),
     )
 
-    # ── Detail helper functions ─────────────────────────────────
+        # ── Detail helper functions ─────────────────────────────────
     def fval(v):
         if v is None: return "—"
         try:
@@ -1199,13 +1305,22 @@ def page_ets():
                                   config={"scrollZoom": False, "doubleClick": False,
                                           "displayModeBar": False})
 
-    selected = None
+    selected = None        # country name
+    selected_scheme = None  # specific scheme name (from province click)
     if clicked and clicked.get("selection") and clicked["selection"].get("points"):
         pts = clicked["selection"]["points"]
         if pts:
             cd = pts[0].get("customdata")
             if cd and len(cd) > 0:
-                selected = cd[0]
+                val = cd[0]
+                # Province marker returns scheme name; choropleth returns country name
+                if val in SCHEME_COORDS:
+                    selected_scheme = val
+                    # Map scheme to country
+                    scheme_country = f_ets[f_ets["name"] == val]["country"]
+                    selected = scheme_country.iloc[0] if not scheme_country.empty else "China"
+                else:
+                    selected = val
     if not selected and len(country_sel) == 1:
         selected = country_sel[0]
 
@@ -1226,21 +1341,31 @@ def page_ets():
         else:
             schemes = f_ets[f_ets["country"] == selected]
 
+            # If a province was clicked, filter to just that scheme
+            if selected_scheme:
+                schemes_display = schemes[schemes["name"] == selected_scheme]
+                if schemes_display.empty:
+                    schemes_display = schemes
+            else:
+                schemes_display = schemes
+
             # Country header
             region_lbl = schemes["region"].iloc[0] if not schemes.empty else "—"
+            prov_note = f' · {selected_scheme.replace(" pilot ETS","").replace(" ETS","")}' if selected_scheme else ""
             st.markdown(f"""
             <div style="background:linear-gradient(135deg,#1a3a5e 0%,#457b9d 100%);
                     border-radius:14px;padding:24px 28px;margin-bottom:20px;color:white;">
-            <div style="font-size:28px;font-weight:900;letter-spacing:1px;margin-bottom:4px;">{selected.upper()}</div>
+            <div style="font-size:28px;font-weight:900;letter-spacing:1px;margin-bottom:4px;">{selected.upper()}{prov_note}</div>
             <div style="font-size:13px;opacity:0.8;margin-bottom:12px;">{region_lbl}</div>
-            <div style="display:inline-block;background:rgba(255,255,255,0.2);border-radius:6px;
-                        padding:4px 14px;font-size:12px;font-weight:700;">{len(schemes)} ETS Scheme(s)</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <div style="background:rgba(255,255,255,0.2);border-radius:6px;padding:4px 14px;font-size:12px;font-weight:700;">{len(schemes)} ETS Scheme(s) total</div>
+                {"<div style='background:rgba(255,200,100,0.3);border-radius:6px;padding:4px 14px;font-size:12px;font-weight:700;'>Showing: " + selected_scheme + "</div>" if selected_scheme else ""}
+            </div>
             </div>
             """, unsafe_allow_html=True)
 
-
-            for scheme_idx, (_, r) in enumerate(schemes.iterrows()):
-                if len(schemes) > 1:
+            for scheme_idx, (_, r) in enumerate(schemes_display.iterrows()):
+                if len(schemes_display) > 1:
                     st.markdown(f'<div style="background:#457b9d;color:white;font-size:12px;font-weight:800;border-radius:8px;padding:7px 14px;margin-bottom:10px;">Scheme {scheme_idx+1}: {r["name"]}</div>', unsafe_allow_html=True)
                 else:
                     st.markdown(f'<div style="font-size:15px;font-weight:800;color:#457b9d;margin-bottom:12px;">{r["name"]}</div>', unsafe_allow_html=True)
@@ -1305,7 +1430,7 @@ def page_ets():
                         else:
                             st.markdown(f'<div style="font-size:11px;color:#555;">{lnk}</div>', unsafe_allow_html=True)
 
-                if scheme_idx < len(schemes) - 1:
+                if scheme_idx < len(schemes_display) - 1:
                     st.divider()
 
     st.divider()
