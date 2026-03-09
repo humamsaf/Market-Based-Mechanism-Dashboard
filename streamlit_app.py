@@ -859,49 +859,27 @@ def page_mbm():
         by_type = f.groupby("mechanism_type")["Country"].nunique().reset_index(name="countries").sort_values("countries", ascending=False)
         bar_colors = [MECH_BOX_COLORS.get(m, "#888") for m in by_type["mechanism_type"]]
 
-        # Map marker symbols matching the actual map
-        MECH_PLOTLY_SYMBOL = {
-            "CBAM":           "square",
-            "Tax Incentives": "diamond",
-            "Fuel Mandates":  "triangle-up",
-            "Feebates":       "circle",
-            "VCM project":    "asterisk",
-            "AMC":            "cross",
-            "ETS":            "square",
-            "Carbon Tax":     "square",
-        }
-
         fig_bar = go.Figure()
 
-        # Actual bars (no legend)
-        fig_bar.add_trace(go.Bar(
-            x=by_type["mechanism_type"],
-            y=by_type["countries"],
-            marker_color=bar_colors,
-            marker_line_color="#222", marker_line_width=1,
-            text=by_type["countries"],
-            textposition="outside",
-            textfont=dict(size=12, color="#1a1a2e"),
-            showlegend=False,
-            hovertemplate="%{x}: <b>%{y} countries</b><extra></extra>",
-        ))
-
-        # Dummy invisible scatter traces for custom legend with map symbols
-        for mech in by_type["mechanism_type"]:
-            color = MECH_BOX_COLORS.get(mech, "#888")
-            symbol = MECH_PLOTLY_SYMBOL.get(mech, "square")
-            fig_bar.add_trace(go.Scatter(
-                x=[None], y=[None],
-                mode="markers",
-                marker=dict(symbol=symbol, color=color, size=8,
-                            line=dict(width=0.8, color="#222")),
-                name=mech,
-                showlegend=True,
+        # One bar per mechanism with legend entry
+        for i, row in by_type.iterrows():
+            color = MECH_BOX_COLORS.get(row["mechanism_type"], "#888")
+            fig_bar.add_trace(go.Bar(
+                x=[row["mechanism_type"]],
+                y=[row["countries"]],
+                name=row["mechanism_type"],
+                marker_color=color,
+                marker_line_color="#222", marker_line_width=1,
+                text=[row["countries"]],
+                textposition="outside",
+                textfont=dict(size=12, color="#1a1a2e"),
+                hovertemplate="%{x}: <b>%{y} countries</b><extra></extra>",
             ))
 
         fig_bar.update_layout(
             margin=dict(l=0, r=0, t=20, b=0),
             paper_bgcolor="white", plot_bgcolor="white",
+            barmode="group",
             xaxis=dict(title="", tickfont=dict(size=11), showgrid=False),
             yaxis=dict(title="Countries", showgrid=True, gridcolor="#f0f0f0"),
             legend=dict(
