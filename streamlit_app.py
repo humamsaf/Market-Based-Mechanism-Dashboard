@@ -314,8 +314,8 @@ def page_mbm():
 
     st.markdown(f"""
     <div style="text-align:center; padding: 32px 0 24px 0;">
-        <div style="font-size:42px; font-weight:900; color:#1a1a2e; line-height:1.1; letter-spacing:-1px; margin-bottom:12px;">
-            Global Market-Based<br>Mechanisms Dashboard
+        <div style="font-size:32px; font-weight:900; color:#1a1a2e; line-height:1.1; letter-spacing:-0.5px; margin-bottom:12px; white-space:nowrap;">
+            Global Market-Based Mechanisms Dashboard
         </div>
         <div style="font-size:14px; color:#555; max-width:640px; margin:0 auto 28px auto; line-height:1.6;">
             A market-based mechanism (MBM) is a climate policy instrument that uses market principles to
