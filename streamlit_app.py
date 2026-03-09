@@ -37,12 +37,12 @@ CARBON_PRICING_COLORS = {
 
 # ── Marker styles — outline hitam tipis ─────────────────────
 MARKER_STYLES = {
-    "CBAM":           {"symbol": "square",      "color": "#1d3557", "size": 6},
-    "Tax Incentives": {"symbol": "diamond",     "color": "#7b2d8b", "size": 7},
+    "CBAM":           {"symbol": "square",      "color": "#4a90d9", "size": 6},
+    "Tax Incentives": {"symbol": "diamond",     "color": "#9b59b6", "size": 7},
     "Fuel Mandates":  {"symbol": "triangle-up", "color": "#e07b00", "size": 7},
     "Feebates":       {"symbol": "circle",      "color": "#e63946", "size": 6},
     "VCM project":    {"symbol": "star",        "color": "#2a9d8f", "size": 8},
-    "AMC":            {"symbol": "cross",       "color": "#457b9d", "size": 7},
+    "AMC":            {"symbol": "cross",       "color": "#5b9bd5", "size": 7},
 }
 
 # ── Warna kotak per mekanisme di card ────────────────────────
@@ -394,8 +394,8 @@ for i, mech in enumerate(OTHER_MECHS):
             symbol=style["symbol"],
             color=style["color"],
             size=style["size"],
-            line=dict(width=1.0, color="#111111"),
-            opacity=0.95,
+            line=dict(width=1.5, color="#000000"),
+            opacity=1.0,
         ),
         text=df_m["country"],
         hoverinfo="skip",
