@@ -370,19 +370,20 @@ def page_mbm():
     <div id="map-section"></div>
     """, unsafe_allow_html=True)
 
-    # Reset handler — harus sebelum multiselect di-render
-    if st.button("↺ Reset filters", key="reset_btn"):
-        st.session_state["f_region"] = []
-        st.session_state["f_type"] = []
-        st.session_state["f_country"] = []
-
-    fc1, fc2, fc3 = st.columns([2, 2, 2])
+    fc1, fc2, fc3, fc4 = st.columns([2, 2, 2, 0.7])
     with fc1:
         region_sel = st.multiselect("Region", sorted(long["Region"].dropna().unique()), key="f_region", placeholder="All regions")
     with fc2:
         type_sel = st.multiselect("Mechanism type", sorted(long["mechanism_type"].dropna().unique()), key="f_type", placeholder="All types")
     with fc3:
         country_sel = st.multiselect("Country", sorted(long["Country"].dropna().unique()), key="f_country", placeholder="All countries")
+    with fc4:
+        # CSS trick: align button vertically with multiselects
+        st.markdown('<div style="height:28px"></div>', unsafe_allow_html=True)
+        if st.button("↺ Reset", use_container_width=True):
+            for k in ["f_region", "f_type", "f_country"]:
+                st.session_state.pop(k, None)
+            st.rerun()
 
     f = long.copy()
     if region_sel:  f = f[f["Region"].isin(region_sel)]
@@ -447,7 +448,7 @@ def page_mbm():
 
     fig_map.update_layout(
         height=520, margin=dict(l=0,r=0,t=0,b=0),
-        paper_bgcolor="white", uirevision=str(region_sel)+str(type_sel)+str(country_sel), dragmode=False,
+        paper_bgcolor="white", uirevision="map_fixed", dragmode=False,
         geo=dict(
             projection_type="equirectangular",
             showframe=False,
@@ -560,3 +561,4 @@ elif page == "imo":
     page_placeholder("IMO", "🚢")
 else:
     page_mbm()
+    
