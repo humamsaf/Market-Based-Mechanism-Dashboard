@@ -824,10 +824,10 @@ def page_mbm():
             align="left",
         ),
         legend=dict(
-            bgcolor="rgba(255,255,255,0.92)", bordercolor="#cccccc", borderwidth=1,
+            title="<b>Legend</b>",
+            bgcolor="rgba(255,255,255,0.85)", bordercolor="rgba(0,0,0,0)", borderwidth=0,
             x=0.01, y=0.01, xanchor="left", yanchor="bottom",
-            font=dict(size=10, color="#333"), tracegroupgap=8,
-            itemsizing="constant", itemwidth=30,
+            font=dict(size=10), tracegroupgap=3, itemsizing="constant",
         ),
         geo=dict(
             projection_type="equirectangular",
@@ -839,12 +839,6 @@ def page_mbm():
             lataxis=dict(range=[-60,85], showgrid=False),
             lonaxis=dict(range=[-180,180], showgrid=False),
             projection_scale=1,
-        ),
-        legend=dict(
-            title="<b>Legend</b>",
-            bgcolor="rgba(255,255,255,0.85)", bordercolor="rgba(0,0,0,0)", borderwidth=0,
-            x=0.01, y=0.01, xanchor="left", yanchor="bottom",
-            font=dict(size=10), tracegroupgap=3, itemsizing="constant",
         ),
         clickmode="event+select",
     )
