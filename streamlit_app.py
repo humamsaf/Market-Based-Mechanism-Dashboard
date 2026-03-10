@@ -1390,17 +1390,27 @@ def page_ets():
             schemes = f_ets[f_ets["country"] == selected]
 
             # Country header
-            region_lbl = schemes["region"].iloc[0] if not schemes.empty else "—"
-            prov_note = f' · {selected_scheme.replace(" pilot ETS","").replace(" ETS","")}' if selected_scheme else ""
+            region_lbl  = schemes["region"].iloc[0] if not schemes.empty else "—"
+            start_lbl   = int(schemes["start_date"].iloc[0]) if not schemes.empty and pd.notna(schemes["start_date"].iloc[0]) else "—"
+            prov_note   = f' · {selected_scheme.replace(" pilot ETS","").replace(" ETS","")}' if selected_scheme else ""
             st.markdown(f"""
             <div style="background:linear-gradient(135deg,#1a3a5e 0%,#457b9d 100%);
                     border-radius:14px;padding:24px 28px;margin-bottom:20px;color:white;">
-            <div style="font-size:28px;font-weight:900;letter-spacing:1px;margin-bottom:4px;">{selected.upper()}{prov_note}</div>
-            <div style="font-size:13px;opacity:0.8;margin-bottom:12px;">{region_lbl}</div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <div style="background:rgba(255,255,255,0.2);border-radius:6px;padding:4px 14px;font-size:12px;font-weight:700;">{len(schemes)} ETS Scheme(s) total</div>
+              <div style="font-size:28px;font-weight:900;letter-spacing:1px;margin-bottom:4px;">{selected.upper()}{prov_note}</div>
+              <div style="font-size:13px;opacity:0.8;margin-bottom:14px;">{region_lbl}</div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+                <div style="background:rgba(255,255,255,0.15);border-radius:8px;padding:6px 14px;">
+                  <div style="font-size:9px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;">Since</div>
+                  <div style="font-size:16px;font-weight:900;">{start_lbl}</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.15);border-radius:8px;padding:6px 14px;">
+                  <div style="font-size:9px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;">Schemes</div>
+                  <div style="font-size:16px;font-weight:900;">{len(schemes)}</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
                 {"<div style='background:rgba(255,200,100,0.3);border-radius:6px;padding:4px 14px;font-size:12px;font-weight:700;'>Showing: " + selected_scheme + "</div>" if selected_scheme else ""}
-            </div>
+              </div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -1420,10 +1430,10 @@ def page_ets():
                 regv = fval(r.get("region"))
                 thv  = fval(r.get("threshold"))
 
-                # ── a–e: Instrument info + Threshold ──
+                # ── Instrument info grid ──
                 section_title("Emission Trading Scheme")
                 st.markdown(f"""
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
                   <div style="background:#ddeef8;border-radius:7px;padding:9px 10px;text-align:center;grid-column:span 2;">
                     <div style="font-size:9px;font-weight:700;color:#457b9d;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Instrument Name</div>
                     <div style="font-size:11px;font-weight:900;color:#1a3a5e;">{r["name"]}</div>
@@ -1447,28 +1457,95 @@ def page_ets():
                 </div>
                 """, unsafe_allow_html=True)
 
-                # e. Share of jurisdiction
-                if pd.notna(share_num) and share_num not in (None, ""):
-                    try: bar_visual("Share of Jurisdiction", float(share_num), f"{float(share_num)*100:.0f}%", "#457b9d")
-                    except: pass
+                # ── Share of Jurisdiction — gauge chart ──
+                try:
+                    share_pct = float(share_num) * 100 if pd.notna(share_num) else None
+                except:
+                    share_pct = None
+                if share_pct is not None:
+                    # Color: <30 red, 30-60 yellow, >60 green
+                    if share_pct < 30:
+                        s_color, s_track = "#e63946", "#fde8ea"
+                    elif share_pct < 60:
+                        s_color, s_track = "#f4a261", "#fef3e8"
+                    else:
+                        s_color, s_track = "#2a9d8f", "#e0f5f3"
+                    # Gauge: semicircle SVG
+                    angle = share_pct / 100 * 180  # 0–180 degrees
+                    import math
+                    rad = math.radians(180 - angle)
+                    nx = 50 + 38 * math.cos(rad)
+                    ny = 50 - 38 * math.sin(rad)
+                    st.markdown(f"""
+                    <div style="background:white;border:1px solid #eee;border-radius:10px;padding:12px 10px 6px;margin-bottom:8px;">
+                      <div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;text-align:center;margin-bottom:6px;">Share of Jurisdiction</div>
+                      <div style="position:relative;text-align:center;">
+                        <svg viewBox="0 0 100 55" width="100%" style="max-width:160px;margin:0 auto;display:block;">
+                          <!-- Track -->
+                          <path d="M 12 50 A 38 38 0 0 1 88 50" fill="none" stroke="{s_track}" stroke-width="10" stroke-linecap="round"/>
+                          <!-- Value arc -->
+                          <path d="M 12 50 A 38 38 0 0 1 {nx:.1f} {ny:.1f}" fill="none" stroke="{s_color}" stroke-width="10" stroke-linecap="round"/>
+                          <!-- Needle dot -->
+                          <circle cx="{nx:.1f}" cy="{ny:.1f}" r="3" fill="{s_color}"/>
+                          <!-- Labels -->
+                          <text x="10" y="56" font-size="7" fill="#aaa" text-anchor="middle">0%</text>
+                          <text x="90" y="56" font-size="7" fill="#aaa" text-anchor="middle">100%</text>
+                        </svg>
+                        <div style="font-size:22px;font-weight:900;color:{s_color};margin-top:-8px;">{share_pct:.0f}%</div>
+                        <div style="font-size:9px;color:#aaa;margin-top:2px;">of jurisdiction covered</div>
+                      </div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
-                # ── f–g: Revenue + Price ──
+                # ── Gov Revenue — big number ──
                 st.markdown(f"""
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;margin-top:4px;">
-                  <div style="background:#e8f5e9;border-radius:7px;padding:9px 10px;text-align:center;grid-column:span 2;">
-                    <div style="font-size:9px;font-weight:700;color:#3a7a3a;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Gov. Revenue (2024)</div>
-                    <div style="font-size:13px;font-weight:900;color:#1a4a1a;">{rv}</div>
-                  </div>
-                  <div style="background:#ddeef8;border-radius:7px;padding:9px 10px;text-align:center;grid-column:span 2;">
-                    <div style="font-size:9px;font-weight:700;color:#457b9d;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Price Rate</div>
-                    <div style="font-size:13px;font-weight:900;color:#1a3a5e;">{pv}</div>
-                  </div>
+                <div style="background:#f0faf4;border:1px solid #c8ecd6;border-radius:10px;padding:14px 12px;text-align:center;margin-bottom:8px;">
+                  <div style="font-size:9px;font-weight:700;color:#3a7a3a;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Gov. Revenue (2024)</div>
+                  <div style="font-size:26px;font-weight:900;color:#1a4a2a;line-height:1;">{rv}</div>
                 </div>
                 """, unsafe_allow_html=True)
 
-                if pd.notna(price_num) and max_price > 0:
-                    try: bar_visual("Price vs Max ETS", float(price_num)/float(max_price), f"USD {float(price_num):.2f} / {float(max_price):.0f}", "#2a9d8f")
-                    except: pass
+                # ── Price Rate — gauge chart ──
+                try:
+                    p_pct = float(price_num) / float(max_price) if pd.notna(price_num) and max_price > 0 else None
+                except:
+                    p_pct = None
+                if p_pct is not None:
+                    p_pct_clamped = min(p_pct, 1.0)
+                    if p_pct_clamped < 0.33:
+                        p_color, p_track = "#2a9d8f", "#e0f5f3"
+                    elif p_pct_clamped < 0.66:
+                        p_color, p_track = "#f4a261", "#fef3e8"
+                    else:
+                        p_color, p_track = "#e63946", "#fde8ea"
+                    p_angle = p_pct_clamped * 180
+                    p_rad = math.radians(180 - p_angle)
+                    pnx = 50 + 38 * math.cos(p_rad)
+                    pny = 50 - 38 * math.sin(p_rad)
+                    lo_price = f_ets["price_num"].dropna().min()
+                    st.markdown(f"""
+                    <div style="background:white;border:1px solid #eee;border-radius:10px;padding:12px 10px 6px;margin-bottom:8px;">
+                      <div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;text-align:center;margin-bottom:6px;">Price Rate</div>
+                      <div style="position:relative;text-align:center;">
+                        <svg viewBox="0 0 100 55" width="100%" style="max-width:160px;margin:0 auto;display:block;">
+                          <path d="M 12 50 A 38 38 0 0 1 88 50" fill="none" stroke="{p_track}" stroke-width="10" stroke-linecap="round"/>
+                          <path d="M 12 50 A 38 38 0 0 1 {pnx:.1f} {pny:.1f}" fill="none" stroke="{p_color}" stroke-width="10" stroke-linecap="round"/>
+                          <circle cx="{pnx:.1f}" cy="{pny:.1f}" r="3" fill="{p_color}"/>
+                          <text x="10" y="56" font-size="6" fill="#aaa" text-anchor="middle">USD {lo_price:.0f}</text>
+                          <text x="90" y="56" font-size="6" fill="#aaa" text-anchor="middle">USD {max_price:.0f}</text>
+                        </svg>
+                        <div style="font-size:22px;font-weight:900;color:{p_color};margin-top:-8px;">{pv}</div>
+                        <div style="font-size:9px;color:#aaa;margin-top:2px;">vs max USD {max_price:.0f}</div>
+                      </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.markdown(f"""
+                    <div style="background:#f5f8ff;border:1px solid #dde8f8;border-radius:10px;padding:14px 12px;text-align:center;margin-bottom:8px;">
+                      <div style="font-size:9px;font-weight:700;color:#457b9d;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Price Rate</div>
+                      <div style="font-size:22px;font-weight:900;color:#1a3a5e;">{pv}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
                 if scheme_idx < len(schemes_display) - 1:
                     st.divider()
