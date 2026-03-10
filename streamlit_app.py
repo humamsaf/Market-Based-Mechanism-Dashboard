@@ -1193,7 +1193,7 @@ def page_cbam():
                 symbol=style["symbol"],
                 color=style["color"],
                 size=style["size"],
-                line=dict(width=0.5, color="#ffffff"),
+                line=dict(width=1.2, color="#000000"),
                 opacity=0.9,
             ),
             name=cat,
