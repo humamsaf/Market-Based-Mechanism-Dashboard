@@ -1408,7 +1408,7 @@ def page_ets():
                     _price_hdr = _p if _p != "—" else ""
                 except: pass
 
-            scheme_badge = (f'<div style="background:rgba(255,200,100,0.3);border-radius:6px;padding:4px 14px;font-size:12px;font-weight:700;align-self:center;">Showing: {selected_scheme}</div>') if selected_scheme else ""
+            scheme_badge = ""
 
             # Build gauge SVG helper
             import math
