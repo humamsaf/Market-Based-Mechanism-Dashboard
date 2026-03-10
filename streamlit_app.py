@@ -229,6 +229,20 @@ MANUAL_ISO3 = {
     "Bolivia": "BOL", "Venezuela": "VEN", "Tanzania": "TZA",
     "Micronesia": "FSM", "Palestine": "PSE", "Taiwan": "TWN",
     "Vietnam": "VNM", "Moldova": "MDA",
+    "Turkey": "TUR", "Türkiye": "TUR",
+    "Egypt, Arab Rep.": "EGY", "Egypt": "EGY",
+    "Korea, Rep.": "KOR", "Korea, Dem. Rep.": "PRK",
+    "Iran, Islamic Rep.": "IRN",
+    "Slovak Republic": "SVK",
+    "Serbia, FR(Serbia/Montenegro)": "SRB", "Serbia": "SRB",
+    "Bosnia and Herzegovina": "BIH",
+    "North Macedonia": "MKD",
+    "Kyrgyz Republic": "KGZ",
+    "Congo, Dem. Rep.": "COD", "Congo, Rep.": "COG",
+    "Lao PDR": "LAO",
+    "Cabo Verde": "CPV", "Cape Verde": "CPV",
+    "Eswatini": "SWZ",
+    "Czechia": "CZE", "Czech Republic": "CZE",
 }
 
 # ── Helpers ────────────────────────────────────────────────────
