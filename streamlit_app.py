@@ -1447,6 +1447,9 @@ def page_ets():
                 + (('<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;min-width:70px;text-align:center;">'
                     '<div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Price Rate</div>'
                     f'<div style="font-size:22px;font-weight:900;">{_price_hdr}</div></div>') if _price_hdr else "")
+                + (('<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;min-width:70px;text-align:center;">'
+                    '<div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Revenue</div>'
+                    f'<div style="font-size:16px;font-weight:900;">{fval(_r0.get("revenue"))}</div></div>') if _r0 is not None and fval(_r0.get("revenue")) != "—" else "")
                 + '</div>'
                 + (f'<div style="margin-top:12px;background:rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;">'
                    f'<div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Sector Coverage</div>'
