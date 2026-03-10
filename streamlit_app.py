@@ -1605,7 +1605,7 @@ def page_ets():
             {stat(n_funding, "Funding Programs")}
         </div>
         <div style="font-size:13px;color:#888;line-height:2;max-width:960px;margin:0 auto 40px auto;">
-            Today, <b>{n_schemes} active ETS schemes</b> operate across <b>{n_countries} jurisdictions</b> — <b>15 in North America</b>, <b>15 in East Asia &amp; Pacific</b>, <b>7 in Europe &amp; Central Asia</b>, and <b>1 in Latin America</b> — with carbon prices ranging from <b>USD {min_price:.0f} to USD {max_price_v:.0f}</b> (avg. <b>USD {avg_price:.0f}/tCO₂</b>). Sectors covered include <b>{", ".join(sectors_list[:-1])}, and {sectors_list[-1]}</b>. Regulated greenhouse gases include CO₂, CH₄, N₂O, HFCs, PFCs, SF₆, and NF₃.
+            <b>{n_schemes} active ETS schemes</b> operate across <b>{n_countries} jurisdictions</b> — <b>15 in North America</b>, <b>15 in East Asia &amp; Pacific</b>, <b>7 in Europe &amp; Central Asia</b>, and <b>1 in Latin America</b> — with carbon prices ranging from <b>USD {min_price:.0f} to USD {max_price_v:.0f}</b> (avg. <b>USD {avg_price:.0f}/tCO₂</b>). Sectors covered include <b>{", ".join(sectors_list[:-1])}, and {sectors_list[-1]}</b>. Regulated greenhouse gases include CO₂, CH₄, N₂O, HFCs, PFCs, SF₆, and NF₃.
         </div>
         <a onclick="
             var el = document.getElementById('ets-map-section');
