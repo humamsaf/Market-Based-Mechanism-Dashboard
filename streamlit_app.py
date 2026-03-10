@@ -995,6 +995,7 @@ def page_cbam():
         "Other":      "#9b59b6",
     }
 
+    MONO_BLUES = ["#1d3557", "#2a6496", "#7fb3d9", "#c8dff4"]
     # ── Hero ───────────────────────────────────────────────────
     def divv():
         return '<div style="width:1px;height:50px;background:#e0e0e0;align-self:center;"></div>'
