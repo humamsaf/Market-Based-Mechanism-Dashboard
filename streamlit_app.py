@@ -1226,33 +1226,73 @@ def page_ets():
                 marker_line_color="#999", marker_line_width=0.8,
             ))
 
-    # ── Orange dots: one per scheme at scheme coordinates ──
-    dot_lons, dot_lats, dot_hovers, dot_custom = [], [], [], []
-    for _, row in f_ets.iterrows():
-        sname = row["name"]
-        coord = SCHEME_COORDS.get(sname)
-        if coord is None:
-            for k, v in SCHEME_COORDS.items():
-                if row["country"].lower() in k.lower():
-                    coord = v
-                    break
-        if coord is None:
+    # ── One dot per country (representative scheme) ──────────────
+    COUNTRY_CENTROIDS = {
+        "Australia":      (-25.27,  133.78),
+        "Austria":        ( 47.52,   14.55),
+        "Canada":         ( 60.00,  -96.00),
+        "China":          ( 35.86,  104.20),
+        "European Union": ( 50.85,    4.35),
+        "Germany":        ( 51.17,   10.45),
+        "Indonesia":      ( -0.79,  113.92),
+        "Japan":          ( 36.20,  138.25),
+        "Kazakhstan":     ( 48.02,   66.92),
+        "Korea, Rep.":    ( 36.50,  127.98),
+        "Mexico":         ( 23.63, -102.55),
+        "Montenegro":     ( 42.71,   19.37),
+        "New Zealand":    (-40.90,  174.89),
+        "Switzerland":    ( 46.82,    8.23),
+        "United Kingdom": ( 55.38,   -3.44),
+        "United States":  ( 39.50,  -98.35),
+    }
+
+    # Pick representative scheme per country (national/federal first)
+    REPR_SCHEME = {}
+    for country, schemes in f_ets.groupby("country")["name"].apply(list).items():
+        national = [s for s in schemes if any(w in s.lower() for w in ["national","federal","safeguard"])]
+        REPR_SCHEME[country] = national[0] if national else schemes[0]
+
+    DOT_COLORS = [
+        "#e07b00","#2a9d8f","#e63946","#9b59b6",
+        "#4a90d9","#f4a261","#5a8a3a","#d63031",
+        "#00b894","#6c5ce7","#457b9d","#c97a3a",
+        "#fdcb6e","#0984e3","#a29bfe","#fd79a8",
+    ]
+    country_list = sorted(COUNTRY_CENTROIDS.keys())
+    country_color = {c: DOT_COLORS[i % len(DOT_COLORS)] for i, c in enumerate(country_list)}
+
+    dot_lons, dot_lats, dot_colors, dot_hovers, dot_custom = [], [], [], [], []
+    for country, coord in COUNTRY_CENTROIDS.items():
+        country_schemes = f_ets[f_ets["country"] == country]
+        if country_schemes.empty:
             continue
-        cLat, cLon = coord
+        repr_name = REPR_SCHEME.get(country, country_schemes["name"].iloc[0])
+        repr_row  = f_ets[f_ets["name"] == repr_name]
+        if repr_row.empty:
+            repr_row = country_schemes.iloc[[0]]
+        row = repr_row.iloc[0]
+        n   = len(country_schemes)
         price_v = row.get("price", "N/A")
         year_v  = int(row["start_date"]) if pd.notna(row.get("start_date")) else "N/A"
-        dot_lons.append(cLon)
-        dot_lats.append(cLat)
-        dot_hovers.append(f"<b>{sname}</b><br>{row['country']} · Est. {year_v}<br>Price: {price_v}<extra></extra>")
-        dot_custom.append([sname])
+        schemes_list = "<br>".join(f"  · {s}" for s in country_schemes["name"].tolist())
+        hover = (f"<b>{country}</b><br>{n} scheme(s)<br>"
+                 f"Repr: {repr_name}<br>Est. {year_v} · {price_v}<br>"
+                 f"──────────<br>{schemes_list}<extra></extra>")
+        dot_lons.append(coord[1])
+        dot_lats.append(coord[0])
+        dot_colors.append(country_color[country])
+        dot_hovers.append(hover)
+        dot_custom.append([country])  # click → show country detail
 
     if dot_lons:
         fig_ets_map.add_trace(go.Scattergeo(
             lon=dot_lons, lat=dot_lats,
             mode="markers",
             marker=dict(
-                size=10, color="#f4a261", symbol="circle",
-                line=dict(width=1.5, color="white"),
+                size=12,
+                color=dot_colors,
+                symbol="circle",
+                line=dict(width=2, color="white"),
             ),
             hovertemplate=dot_hovers,
             customdata=dot_custom,
@@ -1313,19 +1353,18 @@ def page_ets():
                                           "displayModeBar": False})
 
     selected = None        # country name
-    selected_scheme = None  # specific scheme name
+    selected_scheme = None
     if clicked and clicked.get("selection") and clicked["selection"].get("points"):
         pts = clicked["selection"]["points"]
         if pts:
             cd = pts[0].get("customdata")
             if cd and len(cd) > 0:
                 val = cd[0]
-                # All markers return scheme name in customdata
-                scheme_country = f_ets[f_ets["name"] == val]["country"]
-                if not scheme_country.empty:
-                    selected_scheme = val
-                    selected = scheme_country.iloc[0]
+                # Dots return country name
+                if val in f_ets["country"].values:
+                    selected = val
                 else:
+                    # choropleth fallback
                     selected = val
     if not selected and len(country_sel) == 1:
         selected = country_sel[0]
