@@ -1408,30 +1408,67 @@ def page_ets():
                     _price_hdr = _p if _p != "—" else ""
                 except: pass
 
-            share_badge = (f'<div style="background:rgba(255,255,255,0.15);border-radius:8px;padding:6px 14px;min-width:60px;">'
-                           f'<div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;">Share</div>'
-                           f'<div style="font-size:17px;font-weight:900;">{_share_hdr}</div></div>') if _share_hdr else ""
-            price_badge = (f'<div style="background:rgba(255,255,255,0.15);border-radius:8px;padding:6px 14px;min-width:60px;">'
-                           f'<div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;">Price Rate</div>'
-                           f'<div style="font-size:17px;font-weight:900;">{_price_hdr}</div></div>') if _price_hdr else ""
-            scheme_badge = (f'<div style="background:rgba(255,200,100,0.3);border-radius:6px;padding:4px 14px;font-size:12px;font-weight:700;align-self:center;">Showing: {selected_scheme}</div>') if selected_scheme else ""
+            # Build gauge SVG helper
+            import math
+            def gauge_svg(pct, color, track, lo_lbl="", hi_lbl=""):
+                pct_c = max(0.0, min(pct, 1.0))
+                rad   = math.radians(180 - pct_c * 180)
+                nx    = 50 + 38 * math.cos(rad)
+                ny    = 50 - 38 * math.sin(rad)
+                large = 1 if pct_c > 0.5 else 0
+                return f'''<svg viewBox="0 0 100 58" width="100%" style="display:block;">
+                  <path d="M 12 50 A 38 38 0 0 1 88 50" fill="none" stroke="{track}" stroke-width="9" stroke-linecap="round"/>
+                  <path d="M 12 50 A 38 38 0 {large} 1 {nx:.1f} {ny:.1f}" fill="none" stroke="{color}" stroke-width="9" stroke-linecap="round"/>
+                  <circle cx="{nx:.1f}" cy="{ny:.1f}" r="4" fill="white" stroke="{color}" stroke-width="2"/>
+                  <text x="10" y="57" font-size="7" fill="rgba(255,255,255,0.5)" text-anchor="middle">{lo_lbl}</text>
+                  <text x="90" y="57" font-size="7" fill="rgba(255,255,255,0.5)" text-anchor="middle">{hi_lbl}</text>
+                </svg>'''
+
+            # Share gauge
+            share_gauge_html = ""
+            if _share_hdr:
+                try:
+                    sp = float(_r0.get("share"))
+                    sc = "#2a9d8f" if sp >= 0.6 else ("#f4a261" if sp >= 0.3 else "#e63946")
+                    share_gauge_html = f'''
+                    <div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 12px 6px;min-width:110px;text-align:center;">
+                      <div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Share of Jurisdiction</div>
+                      {gauge_svg(sp, sc, "rgba(255,255,255,0.2)", "0%", "100%")}
+                      <div style="font-size:18px;font-weight:900;color:{sc};margin-top:-4px;">{_share_hdr}</div>
+                    </div>'''
+                except: pass
+
+            # Price gauge
+            price_gauge_html = ""
+            if _price_hdr:
+                try:
+                    pp = float(_r0.get("price_num")) / float(max_price)
+                    pc = "#e63946" if pp >= 0.66 else ("#f4a261" if pp >= 0.33 else "#2a9d8f")
+                    lo_p = f_ets["price_num"].dropna().min()
+                    price_gauge_html = f'''
+                    <div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 12px 6px;min-width:110px;text-align:center;">
+                      <div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Price Rate</div>
+                      {gauge_svg(pp, pc, "rgba(255,255,255,0.2)", f"${lo_p:.0f}", f"${max_price:.0f}")}
+                      <div style="font-size:18px;font-weight:900;color:{pc};margin-top:-4px;">{_price_hdr}</div>
+                    </div>'''
+                except: pass
 
             st.markdown(f"""
             <div style="background:linear-gradient(135deg,#1a3a5e 0%,#457b9d 100%);
                     border-radius:14px;padding:24px 28px;margin-bottom:20px;color:white;">
               <div style="font-size:28px;font-weight:900;letter-spacing:1px;margin-bottom:4px;">{selected.upper()}{prov_note}</div>
               <div style="font-size:13px;opacity:0.8;margin-bottom:14px;">{region_lbl}</div>
-              <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <div style="background:rgba(255,255,255,0.15);border-radius:8px;padding:6px 14px;min-width:60px;">
-                  <div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;">Since</div>
-                  <div style="font-size:17px;font-weight:900;">{start_lbl}</div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;">
+                <div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;min-width:70px;text-align:center;">
+                  <div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Since</div>
+                  <div style="font-size:22px;font-weight:900;">{start_lbl}</div>
                 </div>
-                <div style="background:rgba(255,255,255,0.15);border-radius:8px;padding:6px 14px;min-width:60px;">
-                  <div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;">Schemes</div>
-                  <div style="font-size:17px;font-weight:900;">{len(schemes)}</div>
+                <div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;min-width:70px;text-align:center;">
+                  <div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Schemes</div>
+                  <div style="font-size:22px;font-weight:900;">{len(schemes)}</div>
                 </div>
-                {share_badge}
-                {price_badge}
+                {share_gauge_html}
+                {price_gauge_html}
                 {scheme_badge}
               </div>
             </div>
