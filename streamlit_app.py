@@ -122,9 +122,9 @@ MECH_COLS = {
 }
 
 CARBON_PRICING_COLORS = {
-    "ETS + Carbon Tax": "#2a6496",
-    "Carbon Tax":       "#6baed6",
     "ETS":              "#08306b",
+    "ETS + Carbon Tax": "#5c4a8a",
+    "Carbon Tax":       "#c6dbef",
     "No Carbon Pricing":"#e8edf2",
 }
 
