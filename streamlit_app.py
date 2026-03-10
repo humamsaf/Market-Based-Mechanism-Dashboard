@@ -1066,11 +1066,39 @@ def page_cbam():
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Filters ────────────────────────────────────────────────
     # ── Geographic Exposure Map ───────────────────────────────────
     st.markdown('<div id="cbam-main-section"></div>', unsafe_allow_html=True)
+
+    # Summary stats dari df_real (tidak terpengaruh filter)
+    total_all = df_real["Trade Value 1000USD"].sum() / 1_000_000
+    divider = '<div style="width:1px;height:40px;background:#e8e8e8;align-self:center;margin:0 8px;"></div>'
+    total_item = (
+        '<div style="display:flex;flex-direction:column;min-width:100px;">'
+        '<div style="font-size:10px;font-weight:700;color:#1d3557;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;">Total</div>'
+        '<div style="font-size:28px;font-weight:900;color:#1d3557;line-height:1;">USD ' + f"{total_all:.2f}" + 'B</div>'
+        '<div style="font-size:11px;color:#aaa;margin-top:3px;">all sectors</div>'
+        '</div>'
+    )
+    cat_summary_items = []
+    for cat in categories:
+        val = df_real[df_real["Category"] == cat]["Trade Value 1000USD"].sum() / 1_000
+        color = CAT_COLORS.get(cat, "#888")
+        n_p   = df_real[df_real["Category"] == cat]["Partner"].nunique()
+        cat_summary_items.append(
+            '<div style="display:flex;flex-direction:column;min-width:100px;">'
+            '<div style="font-size:10px;font-weight:700;color:' + color + ';text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;">' + cat + '</div>'
+            '<div style="font-size:28px;font-weight:900;color:#1a1a2e;line-height:1;">USD ' + f"{val:,.0f}" + 'M</div>'
+            '<div style="font-size:11px;color:#aaa;margin-top:3px;">' + str(n_p) + ' partners</div>'
+            '</div>'
+        )
+    summary_inner = divider.join([total_item] + cat_summary_items)
+    st.markdown(
+        '<div style="display:flex;align-items:center;gap:0;flex-wrap:wrap;padding:20px 0 24px 0;border-bottom:1px solid #e8e8e8;margin-bottom:20px;">' + summary_inner + '</div>',
+        unsafe_allow_html=True
+    )
+
     st.markdown("""
-    <div style="margin-bottom:16px;">
+    <div style="margin-bottom:12px;">
         <div style="font-size:28px;font-weight:900;color:#1a1a2e;margin-bottom:4px;">Geographic Exposure Map</div>
         <div style="font-size:13px;color:#999;">Trade value by partner country — hover to explore details.</div>
     </div>
@@ -1176,47 +1204,6 @@ def page_cbam():
         ),
     )
     st.plotly_chart(fig_map, use_container_width=True, key="cbam_map", config={"displayModeBar": False, "scrollZoom": False})
-
-    # ── Trade Exposure Overview ───────────────────────────────────
-    st.markdown("<hr style='border:none;border-top:1px solid #e8e8e8;margin:16px 0 20px 0'>", unsafe_allow_html=True)
-    st.markdown("""
-    <div style="margin-bottom:16px;">
-        <div style="font-size:28px;font-weight:900;color:#1a1a2e;margin-bottom:4px;">Trade Exposure Overview</div>
-        <div style="font-size:13px;color:#999;">Summary of CBAM trade exposure by sector and partner.</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # ── Inline summary stats ──────────────────────────────────────
-    total_f = f["Trade Value 1000USD"].sum() / 1_000_000
-    divider = '<div style="width:1px;height:50px;background:#e8e8e8;align-self:center;"></div>'
-    total_html = (
-        '<div style="display:flex;flex-direction:column;align-items:center;text-align:center;min-width:120px;">'
-        '<div style="font-size:10px;font-weight:700;color:#1d3557;text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;">🌐 Total</div>'
-        '<div style="font-size:32px;font-weight:900;color:#1d3557;line-height:1;">USD ' + f"{total_f:.2f}" + 'B</div>'
-        '<div style="font-size:11px;color:#aaa;margin-top:4px;">all sectors</div>'
-        '</div>'
-    )
-    cat_items = []
-    for cat in categories:
-        val = f[f["Category"] == cat]["Trade Value 1000USD"].sum() / 1_000
-        color = CAT_COLORS.get(cat, "#888")
-        icon  = CAT_ICONS.get(cat, "📦")
-        n_p   = f[f["Category"] == cat]["Partner"].nunique()
-        cat_items.append(
-            '<div style="display:flex;flex-direction:column;align-items:center;text-align:center;min-width:120px;">'
-            '<div style="font-size:10px;font-weight:700;color:' + color + ';text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;">' + icon + ' ' + cat + '</div>'
-            '<div style="font-size:32px;font-weight:900;color:#1a1a2e;line-height:1;">USD ' + f"{val:,.0f}" + 'M</div>'
-            '<div style="font-size:11px;color:#aaa;margin-top:4px;">' + str(n_p) + ' partners</div>'
-            '</div>'
-        )
-    inner = divider.join([total_html] + cat_items)
-    summary_html = (
-        '<div style="padding:24px 0 28px 0;border-bottom:1px solid #e8e8e8;margin-bottom:28px;">'
-        '<div style="font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:2px;margin-bottom:16px;">Sector Breakdown</div>'
-        '<div style="display:flex;align-items:center;gap:32px;flex-wrap:wrap;">'
-        + inner + '</div></div>'
-    )
-    st.markdown(summary_html, unsafe_allow_html=True)
 
     # ── Charts ────────────────────────────────────────────────────
     st.markdown("<hr style='border:none;border-top:1px solid #e8e8e8;margin:8px 0 20px 0'>", unsafe_allow_html=True)
