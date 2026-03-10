@@ -631,6 +631,11 @@ def page_mbm():
                 <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">ETS and Carbon Tax</div>
             </div>
         </div>
+        <div style="font-size:11px;color:#aaa;line-height:1.8;max-width:860px;margin:0 auto 32px auto;text-align:center;">
+            Data sourced from <a href="https://wits.worldbank.org/about_wits.html" target="_blank" style="color:#999;text-decoration:underline;">World Integrated Trade Solution (WITS), World Bank</a>
+            and collected as proprietary data of the <span style="color:#777;font-weight:600;">Market-based Interventions for Deep Decarbonisation (MIDD) Lab</span>.
+            This dashboard is a product of the MIDD Lab.
+        </div>
         <a onclick="
             var el = document.getElementById('map-section');
             var container = window.parent.document.querySelector('.main');
@@ -1032,6 +1037,11 @@ def page_cbam():
             {stat(n_products, "Product Codes")}
             {divv()}
             {stat(n_cat, "CBAM Sectors")}
+        </div>
+        <div style="font-size:11px;color:#aaa;line-height:1.8;max-width:860px;margin:0 auto 32px auto;text-align:center;">
+            Data sourced from <a href="https://wits.worldbank.org/about_wits.html" target="_blank" style="color:#999;text-decoration:underline;">World Integrated Trade Solution (WITS), World Bank</a>
+            and collected as proprietary data of the <span style="color:#777;font-weight:600;">Market-based Interventions for Deep Decarbonisation (MIDD) Lab</span>.
+            This dashboard is a product of the MIDD Lab.
         </div>
         <a onclick="
             var el = document.getElementById('cbam-main-section');
@@ -1549,6 +1559,11 @@ def page_ets():
         </div>
         <div style="font-size:13px;color:#888;line-height:2;max-width:960px;margin:0 auto 40px auto;">
             Today, <b>{n_schemes} active ETS schemes</b> operate across <b>{n_countries} jurisdictions</b> — <b>15 in North America</b>, <b>15 in East Asia &amp; Pacific</b>, <b>7 in Europe &amp; Central Asia</b>, and <b>1 in Latin America</b> — with carbon prices ranging from <b>USD {min_price:.0f} to USD {max_price_v:.0f}</b> (avg. <b>USD {avg_price:.0f}/tCO₂</b>). Sectors covered include <b>{", ".join(sectors_list[:-1])}, and {sectors_list[-1]}</b>. Regulated greenhouse gases include CO₂, CH₄, N₂O, HFCs, PFCs, SF₆, and NF₃.
+        </div>
+        <div style="font-size:11px;color:#aaa;line-height:1.8;max-width:860px;margin:0 auto 32px auto;text-align:center;">
+            Data sourced from <a href="https://wits.worldbank.org/about_wits.html" target="_blank" style="color:#999;text-decoration:underline;">World Integrated Trade Solution (WITS), World Bank</a>
+            and collected as proprietary data of the <span style="color:#777;font-weight:600;">Market-based Interventions for Deep Decarbonisation (MIDD) Lab</span>.
+            This dashboard is a product of the MIDD Lab.
         </div>
         <a onclick="
             var el = document.getElementById('ets-map-section');
