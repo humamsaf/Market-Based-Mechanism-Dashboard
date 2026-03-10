@@ -26,6 +26,13 @@ st.markdown("""
         padding-left: 2rem;
         padding-right: 2rem;
     }
+    /* Remove Streamlit default gap below plotly charts */
+    [data-testid="stPlotlyChart"] > div {
+        margin-bottom: -2rem !important;
+    }
+    div[data-testid="element-container"]:has([data-testid="stPlotlyChart"]) {
+        margin-bottom: 0 !important;
+    }
     .navbar {
         display: flex;
         align-items: center;
@@ -1458,8 +1465,8 @@ def page_ets():
 
     # ── Detail section below map (full width) ─────────────────────
     if selected and not schemes_display.empty:
-        st.markdown("<hr style='border:none;border-top:1px solid #e0e0e0;margin:24px 0 20px 0'>", unsafe_allow_html=True)
-        st.markdown(f'<div style="font-size:20px;font-weight:900;color:#1a1a2e;margin-bottom:20px;">Scheme Details — {selected}</div>', unsafe_allow_html=True)
+        st.markdown("<hr style='border:none;border-top:1px solid #e0e0e0;margin:4px 0 12px 0'>", unsafe_allow_html=True)
+        st.markdown(f'<div style="font-size:20px;font-weight:900;color:#1a1a2e;margin-bottom:12px;">Scheme Details — {selected}</div>', unsafe_allow_html=True)
 
         for scheme_idx, (_, r) in enumerate(schemes_display.iterrows()):
             if len(schemes_display) > 1:
@@ -1512,7 +1519,7 @@ def page_ets():
             if scheme_idx < len(schemes_display) - 1:
                 st.markdown("<hr style='border:none;border-top:1px solid #e8e8e8;margin:16px 0'>", unsafe_allow_html=True)
 
-    st.divider()
+    st.markdown("<div style='margin:8px 0'></div>", unsafe_allow_html=True)
 
     # ── Timeline ──────────────────────────────────────────────────
     st.markdown("""
