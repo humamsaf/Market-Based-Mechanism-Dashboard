@@ -1526,9 +1526,8 @@ def page_ets():
             if scheme_idx < len(schemes_display) - 1:
                 st.markdown("<hr style='border:none;border-top:1px solid #e8e8e8;margin:16px 0'>", unsafe_allow_html=True)
 
-    st.markdown("<div style='margin:8px 0'></div>", unsafe_allow_html=True)
 
-    # ── Timeline ──────────────────────────────────────────────────
+# ── Router ─────────────────────────────────────────────────────
     st.markdown("""
     <div style="font-size:28px;font-weight:900;color:#1a1a2e;margin-bottom:16px;">ETS Timeline</div>
     """, unsafe_allow_html=True)
