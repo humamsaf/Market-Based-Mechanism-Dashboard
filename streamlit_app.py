@@ -1143,6 +1143,14 @@ def page_cbam():
 
     map_agg["hover"] = map_agg["Partner"].apply(build_cbam_hover)
 
+    # Sector marker styles
+    CAT_MARKER = {
+        "Aluminium":  {"symbol": "square",      "color": "#4a90d9", "size": 5, "offset": (0.0,  0.0)},
+        "Cement":     {"symbol": "triangle-up", "color": "#e07b00", "size": 6, "offset": (0.0,  2.0)},
+        "Fertilizer": {"symbol": "circle",      "color": "#2a9d8f", "size": 5, "offset": (2.0,  0.0)},
+        "Other":      {"symbol": "diamond",     "color": "#9b59b6", "size": 5, "offset": (-2.0, 0.0)},
+    }
+
     fig_map = go.Figure()
     fig_map.add_trace(go.Choropleth(
         locations=map_agg["iso3"],
@@ -1158,12 +1166,52 @@ def page_cbam():
         customdata=map_agg[["hover"]].values,
         marker_line_color="#ffffff",
         marker_line_width=0.8,
-        name="",
+        name="Trade Value",
+        showlegend=False,
     ))
+
+    # Tambah marker per sektor
+    active_cats = [c for c in categories if c in map_df["Category"].unique()]
+    for i, cat in enumerate(active_cats):
+        style = CAT_MARKER[cat]
+        dlat, dlon = style["offset"]
+        cat_partners = map_df[map_df["Category"] == cat]["Partner"].unique()
+        rows = []
+        for partner in cat_partners:
+            iso3 = to_iso3(partner)
+            if iso3 and iso3 in CENTROIDS:
+                lat, lon = CENTROIDS[iso3]
+                rows.append({"partner": partner, "lat": lat + dlat, "lon": lon + dlon})
+        if not rows:
+            continue
+        import pandas as _pd
+        df_cat = _pd.DataFrame(rows)
+        fig_map.add_trace(go.Scattergeo(
+            lat=df_cat["lat"], lon=df_cat["lon"],
+            mode="markers",
+            marker=dict(
+                symbol=style["symbol"],
+                color=style["color"],
+                size=style["size"],
+                line=dict(width=0.5, color="#ffffff"),
+                opacity=0.9,
+            ),
+            name=cat,
+            text=df_cat["partner"],
+            hoverinfo="skip",
+            showlegend=True,
+            legendgroup="sectors",
+            legendgrouptitle_text="Sectors" if i == 0 else "",
+        ))
 
     fig_map.update_layout(
         height=480, margin=dict(l=0, r=0, t=0, b=0),
         paper_bgcolor="white",
+        legend=dict(
+            bgcolor="rgba(255,255,255,0.9)", bordercolor="#e0e0e0", borderwidth=1,
+            x=0.01, y=0.01, xanchor="left", yanchor="bottom",
+            font=dict(size=10), tracegroupgap=4, itemsizing="constant",
+        ),
         geo=dict(
             projection_type="equirectangular",
             showframe=False,
