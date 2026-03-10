@@ -912,7 +912,7 @@ def page_placeholder(title, icon):
 
 
 # ── CBAM Data Loader ───────────────────────────────────────────
-CBAM_FILE = "data/CBAM_EXPOSURE.xlsx"
+CBAM_FILE = "data/CBAM EXPOSURE.xlsx"
 
 @st.cache_data
 def load_cbam_data():
@@ -934,9 +934,9 @@ def page_cbam():
     # ── Derived stats ──────────────────────────────────────────
     df_real = df[df["Partner"] != "World"].copy()
 
-    total_val = df_real["Trade Value 1000USD"].sum() / 1_000_000   # billion USD
-    eu_val    = df_real[df_real["Reporter"] == "European Union"]["Trade Value 1000USD"].sum() / 1_000_000
-    uk_val    = df_real[df_real["Reporter"] == "United Kingdom"]["Trade Value 1000USD"].sum() / 1_000_000
+    total_val = df_real["Trade Value 1000USD"].sum() / 1_000   # million USD
+    eu_val    = df_real[df_real["Reporter"] == "European Union"]["Trade Value 1000USD"].sum() / 1_000
+    uk_val    = df_real[df_real["Reporter"] == "United Kingdom"]["Trade Value 1000USD"].sum() / 1_000
     n_partners = df_real["Partner"].nunique()
     n_products = df_real["ProductCode"].nunique()
     categories = sorted(df_real["Category"].unique())
@@ -981,11 +981,11 @@ def page_cbam():
             </div>
         </div>
         <div style="display:flex;justify-content:center;align-items:center;gap:40px;flex-wrap:nowrap;margin-bottom:24px;">
-            {stat(f"USD {total_val:.1f}B", "Total Trade Value", sub="EU + UK combined")}
+            {stat(f"USD {total_val:.1f}M", "Total Trade Value", sub="EU + UK combined")}
             {divv()}
-            {stat(f"USD {eu_val:.1f}B", "EU Import Value")}
+            {stat(f"USD {eu_val:.1f}M", "EU Import Value")}
             {divv()}
-            {stat(f"USD {uk_val:.1f}B", "UK Import Value")}
+            {stat(f"USD {uk_val:.1f}M", "UK Import Value")}
             {divv()}
             {stat(n_partners, "Trading Partners")}
             {divv()}
@@ -1057,7 +1057,7 @@ def page_cbam():
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
     cat_cols = st.columns(len(categories))
     for i, cat in enumerate(categories):
-        val = f[f["Category"] == cat]["Trade Value 1000USD"].sum() / 1_000_000
+        val = f[f["Category"] == cat]["Trade Value 1000USD"].sum() / 1_000
         color = CAT_COLORS.get(cat, "#888")
         icon  = CAT_ICONS.get(cat, "📦")
         n_p   = f[f["Category"] == cat]["Partner"].nunique()
@@ -1068,7 +1068,7 @@ def page_cbam():
                         padding:18px 16px;text-align:center;margin-bottom:16px;">
                 <div style="font-size:22px;margin-bottom:4px;">{icon}</div>
                 <div style="font-size:13px;font-weight:800;color:{color};margin-bottom:6px;">{cat}</div>
-                <div style="font-size:28px;font-weight:900;color:#1a1a2e;line-height:1;">USD {val:.1f}B</div>
+                <div style="font-size:28px;font-weight:900;color:#1a1a2e;line-height:1;">USD {val:.0f}M</div>
                 <div style="font-size:11px;color:#999;margin-top:4px;">{n_p} partners</div>
             </div>
             """, unsafe_allow_html=True)
@@ -1084,21 +1084,21 @@ def page_cbam():
             .head(15)
             .reset_index()
         )
-        top_partners["Trade Value USD B"] = top_partners["Trade Value 1000USD"] / 1_000_000
-        top_partners = top_partners.sort_values("Trade Value USD B", ascending=True)
+        top_partners["Trade Value USD M"] = top_partners["Trade Value 1000USD"] / 1_000
+        top_partners = top_partners.sort_values("Trade Value USD M", ascending=True)
 
         fig_bar = go.Figure()
         fig_bar.add_trace(go.Bar(
             y=top_partners["Partner"],
-            x=top_partners["Trade Value USD B"],
+            x=top_partners["Trade Value USD M"],
             orientation="h",
             marker=dict(
-                color=top_partners["Trade Value USD B"],
+                color=top_partners["Trade Value USD M"],
                 colorscale=[[0, "#c8dff4"], [1, "#1d3557"]],
                 showscale=False,
                 line=dict(width=0),
             ),
-            text=[f"USD {v:.2f}B" for v in top_partners["Trade Value USD B"]],
+            text=[f"USD {v:.0f}M" for v in top_partners["Trade Value USD M"]],
             textposition="outside",
             textfont=dict(size=10, color="#555"),
             hovertemplate="<b>%{y}</b><br>USD %{x:.2f}B<extra></extra>",
@@ -1106,7 +1106,7 @@ def page_cbam():
         fig_bar.update_layout(
             height=420, margin=dict(l=0, r=60, t=10, b=0),
             paper_bgcolor="white", plot_bgcolor="white",
-            xaxis=dict(title="Trade Value (USD Billion)", showgrid=True, gridcolor="#f0f0f0", zeroline=False),
+            xaxis=dict(title="Trade Value (USD Million)", showgrid=True, gridcolor="#f0f0f0", zeroline=False),
             yaxis=dict(title="", showgrid=False, tickfont=dict(size=11)),
             hoverlabel=dict(bgcolor="white", bordercolor="#ccc", font=dict(size=12)),
         )
@@ -1115,12 +1115,12 @@ def page_cbam():
     with col_donut:
         st.markdown('<div style="font-size:16px;font-weight:800;color:#1a1a2e;margin-bottom:8px;">Trade Value by Sector</div>', unsafe_allow_html=True)
         cat_agg = f.groupby("Category")["Trade Value 1000USD"].sum().reset_index()
-        cat_agg["USD B"] = cat_agg["Trade Value 1000USD"] / 1_000_000
-        cat_agg = cat_agg[cat_agg["USD B"] > 0]
+        cat_agg["USD M"] = cat_agg["Trade Value 1000USD"] / 1_000
+        cat_agg = cat_agg[cat_agg["USD M"] > 0]
 
         fig_donut = go.Figure(go.Pie(
             labels=cat_agg["Category"],
-            values=cat_agg["USD B"],
+            values=cat_agg["USD M"],
             hole=0.55,
             marker=dict(
                 colors=[CAT_COLORS.get(c, "#888") for c in cat_agg["Category"]],
@@ -1130,9 +1130,9 @@ def page_cbam():
             textfont=dict(size=12),
             hovertemplate="<b>%{label}</b><br>USD %{value:.2f}B<br>%{percent}<extra></extra>",
         ))
-        total_filtered = cat_agg["USD B"].sum()
+        total_filtered = cat_agg["USD M"].sum()
         fig_donut.add_annotation(
-            text=f"<b>USD {total_filtered:.1f}B</b><br><span style='font-size:10px;color:#999'>Total</span>",
+            text=f"<b>USD {total_filtered:.0f}M</b><br><span style='font-size:10px;color:#999'>Total</span>",
             x=0.5, y=0.5, xref="paper", yref="paper",
             showarrow=False, font=dict(size=14, color="#1a1a2e"), align="center",
         )
@@ -1170,7 +1170,7 @@ def page_cbam():
 
     # Aggregate by partner
     map_agg = map_df.groupby("Partner")["Trade Value 1000USD"].sum().reset_index()
-    map_agg["Trade Value USD B"] = map_agg["Trade Value 1000USD"] / 1_000_000
+    map_agg["Trade Value USD M"] = map_agg["Trade Value 1000USD"] / 1_000
     map_agg["iso3"] = map_agg["Partner"].apply(to_iso3)
     map_agg = map_agg.dropna(subset=["iso3"])
 
@@ -1181,21 +1181,21 @@ def page_cbam():
         row = cat_by_partner[cat_by_partner["Partner"] == partner]
         lines = ""
         for _, r in row.sort_values("Trade Value 1000USD", ascending=False).iterrows():
-            v = r["Trade Value 1000USD"] / 1_000_000
-            lines += f"<br><span style='color:{CAT_COLORS.get(r['Category'],'#888')}'><b>■</b></span> {r['Category']}: <b>USD {v:.2f}B</b>"
-        total = row["Trade Value 1000USD"].sum() / 1_000_000
-        return f"<b>{partner}</b><br>─────────────<br>Total: <b>USD {total:.2f}B</b>{lines}"
+            v = r["Trade Value 1000USD"] / 1_000
+            lines += f"<br><span style='color:{CAT_COLORS.get(r['Category'],'#888')}'><b>■</b></span> {r['Category']}: <b>USD {v:.0f}M</b>"
+        total = row["Trade Value 1000USD"].sum() / 1_000
+        return f"<b>{partner}</b><br>─────────────<br>Total: <b>USD {total:.0f}M</b>{lines}"
 
     map_agg["hover"] = map_agg["Partner"].apply(build_cbam_hover)
 
     fig_map = go.Figure()
     fig_map.add_trace(go.Choropleth(
         locations=map_agg["iso3"],
-        z=map_agg["Trade Value USD B"],
+        z=map_agg["Trade Value USD M"],
         colorscale=[[0, "#dceaf7"], [0.3, "#7fb3d9"], [0.7, "#2a6496"], [1, "#1d3557"]],
         showscale=True,
         colorbar=dict(
-            title=dict(text="USD Billion", font=dict(size=11)),
+            title=dict(text="USD Million", font=dict(size=11)),
             thickness=12, len=0.6, x=1.0,
             tickfont=dict(size=10),
         ),
@@ -1242,18 +1242,18 @@ def page_cbam():
             f.groupby(["Reporter", "Category"])["Trade Value 1000USD"]
             .sum().reset_index()
         )
-        rep_cat["USD B"] = rep_cat["Trade Value 1000USD"] / 1_000_000
+        rep_cat["USD M"] = rep_cat["Trade Value 1000USD"] / 1_000
 
         fig_grouped = go.Figure()
         for cat in categories:
             sub = rep_cat[rep_cat["Category"] == cat]
             fig_grouped.add_trace(go.Bar(
                 x=sub["Reporter"],
-                y=sub["USD B"],
+                y=sub["USD M"],
                 name=cat,
                 marker_color=CAT_COLORS.get(cat, "#888"),
                 marker_line_color="#222", marker_line_width=0.8,
-                text=[f"{v:.1f}B" for v in sub["USD B"]],
+                text=[f"{v:.1f}M" for v in sub["USD M"]],
                 textposition="inside",
                 textfont=dict(size=11, color="white"),
                 hovertemplate=f"<b>{cat}</b><br>%{{x}}: USD %{{y:.2f}}B<extra></extra>",
@@ -1263,7 +1263,7 @@ def page_cbam():
             height=360, margin=dict(l=0, r=0, t=10, b=0),
             paper_bgcolor="white", plot_bgcolor="white",
             xaxis=dict(title="", showgrid=False, tickfont=dict(size=12, color="#1a1a2e")),
-            yaxis=dict(title="Trade Value (USD Billion)", showgrid=True, gridcolor="#f0f0f0"),
+            yaxis=dict(title="Trade Value (USD Million)", showgrid=True, gridcolor="#f0f0f0"),
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=11)),
             hoverlabel=dict(bgcolor="white", bordercolor="#ccc", font=dict(size=12)),
         )
@@ -1277,10 +1277,10 @@ def page_cbam():
             .sort_values("Trade Value 1000USD", ascending=False)
             .head(12)
         )
-        prod_agg["USD B"] = prod_agg["Trade Value 1000USD"] / 1_000_000
+        prod_agg["USD M"] = prod_agg["Trade Value 1000USD"] / 1_000
         # Truncate long product names
         prod_agg["Label"] = prod_agg["Product Description"].apply(lambda x: (x[:42] + "…") if len(x) > 42 else x)
-        prod_agg = prod_agg.sort_values("USD B", ascending=True)
+        prod_agg = prod_agg.sort_values("USD M", ascending=True)
 
         fig_prod = go.Figure()
         for cat in categories:
@@ -1288,7 +1288,7 @@ def page_cbam():
             if sub.empty: continue
             fig_prod.add_trace(go.Bar(
                 y=sub["Label"],
-                x=sub["USD B"],
+                x=sub["USD M"],
                 orientation="h",
                 name=cat,
                 marker_color=CAT_COLORS.get(cat, "#888"),
@@ -1299,7 +1299,7 @@ def page_cbam():
             barmode="stack",
             height=360, margin=dict(l=0, r=40, t=10, b=0),
             paper_bgcolor="white", plot_bgcolor="white",
-            xaxis=dict(title="Trade Value (USD Billion)", showgrid=True, gridcolor="#f0f0f0", zeroline=False),
+            xaxis=dict(title="Trade Value (USD Million)", showgrid=True, gridcolor="#f0f0f0", zeroline=False),
             yaxis=dict(title="", showgrid=False, tickfont=dict(size=10)),
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=11)),
             hoverlabel=dict(bgcolor="white", bordercolor="#ccc", font=dict(size=12)),
