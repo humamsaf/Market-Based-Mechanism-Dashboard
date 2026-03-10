@@ -1033,6 +1033,9 @@ def page_cbam():
             {divv()}
             {stat(n_cat, "CBAM Sectors")}
         </div>
+        <div style="font-size:11px;color:#aaa;line-height:1.8;max-width:540px;margin:0 auto 32px auto;text-align:center;">
+            This dashboard presents CBAM trade exposure data sourced from the <a href="https://wits.worldbank.org/about_wits.html" target="_blank" style="color:#999;text-decoration:underline;">World Integrated Trade Solution (WITS), World Bank</a>. The data has been curated and compiled as part of the research activities of the <span style="color:#777;font-weight:600;">Market-based Interventions for Deep Decarbonisation (MIDD) Lab</span>. All rights to the compiled dataset are retained by the MIDD Lab.
+        </div>
         <a onclick="
             var el = document.getElementById('cbam-main-section');
             var container = window.parent.document.querySelector('.main');
@@ -1603,9 +1606,6 @@ def page_ets():
         </div>
         <div style="font-size:13px;color:#888;line-height:2;max-width:960px;margin:0 auto 40px auto;">
             Today, <b>{n_schemes} active ETS schemes</b> operate across <b>{n_countries} jurisdictions</b> — <b>15 in North America</b>, <b>15 in East Asia &amp; Pacific</b>, <b>7 in Europe &amp; Central Asia</b>, and <b>1 in Latin America</b> — with carbon prices ranging from <b>USD {min_price:.0f} to USD {max_price_v:.0f}</b> (avg. <b>USD {avg_price:.0f}/tCO₂</b>). Sectors covered include <b>{", ".join(sectors_list[:-1])}, and {sectors_list[-1]}</b>. Regulated greenhouse gases include CO₂, CH₄, N₂O, HFCs, PFCs, SF₆, and NF₃.
-        </div>
-        <div style="font-size:11px;color:#aaa;line-height:1.8;max-width:540px;margin:0 auto 32px auto;text-align:center;">
-            This dashboard presents CBAM trade exposure data sourced from the <a href="https://wits.worldbank.org/about_wits.html" target="_blank" style="color:#999;text-decoration:underline;">World Integrated Trade Solution (WITS), World Bank</a>. The data has been curated and compiled as part of the research activities of the <span style="color:#777;font-weight:600;">Market-based Interventions for Deep Decarbonisation (MIDD) Lab</span>. All rights to the compiled dataset are retained by the MIDD Lab.
         </div>
         <a onclick="
             var el = document.getElementById('ets-map-section');
