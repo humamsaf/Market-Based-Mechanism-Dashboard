@@ -1138,14 +1138,36 @@ def page_cbam():
     # Category breakdown per partner for hover
     cat_by_partner = map_df.groupby(["Partner", "Category"])["Trade Value 1000USD"].sum().reset_index()
 
+    CAT_SHAPE_CHAR = {
+        "Aluminium":  "●",
+        "Cement":     "■",
+        "Fertilizer": "◆",
+        "Other":      "✚",
+    }
+
     def build_cbam_hover(partner):
         row = cat_by_partner[cat_by_partner["Partner"] == partner]
-        lines = ""
+        total = row["Trade Value 1000USD"].sum() / 1_000
+        sector_lines = ""
         for _, r in row.sort_values("Trade Value 1000USD", ascending=False).iterrows():
             v = r["Trade Value 1000USD"] / 1_000
-            lines += f"<br><span style='color:{CAT_COLORS.get(r['Category'],'#888')}'><b>■</b></span> {r['Category']}: <b>USD {v:,.0f}M</b>"
-        total = row["Trade Value 1000USD"].sum() / 1_000
-        return f"<b>{partner}</b><br>─────────────<br>Total: <b>USD {total:,.0f}M</b>{lines}"
+            if v == 0:
+                continue
+            color = CAT_COLORS.get(r["Category"], "#888")
+            shape = CAT_SHAPE_CHAR.get(r["Category"], "■")
+            sector_lines += (
+                "<br><span style='color:" + color + ";'>" + shape + "</span>"
+                "&nbsp;<span style='color:#666;font-size:11px;'>" + r["Category"] + "</span>"
+                "<b style='color:#1a1a2e;'>&nbsp;&nbsp;USD " + f"{v:,.0f}" + "M</b>"
+            )
+        return (
+            "<b style='font-size:13px;color:#1a1a2e;'>" + partner + "</b>"
+            "<br><span style='color:#ccc;'>──────────────</span>"
+            "<br><span style='font-size:10px;color:#999;text-transform:uppercase;letter-spacing:1px;'>Total Trade Value</span>"
+            "<br><b style='font-size:16px;color:#1d3557;'>USD " + f"{total:,.0f}" + "M</b>"
+            "<br><span style='color:#ccc;'>──────────────</span>"
+            + sector_lines
+        )
 
     map_agg["hover"] = map_agg["Partner"].apply(build_cbam_hover)
 
