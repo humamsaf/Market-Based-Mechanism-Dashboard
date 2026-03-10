@@ -1094,14 +1094,13 @@ def page_cbam():
     if cat_sel:      f = f[f["Category"].isin(cat_sel)]
     if partner_sel:  f = f[f["Partner"].isin(partner_sel)]
 
-    # ── Summary stats (after filter) ─────────────────────────────
+    # ── Summary stats (after filter, hero-style) ─────────────────
     total_all = f["Trade Value 1000USD"].sum() / 1_000_000
-    divider = '<div style="width:1px;height:40px;background:#e8e8e8;align-self:center;margin:0 24px;"></div>'
+    divider = '<div style="width:1px;height:50px;background:#e0e0e0;align-self:center;"></div>'
     total_item = (
-        '<div style="display:flex;flex-direction:column;min-width:100px;">'
-        '<div style="font-size:10px;font-weight:700;color:#1d3557;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;">Total</div>'
-        '<div style="font-size:28px;font-weight:900;color:#1d3557;line-height:1;">USD ' + f"{total_all:.2f}" + 'B</div>'
-        '<div style="font-size:11px;color:#aaa;margin-top:3px;">all sectors</div>'
+        '<div style="text-align:center;">'
+        '<div style="font-size:44px;font-weight:900;color:#1d3557;line-height:1;white-space:nowrap;">USD ' + f"{total_all:.2f}" + 'B</div>'
+        '<div style="font-size:10px;color:#999;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-top:7px;">Total</div>'
         '</div>'
     )
     cat_summary_items = []
@@ -1110,15 +1109,15 @@ def page_cbam():
         color = CAT_COLORS.get(cat, "#888")
         n_p   = f[f["Category"] == cat]["Partner"].nunique()
         cat_summary_items.append(
-            '<div style="display:flex;flex-direction:column;min-width:100px;">'
-            '<div style="font-size:10px;font-weight:700;color:' + color + ';text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;">' + cat + '</div>'
-            '<div style="font-size:28px;font-weight:900;color:#1a1a2e;line-height:1;">USD ' + f"{val:,.0f}" + 'M</div>'
-            '<div style="font-size:11px;color:#aaa;margin-top:3px;">' + str(n_p) + ' partners</div>'
+            '<div style="text-align:center;">'
+            '<div style="font-size:44px;font-weight:900;color:#1a1a2e;line-height:1;white-space:nowrap;">USD ' + f"{val:,.0f}" + 'M</div>'
+            '<div style="font-size:10px;color:' + color + ';font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-top:7px;">' + cat + '</div>'
+            '<div style="font-size:11px;color:#aaa;margin-top:4px;">' + str(n_p) + ' partners</div>'
             '</div>'
         )
     summary_inner = divider.join([total_item] + cat_summary_items)
     st.markdown(
-        '<div style="display:flex;align-items:flex-start;gap:0;flex-wrap:wrap;padding:20px 0 24px 0;border-bottom:1px solid #e8e8e8;margin-bottom:20px;">' + summary_inner + '</div>',
+        '<div style="display:flex;justify-content:center;align-items:center;gap:40px;flex-wrap:wrap;padding:32px 0 32px 0;border-bottom:1px solid #e8e8e8;margin-bottom:24px;">' + summary_inner + '</div>',
         unsafe_allow_html=True
     )
 
