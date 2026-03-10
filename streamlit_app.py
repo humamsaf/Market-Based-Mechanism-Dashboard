@@ -1108,8 +1108,9 @@ def page_ets():
     if region_sel:  f_ets = f_ets[f_ets["region"].isin(region_sel)]
     if country_sel: f_ets = f_ets[f_ets["country"].isin(country_sel)]
 
-    # ── Sub-national scheme coords & polygons ─────────────────────
+    # ── All-schemes marker coords (one dot per scheme) ────────────
     SCHEME_COORDS = {
+        # China
         "Beijing pilot ETS":    (39.90, 116.40),
         "Shanghai pilot ETS":   (31.23, 121.47),
         "Guangdong pilot ETS":  (23.13, 113.26),
@@ -1119,6 +1120,7 @@ def page_ets():
         "Hubei pilot ETS":      (30.60, 114.31),
         "Fujian pilot ETS":     (26.07, 119.30),
         "China national ETS":   (35.86, 104.20),
+        # Canada
         "Alberta TIER":                                          (53.93, -116.58),
         "British Columbia OBPS":                                 (53.73, -127.65),
         "Canada federal OBPS":                                   (60.00,  -96.00),
@@ -1128,23 +1130,30 @@ def page_ets():
         "Ontario EPS":                                           (50.00,  -86.00),
         "Quebec cap and trade":                                  (52.94,  -73.55),
         "Saskatchewan Output-Based Performance Standards Program":(54.00, -106.00),
+        # USA
         "California cap and trade":                 (37.35, -119.00),
         "Colorado GHG crediting trading system":    (39.11, -105.36),
         "Massachusetts ETS":                        (42.40,  -71.38),
         "Oregon ETS":                               (44.00, -120.55),
         "Regional Greenhouse Gas Initiative":       (43.50,  -73.50),
         "Washington CCA":                           (47.40, -120.50),
+        # Japan
         "Saitama ETS":          (35.86, 139.65),
         "Tokyo cap and trade":  (35.69, 139.69),
+        # Single-country: centroid coordinates
+        "Australia safeguard mechanism": (-25.27, 133.78),
+        "Austria ETS":          (47.52,  14.55),
+        "EU ETS":               (50.85,   4.35),
+        "Germany ETS":          (51.17,  10.45),
+        "Indonesia ETS":        (-0.79, 113.92),
+        "Kazakhstan ETS":       (48.02,  66.92),
+        "Korea ETS":            (36.50, 127.98),
+        "Mexico ETS":           (23.63, -102.55),
+        "Montenegro ETS":       (42.71,  19.37),
+        "New Zealand ETS":      (-40.90, 174.89),
+        "Switzerland ETS":      (46.82,   8.23),
+        "UK ETS":               (55.38,  -3.44),
     }
-
-    SCHEME_COLORS = [
-        "#e07b00","#2a9d8f","#9b59b6","#e63946",
-        "#4a90d9","#c97a3a","#5a8a3a","#457b9d",
-        "#d63031","#00b894","#6c5ce7","#fdcb6e",
-    ]
-
-    MULTI_SCHEME_COUNTRIES = {"China", "Canada", "United States", "Japan"}
 
     def shorten(name):
         return (name.replace(" pilot ETS","").replace(" cap and trade","")
@@ -1152,77 +1161,101 @@ def page_ets():
                     .replace(" TIER","").replace(" EPS","")
                     .replace(" GHG crediting trading system","")
                     .replace(" Output-Based Performance Standards Program","")
-                    .replace(" Performance Standards System",""))
+                    .replace(" Performance Standards System","")
+                    .replace(" safeguard mechanism",""))
 
-    # Build map
-    country_ets_map = f_ets.groupby("country")["name"].apply(list).to_dict()
-    country_price_map = f_ets.groupby("country")["price_num"].mean().to_dict()
-
-    map_rows = []
-    for country, schemes in country_ets_map.items():
-        iso3 = to_iso3(country)
-        if iso3:
-            n = len(schemes)
-            avg_p = country_price_map.get(country)
-            map_rows.append({
-                "iso3": iso3, "country": country,
-                "n_schemes": n, "avg_price": avg_p,
-                "schemes_str": "<br>".join(f"  · {s}" for s in schemes),
-            })
-
-    map_df = pd.DataFrame(map_rows) if map_rows else pd.DataFrame()
-
+    # ── Build all-marker map (one dot per scheme, color = price) ───
     fig_ets_map = go.Figure()
-    if not map_df.empty:
-        fig_ets_map.add_trace(go.Choropleth(
-            locations=map_df["iso3"],
-            z=map_df["n_schemes"],
-            colorscale=[[0, "#c6dff0"], [0.5, "#457b9d"], [1, "#1a3a5e"]],
-            showscale=True,
-            colorbar=dict(title="Schemes", thickness=12, len=0.5, tickfont=dict(size=10)),
-            hovertemplate=(
-                "<b>%{customdata[0]}</b><br>"
-                "%{customdata[1]} scheme(s)<br>"
-                "─────────────<br>"
-                "%{customdata[2]}<extra></extra>"
-            ),
-            customdata=map_df[["country", "n_schemes", "schemes_str"]].values,
-            marker_line_color="#111", marker_line_width=1.2,
+
+    # Light base map (no choropleth)
+    fig_ets_map.add_trace(go.Choropleth(
+        locations=["USA"],  # dummy to enable geo base
+        z=[0], showscale=False, colorscale=[[0,"rgba(0,0,0,0)"],[1,"rgba(0,0,0,0)"]],
+        marker_line_width=0, hoverinfo="skip",
+    ))
+
+    # Collect all scheme marker data
+    lons, lats, prices, labels, hovers, customdata_list = [], [], [], [], [], []
+    for _, row in f_ets.iterrows():
+        sname = row["name"]
+        # Find coords: check SCHEME_COORDS by name, else by country centroid
+        coord = SCHEME_COORDS.get(sname)
+        if coord is None:
+            # Try country centroid
+            country_key = f"{row['country']} ETS" if f"{row['country']} ETS" not in SCHEME_COORDS else None
+            for k, v in SCHEME_COORDS.items():
+                if row["country"].lower() in k.lower():
+                    coord = v
+                    break
+        if coord is None:
+            continue
+        cLat, cLon = coord
+        price_num = row.get("price_num")
+        price_v   = row.get("price", "N/A")
+        year_v    = int(row["start_date"]) if pd.notna(row.get("start_date")) else "N/A"
+        lats.append(cLat)
+        lons.append(cLon)
+        prices.append(price_num if pd.notna(price_num) else None)
+        labels.append(shorten(sname))
+        hovers.append(f"<b>{sname}</b><br>{row['country']} · Est. {year_v}<br>Price: {price_v}")
+        customdata_list.append([sname])
+
+    # Split into priced and unpriced
+    priced_idx   = [i for i,p in enumerate(prices) if p is not None]
+    unpriced_idx = [i for i,p in enumerate(prices) if p is None]
+
+    # Unpriced — grey markers
+    if unpriced_idx:
+        fig_ets_map.add_trace(go.Scattergeo(
+            lon=[lons[i] for i in unpriced_idx],
+            lat=[lats[i] for i in unpriced_idx],
+            mode="markers",
+            marker=dict(size=10, color="#bbb", symbol="circle",
+                        line=dict(width=1.5, color="white")),
+            text=[labels[i] for i in unpriced_idx],
+            hovertemplate=[hovers[i]+"<extra></extra>" for i in unpriced_idx],
+            customdata=[customdata_list[i] for i in unpriced_idx],
+            showlegend=False, name="No price data",
         ))
 
-    # ── Sub-national markers per scheme (dots, no polygon fill) ────
-    for country in MULTI_SCHEME_COUNTRIES:
-        country_schemes = f_ets[f_ets["country"] == country]["name"].tolist() if country in f_ets["country"].values else []
-        for ci, scheme_name in enumerate(country_schemes):
-            if scheme_name not in SCHEME_COORDS:
-                continue
-            cLat, cLon = SCHEME_COORDS[scheme_name]
-            color = SCHEME_COLORS[ci % len(SCHEME_COLORS)]
-            scheme_row = f_ets[f_ets["name"] == scheme_name]
-            price_v = scheme_row["price"].iloc[0] if not scheme_row.empty else "N/A"
-            year_v  = int(scheme_row["start_date"].iloc[0]) if not scheme_row.empty and pd.notna(scheme_row["start_date"].iloc[0]) else "N/A"
-            fig_ets_map.add_trace(go.Scattergeo(
-                lon=[cLon], lat=[cLat],
-                mode="markers+text",
-                marker=dict(size=9, color=color, symbol="circle", line=dict(width=1.5, color="white")),
-                text=[shorten(scheme_name)],
-                textposition="top center",
-                textfont=dict(size=7, color="#1a1a2e"),
-                hovertemplate=f"<b>{scheme_name}</b><br>Est. {year_v} · {price_v}<extra></extra>",
-                customdata=[[scheme_name]],
-                showlegend=False,
-            ))
+    # Priced — color gradient from price
+    if priced_idx:
+        fig_ets_map.add_trace(go.Scattergeo(
+            lon=[lons[i] for i in priced_idx],
+            lat=[lats[i] for i in priced_idx],
+            mode="markers",
+            marker=dict(
+                size=12,
+                color=[prices[i] for i in priced_idx],
+                colorscale=[[0,"#c6f0e0"],[0.3,"#2a9d8f"],[0.65,"#457b9d"],[1,"#1a3a5e"]],
+                cmin=0, cmax=100,
+                symbol="circle",
+                line=dict(width=1.5, color="white"),
+                colorbar=dict(
+                    title=dict(text="USD/tCO₂", font=dict(size=11)),
+                    thickness=12, len=0.45,
+                    tickfont=dict(size=10),
+                    x=1.01,
+                ),
+                showscale=True,
+            ),
+            text=[labels[i] for i in priced_idx],
+            hovertemplate=[hovers[i]+"<extra></extra>" for i in priced_idx],
+            customdata=[customdata_list[i] for i in priced_idx],
+            showlegend=False,
+        ))
 
     fig_ets_map.update_layout(
-        height=460, margin=dict(l=0, r=0, t=0, b=0),
+        height=480, margin=dict(l=0, r=0, t=0, b=0),
         paper_bgcolor="white",
         hoverlabel=dict(bgcolor="white", bordercolor="#ccc", font=dict(size=12), align="left"),
         geo=dict(
             projection_type="equirectangular", showframe=False,
-            showcoastlines=True, coastlinecolor="#333", coastlinewidth=1.2,
-            showcountries=True, countrycolor="#333", countrywidth=1.2,
+            showcoastlines=True, coastlinecolor="#ccc", coastlinewidth=0.8,
+            showcountries=True, countrycolor="#ddd", countrywidth=0.8,
             showland=True, landcolor="#f5f5f5",
-            showocean=False, bgcolor="white",
+            showocean=True, oceancolor="#eaf4fb",
+            bgcolor="white",
             lataxis=dict(range=[-60, 85], showgrid=False),
             lonaxis=dict(range=[-180, 180], showgrid=False),
         ),
@@ -1266,19 +1299,18 @@ def page_ets():
                                           "displayModeBar": False})
 
     selected = None        # country name
-    selected_scheme = None  # specific scheme name (from province click)
+    selected_scheme = None  # specific scheme name
     if clicked and clicked.get("selection") and clicked["selection"].get("points"):
         pts = clicked["selection"]["points"]
         if pts:
             cd = pts[0].get("customdata")
             if cd and len(cd) > 0:
                 val = cd[0]
-                # Province marker returns scheme name; choropleth returns country name
-                if val in SCHEME_COORDS:
+                # All markers return scheme name in customdata
+                scheme_country = f_ets[f_ets["name"] == val]["country"]
+                if not scheme_country.empty:
                     selected_scheme = val
-                    # Map scheme to country
-                    scheme_country = f_ets[f_ets["name"] == val]["country"]
-                    selected = scheme_country.iloc[0] if not scheme_country.empty else "China"
+                    selected = scheme_country.iloc[0]
                 else:
                     selected = val
     if not selected and len(country_sel) == 1:
