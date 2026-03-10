@@ -1341,6 +1341,16 @@ def page_ets():
     if not selected and len(country_sel) == 1:
         selected = country_sel[0]
 
+    # Pre-compute schemes_display outside col_card so it's accessible below map
+    schemes_display = pd.DataFrame()
+    if selected:
+        _schemes = f_ets[f_ets["country"] == selected]
+        if selected_scheme:
+            _sd = _schemes[_schemes["name"] == selected_scheme]
+            schemes_display = _sd if not _sd.empty else _schemes
+        else:
+            schemes_display = _schemes
+
     with col_card:
         st.markdown("""
         <div style="font-size:15px;font-weight:800;color:#1a1a2e;margin-bottom:4px;">Scheme Detail</div>
@@ -1357,14 +1367,6 @@ def page_ets():
             """, unsafe_allow_html=True)
         else:
             schemes = f_ets[f_ets["country"] == selected]
-
-            # If a province was clicked, filter to just that scheme
-            if selected_scheme:
-                schemes_display = schemes[schemes["name"] == selected_scheme]
-                if schemes_display.empty:
-                    schemes_display = schemes
-            else:
-                schemes_display = schemes
 
             # Country header
             region_lbl = schemes["region"].iloc[0] if not schemes.empty else "—"
