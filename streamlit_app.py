@@ -1447,9 +1447,6 @@ def page_ets():
                 + (('<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;min-width:70px;text-align:center;">'
                     '<div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Price Rate</div>'
                     f'<div style="font-size:22px;font-weight:900;">{_price_hdr}</div></div>') if _price_hdr else "")
-                + (('<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;min-width:70px;text-align:center;">'
-                    '<div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Revenue</div>'
-                    f'<div style="font-size:16px;font-weight:900;">{fval(_r0.get("revenue"))}</div></div>') if _r0 is not None and fval(_r0.get("revenue")) != "—" else "")
                 + '</div>'
                 + (f'<div style="margin-top:12px;background:rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;">'
                    f'<div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Sector Coverage</div>'
@@ -1610,42 +1607,6 @@ def page_ets():
                         config={"displayModeBar": False})
 
     st.divider()
-
-    # ── Full Table ────────────────────────────────────────────────
-    st.markdown("""
-    <div style="font-size:28px;font-weight:900;color:#1a1a2e;margin-bottom:4px;">All ETS Schemes</div>
-    <div style="font-size:13px;color:#999;margin-bottom:16px;">Complete list of tracked ETS schemes worldwide.</div>
-    """, unsafe_allow_html=True)
-
-    # Search + filter
-    ts1, ts2 = st.columns([2, 2])
-    with ts1:
-        search_q = st.text_input("Search by scheme or country name", placeholder="e.g. EU ETS, China...", key="ets_search")
-    with ts2:
-        region_tbl = st.multiselect("Filter by region", regions_all, key="ets_tbl_region", placeholder="All regions")
-
-    # Get all original columns for display
-    display_cols = {
-        "name": "Scheme", "country": "Jurisdiction", "region": "Region",
-        "start_date": "Est.", "price": "Price Rate", "share": "Share of Jurisdiction",
-        "revenue": "Revenue (2024)", "ghg": "GHG Coverage", "sectors": "Sector Coverage",
-        "allocation": "Allocation Method", "cap": "Cap Emissions", "revenue_recycling": "Revenue Recycling",
-    }
-
-    tbl = ets.copy()
-
-    if search_q:
-        mask = (tbl["name"].str.contains(search_q, case=False, na=False) |
-                tbl["country"].str.contains(search_q, case=False, na=False))
-        tbl = tbl[mask]
-    if region_tbl:
-        tbl = tbl[tbl["region"].isin(region_tbl)]
-
-    show_cols = [c for c in display_cols if c in tbl.columns]
-    tbl_show = tbl[show_cols].copy()
-    tbl_show.columns = [display_cols[c] for c in show_cols]
-    tbl_show["Est."] = tbl_show["Est."].apply(lambda x: int(x) if pd.notna(x) else "—")
-    st.dataframe(tbl_show, use_container_width=True, hide_index=True)
 
 
 # ── Router ─────────────────────────────────────────────────────
