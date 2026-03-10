@@ -1011,8 +1011,8 @@ def page_cbam():
     st.markdown(f"""
     <div style="padding:56px 0 48px 0;border-bottom:1px solid #e8e8e8;margin-bottom:40px;text-align:center;">
         <div style="font-size:11px;font-weight:700;color:#1d3557;letter-spacing:3px;text-transform:uppercase;margin-bottom:32px;">Carbon Border Adjustment Mechanism</div>
-        <div style="font-size:56px;font-weight:900;color:#1a1a2e;line-height:1.05;margin-bottom:40px;">CBAM Exposure Dashboard</div>
-        <div style="max-width:960px;margin:0 auto 56px auto;">
+        <div style="font-size:56px;font-weight:900;color:#1a1a2e;line-height:1.05;margin-bottom:56px;">CBAM Exposure Dashboard</div>
+        <div style="max-width:960px;margin:0 auto 72px auto;">
             <div style="font-size:16px;color:#666;line-height:1.9;">
                 The Carbon Border Adjustment Mechanism (CBAM) is the EU's instrument to put a fair carbon price
                 on imports of carbon-intensive goods from outside the EU. It levels the playing field between
@@ -1145,10 +1145,10 @@ def page_cbam():
 
     # Sector marker styles
     CAT_MARKER = {
-        "Aluminium":  {"symbol": "square",      "color": "#4a90d9", "size": 5, "offset": (0.0,  0.0)},
-        "Cement":     {"symbol": "triangle-up", "color": "#e07b00", "size": 6, "offset": (0.0,  2.0)},
-        "Fertilizer": {"symbol": "circle",      "color": "#2a9d8f", "size": 5, "offset": (2.0,  0.0)},
-        "Other":      {"symbol": "diamond",     "color": "#9b59b6", "size": 5, "offset": (-2.0, 0.0)},
+        "Aluminium":  {"symbol": "circle",   "color": "#1d6fa4", "size": 6, "offset": (0.0,  0.0)},
+        "Cement":     {"symbol": "square",   "color": "#c45e00", "size": 5, "offset": (0.0,  2.2)},
+        "Fertilizer": {"symbol": "diamond",  "color": "#1a7a6e", "size": 6, "offset": (2.0,  0.0)},
+        "Other":      {"symbol": "cross",    "color": "#6b3fa0", "size": 6, "offset": (-2.0, 0.0)},
     }
 
     fig_map = go.Figure()
@@ -1164,8 +1164,8 @@ def page_cbam():
         ),
         hovertemplate="%{customdata}<extra></extra>",
         customdata=map_agg[["hover"]].values,
-        marker_line_color="#ffffff",
-        marker_line_width=0.8,
+        marker_line_color="#333333",
+        marker_line_width=1.0,
         name="Trade Value",
         showlegend=False,
     ))
@@ -1193,7 +1193,7 @@ def page_cbam():
                 symbol=style["symbol"],
                 color=style["color"],
                 size=style["size"],
-                line=dict(width=1.2, color="#000000"),
+                line=dict(width=0.8, color="#222222"),
                 opacity=0.9,
             ),
             name=cat,
@@ -1381,35 +1381,7 @@ def page_cbam():
         )
         st.plotly_chart(fig_prod, use_container_width=True, key="cbam_products", config={"displayModeBar": False})
 
-    # ── Row 4: Full Data Table ─────────────────────────────────
-    st.markdown("<hr style='border:none;border-top:1px solid #e8e8e8;margin:8px 0 20px 0'>", unsafe_allow_html=True)
-    st.markdown("""
-    <div style="margin-bottom:12px;">
-        <div style="font-size:22px;font-weight:900;color:#1a1a2e;margin-bottom:4px;">Partner Detail Table</div>
-        <div style="font-size:13px;color:#999;">Aggregated trade values by reporter, sector, and partner country.</div>
-    </div>
-    """, unsafe_allow_html=True)
 
-    table_df = (
-        f.groupby(["Reporter", "Category", "Partner"])["Trade Value 1000USD"]
-        .sum().reset_index()
-        .sort_values("Trade Value 1000USD", ascending=False)
-    )
-    table_df["Trade Value (USD M)"] = (table_df["Trade Value 1000USD"] / 1000).round(1)
-    table_df = table_df[["Reporter", "Category", "Partner", "Trade Value (USD M)"]].reset_index(drop=True)
-    table_df.index = table_df.index + 1
-
-    st.dataframe(
-        table_df,
-        use_container_width=True,
-        height=340,
-        column_config={
-            "Trade Value (USD M)": st.column_config.NumberColumn(
-                "Trade Value (USD M)",
-                format="USD %.1f M",
-            )
-        },
-    )
 
 
 @st.cache_data
@@ -1555,7 +1527,7 @@ def page_ets():
     <div style="padding:56px 0 48px 0;border-bottom:1px solid #e8e8e8;margin-bottom:40px;text-align:center;">
         <div style="font-size:11px;font-weight:700;color:#457b9d;letter-spacing:3px;text-transform:uppercase;margin-bottom:32px;">Carbon Pricing Instrument</div>
         <div style="font-size:56px;font-weight:900;color:#1a1a2e;line-height:1.05;margin-bottom:40px;white-space:nowrap;">Emissions Trading Systems (ETS)</div>
-        <div style="max-width:960px;margin:0 auto 56px auto;">
+        <div style="max-width:960px;margin:0 auto 72px auto;">
             <div style="font-size:16px;color:#666;line-height:1.9;">
                 An Emissions Trading System is a market-based approach to controlling pollution by providing economic incentives for reducing emissions. Governments set a cap on total emissions and issue allowances — companies must hold allowances equal to their emissions and can trade them, creating a carbon price signal.
             </div>
