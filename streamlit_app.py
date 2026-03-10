@@ -1530,8 +1530,7 @@ def page_ets():
 
     # ── Timeline ──────────────────────────────────────────────────
     st.markdown("""
-    <div style="font-size:28px;font-weight:900;color:#1a1a2e;margin-bottom:4px;">ETS Timeline</div>
-    <div style="font-size:13px;color:#999;margin-bottom:16px;">Year each ETS scheme was established.</div>
+    <div style="font-size:28px;font-weight:900;color:#1a1a2e;margin-bottom:16px;">ETS Timeline</div>
     """, unsafe_allow_html=True)
 
     timeline_df = ets[ets["start_date"].notna()].sort_values("start_date").copy()
@@ -1575,10 +1574,6 @@ def page_ets():
     
 
         # ── Charts ────────────────────────────────────────────────────
-    st.markdown("""
-    <div style="font-size:28px;font-weight:900;color:#1a1a2e;margin-bottom:4px;">Summary</div>
-    <div style="font-size:13px;color:#999;margin-bottom:20px;">Distribution of ETS schemes by region and price.</div>
-    """, unsafe_allow_html=True)
 
     c1, c2 = st.columns(2)
     with c1:
