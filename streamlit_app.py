@@ -994,12 +994,6 @@ def page_cbam():
         "Fertilizer": "#2a9d8f",
         "Other":      "#9b59b6",
     }
-    CAT_ICONS = {
-        "Aluminium":  "🔩",
-        "Cement":     "🏗️",
-        "Fertilizer": "🌱",
-        "Other":      "⚡",
-    }
 
     # ── Hero ───────────────────────────────────────────────────
     def divv():
@@ -1069,34 +1063,6 @@ def page_cbam():
     # ── Geographic Exposure Map ───────────────────────────────────
     st.markdown('<div id="cbam-main-section"></div>', unsafe_allow_html=True)
 
-    # Summary stats dari df_real (tidak terpengaruh filter)
-    total_all = df_real["Trade Value 1000USD"].sum() / 1_000_000
-    divider = '<div style="width:1px;height:40px;background:#e8e8e8;align-self:center;margin:0 8px;"></div>'
-    total_item = (
-        '<div style="display:flex;flex-direction:column;min-width:100px;">'
-        '<div style="font-size:10px;font-weight:700;color:#1d3557;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;">Total</div>'
-        '<div style="font-size:28px;font-weight:900;color:#1d3557;line-height:1;">USD ' + f"{total_all:.2f}" + 'B</div>'
-        '<div style="font-size:11px;color:#aaa;margin-top:3px;">all sectors</div>'
-        '</div>'
-    )
-    cat_summary_items = []
-    for cat in categories:
-        val = df_real[df_real["Category"] == cat]["Trade Value 1000USD"].sum() / 1_000
-        color = CAT_COLORS.get(cat, "#888")
-        n_p   = df_real[df_real["Category"] == cat]["Partner"].nunique()
-        cat_summary_items.append(
-            '<div style="display:flex;flex-direction:column;min-width:100px;">'
-            '<div style="font-size:10px;font-weight:700;color:' + color + ';text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;">' + cat + '</div>'
-            '<div style="font-size:28px;font-weight:900;color:#1a1a2e;line-height:1;">USD ' + f"{val:,.0f}" + 'M</div>'
-            '<div style="font-size:11px;color:#aaa;margin-top:3px;">' + str(n_p) + ' partners</div>'
-            '</div>'
-        )
-    summary_inner = divider.join([total_item] + cat_summary_items)
-    st.markdown(
-        '<div style="display:flex;align-items:center;gap:0;flex-wrap:wrap;padding:20px 0 24px 0;border-bottom:1px solid #e8e8e8;margin-bottom:20px;">' + summary_inner + '</div>',
-        unsafe_allow_html=True
-    )
-
     st.markdown("""
     <div style="margin-bottom:12px;">
         <div style="font-size:28px;font-weight:900;color:#1a1a2e;margin-bottom:4px;">Geographic Exposure Map</div>
@@ -1135,6 +1101,34 @@ def page_cbam():
     if reporter_sel: f = f[f["Reporter"].isin(reporter_sel)]
     if cat_sel:      f = f[f["Category"].isin(cat_sel)]
     if partner_sel:  f = f[f["Partner"].isin(partner_sel)]
+
+    # ── Summary stats (after filter) ─────────────────────────────
+    total_all = f["Trade Value 1000USD"].sum() / 1_000_000
+    divider = '<div style="width:1px;height:40px;background:#e8e8e8;align-self:center;margin:0 24px;"></div>'
+    total_item = (
+        '<div style="display:flex;flex-direction:column;min-width:100px;">'
+        '<div style="font-size:10px;font-weight:700;color:#1d3557;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;">Total</div>'
+        '<div style="font-size:28px;font-weight:900;color:#1d3557;line-height:1;">USD ' + f"{total_all:.2f}" + 'B</div>'
+        '<div style="font-size:11px;color:#aaa;margin-top:3px;">all sectors</div>'
+        '</div>'
+    )
+    cat_summary_items = []
+    for cat in categories:
+        val = f[f["Category"] == cat]["Trade Value 1000USD"].sum() / 1_000
+        color = CAT_COLORS.get(cat, "#888")
+        n_p   = f[f["Category"] == cat]["Partner"].nunique()
+        cat_summary_items.append(
+            '<div style="display:flex;flex-direction:column;min-width:100px;">'
+            '<div style="font-size:10px;font-weight:700;color:' + color + ';text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;">' + cat + '</div>'
+            '<div style="font-size:28px;font-weight:900;color:#1a1a2e;line-height:1;">USD ' + f"{val:,.0f}" + 'M</div>'
+            '<div style="font-size:11px;color:#aaa;margin-top:3px;">' + str(n_p) + ' partners</div>'
+            '</div>'
+        )
+    summary_inner = divider.join([total_item] + cat_summary_items)
+    st.markdown(
+        '<div style="display:flex;align-items:flex-start;gap:0;flex-wrap:wrap;padding:20px 0 24px 0;border-bottom:1px solid #e8e8e8;margin-bottom:20px;">' + summary_inner + '</div>',
+        unsafe_allow_html=True
+    )
 
     map_df = f.copy()
     if map_reporter == "European Union":
