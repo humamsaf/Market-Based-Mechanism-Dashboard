@@ -1426,40 +1426,7 @@ def page_ets():
                   <text x="90" y="57" font-size="7" fill="rgba(255,255,255,0.5)" text-anchor="middle">{hi_lbl}</text>
                 </svg>'''
 
-            # Share gauge — gradient arc using defs linearGradient mapped to arc
             share_gauge_html = ""
-            if _share_hdr:
-                try:
-                    sp  = float(_r0.get("share"))
-                    spx = 50 + 38 * math.cos(math.radians(180 - sp * 180))
-                    spy = 50 - 38 * math.sin(math.radians(180 - sp * 180))
-                    lf  = 1 if sp >= 0.5 else 0
-                    # needle color based on value
-                    sc  = "#2a9d8f" if sp >= 0.6 else ("#f4a261" if sp >= 0.3 else "#e63946")
-                    share_gauge_html = (
-                        '<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:8px 10px 4px;width:130px;text-align:center;">'
-                        '<div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Share</div>'
-                        '<svg viewBox="0 0 100 58" width="110" height="55" style="display:block;margin:0 auto;">'
-                        '<defs>'
-                        '<linearGradient id="sgGrad" x1="0%" y1="0%" x2="100%" y2="0%">'
-                        '<stop offset="0%" stop-color="#2a9d8f"/>'
-                        '<stop offset="50%" stop-color="#f4a261"/>'
-                        '<stop offset="100%" stop-color="#e63946"/>'
-                        '</linearGradient>'
-                        '</defs>'
-                        # full track (gradient)
-                        '<path d="M 12 50 A 38 38 0 0 1 88 50" fill="none" stroke="url(#sgGrad)" stroke-width="9" stroke-linecap="round" opacity="0.35"/>'
-                        # active arc
-                        f'<path d="M 12 50 A 38 38 0 {lf} 1 {spx:.1f} {spy:.1f}" fill="none" stroke="url(#sgGrad)" stroke-width="9" stroke-linecap="round"/>'
-                        # needle dot
-                        f'<circle cx="{spx:.1f}" cy="{spy:.1f}" r="4" fill="white" stroke="{sc}" stroke-width="2"/>'
-                        '<text x="10" y="57" font-size="7" fill="rgba(255,255,255,0.5)" text-anchor="middle">0%</text>'
-                        '<text x="90" y="57" font-size="7" fill="rgba(255,255,255,0.5)" text-anchor="middle">100%</text>'
-                        '</svg>'
-                        f'<div style="font-size:16px;font-weight:900;color:{sc};margin-top:-2px;">{_share_hdr}</div>'
-                        '</div>'
-                    )
-                except: pass
 
             # Price Rate — horizontal bar chart
             price_gauge_html = ""
