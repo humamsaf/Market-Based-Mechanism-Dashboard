@@ -1020,7 +1020,7 @@ def page_cbam():
                 This dashboard explores the trade exposure of the EU and UK across CBAM-covered sectors.
             </div>
         </div>
-        <div style="display:flex;justify-content:center;align-items:center;gap:40px;flex-wrap:nowrap;margin-bottom:24px;">
+        <div style="display:flex;justify-content:center;align-items:center;gap:40px;flex-wrap:nowrap;margin-bottom:56px;">
             {stat(f"USD {total_val:.1f}B", "Total Trade Value", sub="EU + UK combined")}
             {divv()}
             {stat(f"USD {eu_val:.1f}B", "EU Import Value")}
@@ -1532,7 +1532,7 @@ def page_ets():
                 An Emissions Trading System is a market-based approach to controlling pollution by providing economic incentives for reducing emissions. Governments set a cap on total emissions and issue allowances — companies must hold allowances equal to their emissions and can trade them, creating a carbon price signal.
             </div>
         </div>
-        <div style="display:flex;justify-content:center;align-items:center;gap:40px;flex-wrap:nowrap;margin-bottom:24px;">
+        <div style="display:flex;justify-content:center;align-items:center;gap:40px;flex-wrap:nowrap;margin-bottom:56px;">
             {stat(n_schemes, "Active Schemes")}
             {divv()}
             {stat(n_countries, "Jurisdictions")}
