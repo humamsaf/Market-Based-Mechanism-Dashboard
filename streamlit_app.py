@@ -1138,33 +1138,6 @@ def page_ets():
         "Tokyo cap and trade":  (35.69, 139.69),
     }
 
-    SCHEME_POLYGONS = {
-        "Beijing pilot ETS":    [[115.4,39.4],[117.5,39.4],[117.5,41.1],[115.4,41.1],[115.4,39.4]],
-        "Shanghai pilot ETS":   [[120.8,30.6],[122.2,30.6],[122.2,31.9],[120.8,31.9],[120.8,30.6]],
-        "Guangdong pilot ETS":  [[109.7,20.2],[117.3,20.2],[117.3,25.5],[109.7,25.5],[109.7,20.2]],
-        "Shenzhen pilot ETS":   [[113.7,22.4],[114.6,22.4],[114.6,22.9],[113.7,22.9],[113.7,22.4]],
-        "Tianjin pilot ETS":    [[116.7,38.5],[118.1,38.5],[118.1,40.3],[116.7,40.3],[116.7,38.5]],
-        "Chongqing pilot ETS":  [[105.2,28.1],[110.2,28.1],[110.2,32.2],[105.2,32.2],[105.2,28.1]],
-        "Hubei pilot ETS":      [[108.4,29.0],[116.1,29.0],[116.1,33.3],[108.4,33.3],[108.4,29.0]],
-        "Fujian pilot ETS":     [[115.8,23.5],[120.9,23.5],[120.9,28.3],[115.8,28.3],[115.8,23.5]],
-        "Alberta TIER":                                          [[-120.0,49.0],[-110.0,49.0],[-110.0,60.0],[-120.0,60.0],[-120.0,49.0]],
-        "British Columbia OBPS":                                 [[-139.0,48.3],[-114.0,48.3],[-114.0,60.0],[-139.0,60.0],[-139.0,48.3]],
-        "New Brunswick OBPS":                                    [[-67.8,44.5],[-63.8,44.5],[-63.8,48.1],[-67.8,48.1],[-67.8,44.5]],
-        "Newfoundland and Labrador Performance Standards System": [[-67.8,46.5],[-52.6,46.5],[-52.6,60.4],[-67.8,60.4],[-67.8,46.5]],
-        "Nova Scotia OBPS":                                      [[-66.4,43.4],[-59.7,43.4],[-59.7,47.0],[-66.4,47.0],[-66.4,43.4]],
-        "Ontario EPS":                                           [[-95.2,41.7],[-74.3,41.7],[-74.3,56.9],[-95.2,56.9],[-95.2,41.7]],
-        "Quebec cap and trade":                                  [[-79.8,44.9],[-57.1,44.9],[-57.1,62.6],[-79.8,62.6],[-79.8,44.9]],
-        "Saskatchewan Output-Based Performance Standards Program":[[-110.0,49.0],[-101.4,49.0],[-101.4,60.0],[-110.0,60.0],[-110.0,49.0]],
-        "California cap and trade":                 [[-124.4,32.5],[-114.1,32.5],[-114.1,42.0],[-124.4,42.0],[-124.4,32.5]],
-        "Colorado GHG crediting trading system":    [[-109.0,37.0],[-102.0,37.0],[-102.0,41.0],[-109.0,41.0],[-109.0,37.0]],
-        "Massachusetts ETS":                        [[-73.5,41.2],[-69.9,41.2],[-69.9,42.9],[-73.5,42.9],[-73.5,41.2]],
-        "Oregon ETS":                               [[-124.6,42.0],[-116.5,42.0],[-116.5,46.3],[-124.6,46.3],[-124.6,42.0]],
-        "Regional Greenhouse Gas Initiative":       [[-76.0,40.5],[-66.9,40.5],[-66.9,47.5],[-76.0,47.5],[-76.0,40.5]],
-        "Washington CCA":                           [[-124.7,45.5],[-116.9,45.5],[-116.9,49.0],[-124.7,49.0],[-124.7,45.5]],
-        "Saitama ETS":          [[138.9,35.7],[140.2,35.7],[140.2,36.3],[138.9,36.3],[138.9,35.7]],
-        "Tokyo cap and trade":  [[138.9,35.5],[140.0,35.5],[140.0,35.9],[138.9,35.9],[138.9,35.5]],
-    }
-
     SCHEME_COLORS = [
         "#e07b00","#2a9d8f","#9b59b6","#e63946",
         "#4a90d9","#c97a3a","#5a8a3a","#457b9d",
@@ -1217,41 +1190,28 @@ def page_ets():
             marker_line_color="#111", marker_line_width=1.2,
         ))
 
-    # ── Sub-national overlays ──────────────────────────────────────
+    # ── Sub-national markers per scheme (dots, no polygon fill) ────
     for country in MULTI_SCHEME_COUNTRIES:
         country_schemes = f_ets[f_ets["country"] == country]["name"].tolist() if country in f_ets["country"].values else []
-        if not country_schemes:
-            continue
         for ci, scheme_name in enumerate(country_schemes):
-            if scheme_name not in SCHEME_POLYGONS:
+            if scheme_name not in SCHEME_COORDS:
                 continue
-            coords = SCHEME_POLYGONS[scheme_name]
-            lons = [c[0] for c in coords]
-            lats = [c[1] for c in coords]
+            cLat, cLon = SCHEME_COORDS[scheme_name]
             color = SCHEME_COLORS[ci % len(SCHEME_COLORS)]
             scheme_row = f_ets[f_ets["name"] == scheme_name]
             price_v = scheme_row["price"].iloc[0] if not scheme_row.empty else "N/A"
             year_v  = int(scheme_row["start_date"].iloc[0]) if not scheme_row.empty and pd.notna(scheme_row["start_date"].iloc[0]) else "N/A"
             fig_ets_map.add_trace(go.Scattergeo(
-                lon=lons, lat=lats, mode="lines",
-                fill="toself", fillcolor=color,
-                line=dict(color="#fff", width=1),
-                opacity=0.82, name=scheme_name,
+                lon=[cLon], lat=[cLat],
+                mode="markers+text",
+                marker=dict(size=9, color=color, symbol="circle", line=dict(width=1.5, color="white")),
+                text=[shorten(scheme_name)],
+                textposition="top center",
+                textfont=dict(size=7, color="#1a1a2e"),
                 hovertemplate=f"<b>{scheme_name}</b><br>Est. {year_v} · {price_v}<extra></extra>",
+                customdata=[[scheme_name]],
                 showlegend=False,
             ))
-            if scheme_name in SCHEME_COORDS:
-                cLat, cLon = SCHEME_COORDS[scheme_name]
-                fig_ets_map.add_trace(go.Scattergeo(
-                    lon=[cLon], lat=[cLat], mode="markers+text",
-                    marker=dict(size=5, color=color, line=dict(width=1, color="#fff")),
-                    text=[shorten(scheme_name)],
-                    textposition="top center",
-                    textfont=dict(size=7, color="#1a1a2e"),
-                    hovertemplate=f"<b>{scheme_name}</b><br>Est. {year_v} · {price_v}<extra></extra>",
-                    customdata=[[scheme_name]],
-                    showlegend=False,
-                ))
 
     fig_ets_map.update_layout(
         height=460, margin=dict(l=0, r=0, t=0, b=0),
