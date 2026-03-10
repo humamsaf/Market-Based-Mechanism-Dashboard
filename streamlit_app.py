@@ -229,20 +229,49 @@ MANUAL_ISO3 = {
     "Bolivia": "BOL", "Venezuela": "VEN", "Tanzania": "TZA",
     "Micronesia": "FSM", "Palestine": "PSE", "Taiwan": "TWN",
     "Vietnam": "VNM", "Moldova": "MDA",
+    # Turkey
     "Turkey": "TUR", "Türkiye": "TUR",
-    "Egypt, Arab Rep.": "EGY", "Egypt": "EGY",
+    # Egypt, Korea, Iran variants
+    "Egypt, Arab Rep.": "EGY",
     "Korea, Rep.": "KOR", "Korea, Dem. Rep.": "PRK",
     "Iran, Islamic Rep.": "IRN",
-    "Slovak Republic": "SVK",
+    # Europe
+    "Slovak Republic": "SVK", "Czechia": "CZE", "Czech Republic": "CZE",
     "Serbia, FR(Serbia/Montenegro)": "SRB", "Serbia": "SRB",
-    "Bosnia and Herzegovina": "BIH",
-    "North Macedonia": "MKD",
+    "Bosnia and Herzegovina": "BIH", "North Macedonia": "MKD",
     "Kyrgyz Republic": "KGZ",
+    # Africa / others
     "Congo, Dem. Rep.": "COD", "Congo, Rep.": "COG",
-    "Lao PDR": "LAO",
-    "Cabo Verde": "CPV", "Cape Verde": "CPV",
+    "Lao PDR": "LAO", "Cabo Verde": "CPV", "Cape Verde": "CPV",
     "Eswatini": "SWZ",
-    "Czechia": "CZE", "Czech Republic": "CZE",
+    # CBAM-specific partner names
+    "Bahamas, The": "BHS",
+    "Bonaire": "BES",
+    "British Virgin Islands": "VGB",
+    "Brunei": "BRN",
+    "Cayman Islands": "CYM",
+    "Curaçao": "CUW",
+    "Ethiopia(excludes Eritrea)": "ETH",
+    "Faeroe Islands": "FRO",
+    "Falkland Island": "FLK",
+    "French Polynesia": "PYF",
+    "Gambia, The": "GMB",
+    "Gibraltar": "GIB",
+    "Greenland": "GRL",
+    "Hong Kong, China": "HKG",
+    "Macao": "MAC",
+    "Marshall Islands": "MHL",
+    "New Caledonia": "NCL",
+    "Northern Mariana Islands": "MNP",
+    "Russian Federation": "RUS",
+    "Saint Barthélemy": "BLM",
+    "Saint Maarten (Dutch part)": "SXM",
+    "Sao Tome and Principe": "STP",
+    "St. Kitts and Nevis": "KNA",
+    "St. Lucia": "LCA",
+    "St. Vincent and the Grenadines": "VCT",
+    "Syrian Arab Republic": "SYR",
+    "Trinidad and Tobago": "TTO",
 }
 
 # ── Helpers ────────────────────────────────────────────────────
@@ -1094,10 +1123,11 @@ def page_cbam():
     col_bar, col_donut = st.columns([3, 2])
 
     with col_bar:
-        st.markdown('<div style="font-size:16px;font-weight:800;color:#1a1a2e;margin-bottom:8px;">All Partners by Trade Value</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:16px;font-weight:800;color:#1a1a2e;margin-bottom:8px;">Top 25 Partners by Trade Value</div>', unsafe_allow_html=True)
         top_partners = (
             f.groupby("Partner")["Trade Value 1000USD"].sum()
             .sort_values(ascending=False)
+            .head(25)
             .reset_index()
         )
         top_partners["Trade Value USD M"] = top_partners["Trade Value 1000USD"] / 1_000
@@ -1120,7 +1150,7 @@ def page_cbam():
             hovertemplate="<b>%{y}</b><br>USD %{x:.2f}B<extra></extra>",
         ))
         fig_bar.update_layout(
-            height=700, margin=dict(l=0, r=60, t=10, b=0),
+            height=520, margin=dict(l=0, r=60, t=10, b=0),
             paper_bgcolor="white", plot_bgcolor="white",
             xaxis=dict(title="Trade Value (USD Million)", showgrid=True, gridcolor="#f0f0f0", zeroline=False),
             yaxis=dict(title="", showgrid=False, tickfont=dict(size=11)),
