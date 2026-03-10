@@ -111,7 +111,7 @@ MECH_COLS = {
     "5. VCM project ": "VCM project",
     "6. Feebates": "Feebates",
     "7. CBAM": "CBAM",
-    "8. AMC": "AMC",
+    "8. AMC": "8. AMC",
 }
 
 CARBON_PRICING_COLORS = {
@@ -127,7 +127,7 @@ MARKER_STYLES = {
     "Fuel Mandates":  {"symbol": "triangle-up", "color": "#e07b00", "size": 5},
     "Feebates":       {"symbol": "circle",      "color": "#e63946", "size": 4},
     "VCM project":    {"symbol": "asterisk",    "color": "#2a9d8f", "size": 7},
-    "AMC":            {"symbol": "cross",       "color": "#5b9bd5", "size": 5},
+    "8. AMC":            {"symbol": "cross",       "color": "#5b9bd5", "size": 5},
 }
 
 MECH_BOX_COLORS = {
@@ -138,7 +138,7 @@ MECH_BOX_COLORS = {
     "Feebates":       "#e63946",
     "VCM project":    "#2a9d8f",
     "CBAM":           "#1d3557",
-    "AMC":            "#5e9bbd",
+    "8. AMC":            "#5e9bbd",
 }
 
 MECH_OFFSETS = {
@@ -147,7 +147,7 @@ MECH_OFFSETS = {
     "Fuel Mandates":  ( 0.0, -1.5),
     "Feebates":       ( 1.5,  0.0),
     "VCM project":    (-1.5,  0.0),
-    "AMC":            ( 1.5,  1.5),
+    "8. AMC":            ( 1.5,  1.5),
 }
 
 CENTROIDS = {
@@ -245,13 +245,14 @@ def load_detail_data():
     xl = pd.ExcelFile(FILE_PATH)
 
     # ETS — name + price per jurisdiction
-    ets = xl.parse("1.a ETS")
-    ets = ets[["Instrument name", "Jurisdiction", "Price rate ", "Start date", "Sector coverage"]].copy()
+    ets = xl.parse("1. ETS")
+    ets.columns = [str(c).strip() for c in ets.columns]
+    ets = ets[["Instrument name", "Jurisdiction", "Price rate", "Start date", "Sector coverage"]].copy()
     ets.columns = ["name", "country", "price", "start_date", "sectors"]
     ets["country"] = ets["country"].str.strip()
 
     # Carbon Tax — name + price per jurisdiction
-    ctx = xl.parse("1.b Carbon Tax")
+    ctx = xl.parse("2. Carbon Tax")
     ctx = ctx[["Instrument name", "Jurisdiction", "Main price rate", "Start date", "Sectoral coverage"]].copy()
     ctx.columns = ["name", "country", "price", "start_date", "sectors"]
     ctx["country"] = ctx["country"].str.strip()
@@ -264,8 +265,8 @@ def load_detail_data():
     fm["country"] = fm["country"].str.strip()
 
     # VCM
-    vcm = xl.parse("8. VCM")
-    vcm = vcm[["Country", "Projects", "Credits"]].copy()
+    vcm = xl.parse("5. VCM")
+    vcm = vcm[["Country", "Projects", "Credits"]].copy() if "Country" in vcm.columns else vcm.iloc[:, 1:4].copy()
     vcm.columns = ["country", "projects", "credits"]
     vcm["country"] = vcm["country"].str.strip()
 
@@ -284,7 +285,7 @@ def load_detail_data():
     ti["country"] = ti["Country"].str.strip()
 
     # AMC
-    amc = xl.parse("AMC")
+    amc = xl.parse("8. AMC")
     amc = amc[["Country", "Product / Technology", "Sector", "Climate AMC Status"]].copy()
     amc.columns = ["country", "product", "sector", "status"]
     amc = amc[amc["country"].notna()]
@@ -430,7 +431,7 @@ def render_mechanism_details(country, mechs):
             rows += card("#9b59b6", "#faf0ff", content)
 
     # ── AMC ──
-    if "AMC" in mechs:
+    if "8. AMC" in mechs:
         amc_rows = details["amc"][details["amc"]["country"] == country]
         for _, r in amc_rows.iterrows():
             content = (title(f'Advance Market Commitment — {r["product"]}', "#5b9bd5")
@@ -662,7 +663,7 @@ def page_mbm():
         "VCM project":    "#2a9d8f",
         "Feebates":       "#e63946",
         "CBAM":           "#4a90d9",
-        "AMC":            "#5b9bd5",
+        "8. AMC":            "#5b9bd5",
     }
     # Match symbols to map markers
     MECH_SYMBOL_HOVER = {
@@ -671,7 +672,7 @@ def page_mbm():
         "Fuel Mandates":  "▲",   # triangle-up
         "Feebates":       "●",   # circle
         "VCM project":    "✳",   # asterisk-like
-        "AMC":            "✚",   # cross
+        "8. AMC":            "✚",   # cross
     }
 
     CP_DISPLAY = {
@@ -728,7 +729,7 @@ def page_mbm():
             hoverinfo="skip",
         ))
 
-    OTHER_MECHS = ["CBAM", "Tax Incentives", "Fuel Mandates", "Feebates", "VCM project", "AMC"]
+    OTHER_MECHS = ["CBAM", "Tax Incentives", "Fuel Mandates", "Feebates", "VCM project", "8. AMC"]
     for i, mech in enumerate(OTHER_MECHS):
         style = MARKER_STYLES[mech]
         dlat, dlon = MECH_OFFSETS[mech]
@@ -907,7 +908,7 @@ def page_placeholder(title, icon):
 def load_ets_data():
     import re
     xl = pd.ExcelFile(FILE_PATH)
-    ets = xl.parse("1.a ETS")
+    ets = xl.parse("1. ETS")
     ets.columns = [str(c).strip() for c in ets.columns]
     col_map = {}
     for c in ets.columns:
