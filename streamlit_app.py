@@ -1093,10 +1093,43 @@ def page_cbam():
             st.session_state["cbam_reset"] += 1
             st.rerun()
 
+    # ── HS6 Code filter row ────────────────────────────────────────
+    fh1, fh2 = st.columns([2, 3])
+    with fh1:
+        # Build HS6 options: "ProductCode — Product Description"
+        hs6_df = df_real[["ProductCode", "Product Description"]].drop_duplicates().sort_values("ProductCode")
+        hs6_df["ProductCode"] = hs6_df["ProductCode"].astype(str).str.strip()
+        hs6_opts = [
+            f"{row['ProductCode']} — {row['Product Description']}"
+            for _, row in hs6_df.iterrows()
+        ]
+        hs6_sel_raw = st.multiselect(
+            "HS6 Code",
+            hs6_opts,
+            key=f"cbam_hs6_{rc}",
+            placeholder="All HS6 codes",
+        )
+        # Extract only the code part (before " — ")
+        hs6_sel = [opt.split(" — ")[0] for opt in hs6_sel_raw]
+    with fh2:
+        if hs6_sel:
+            st.markdown(
+                '<div style="margin-top:28px;display:flex;flex-wrap:wrap;gap:6px;">'
+                + "".join(
+                    f'<span style="background:#e8f0fb;color:#1d3557;border:1px solid #b0c8e8;'
+                    f'padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">'
+                    f'{code}</span>'
+                    for code in hs6_sel
+                )
+                + "</div>",
+                unsafe_allow_html=True,
+            )
+
     f = df_real.copy()
     if reporter_sel: f = f[f["Reporter"].isin(reporter_sel)]
     if cat_sel:      f = f[f["Category"].isin(cat_sel)]
     if partner_sel:  f = f[f["Partner"].isin(partner_sel)]
+    if hs6_sel:      f = f[f["ProductCode"].astype(str).str.strip().isin(hs6_sel)]
 
     # ── Summary stats (after filter, hero-style) ─────────────────
     total_all = f["Trade Value 1000USD"].sum() / 1_000_000
