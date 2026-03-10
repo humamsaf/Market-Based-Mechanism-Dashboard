@@ -1164,130 +1164,108 @@ def page_ets():
                     .replace(" Performance Standards System","")
                     .replace(" safeguard mechanism",""))
 
-    # ── Build map: choropleth by avg price + orange dots per scheme ─
-    country_ets_map   = f_ets.groupby("country")["name"].apply(list).to_dict()
-    country_price_map = f_ets.groupby("country")["price_num"].mean().to_dict()
-
-    map_rows = []
-    for country, schemes in country_ets_map.items():
-        iso3 = to_iso3(country)
-        if iso3:
-            avg_p = country_price_map.get(country)
-            map_rows.append({
-                "iso3": iso3, "country": country,
-                "avg_price": avg_p if pd.notna(avg_p) else None,
-                "n_schemes": len(schemes),
-                "schemes_str": "<br>".join(f"  · {s}" for s in schemes),
-            })
-    map_df = pd.DataFrame(map_rows) if map_rows else pd.DataFrame()
-
+    # ── Build map: choropleth by national price + all-scheme dots ─
     fig_ets_map = go.Figure()
 
-    # ── Choropleth: same color scheme as MBM map ─────────────────
-    # ETS-only countries = #457b9d (blue), also has carbon tax = #f4a261 (orange)
-    # Load carbon tax sheet to check overlap
-    try:
-        ctx_sheet = pd.read_excel(DATA_PATH, sheet_name="1.b Carbon Tax")
-        ctx_sheet.columns = [str(c).strip() for c in ctx_sheet.columns]
-        ctx_col = next((c for c in ctx_sheet.columns if "jurisdiction" in c.lower()), ctx_sheet.columns[0])
-        ctx_countries = set(ctx_sheet[ctx_col].dropna().astype(str).str.strip().tolist())
-    except:
-        ctx_countries = set()
+    # Per-country: pick national/federal price, else avg
+    country_price_repr = {}
+    for country, grp in f_ets.groupby("country"):
+        national = grp[grp["name"].str.lower().str.contains("national|federal|safeguard", na=False)]
+        if not national.empty and pd.notna(national["price_num"].iloc[0]):
+            country_price_repr[country] = national["price_num"].iloc[0]
+        else:
+            avg = grp["price_num"].dropna()
+            if not avg.empty:
+                country_price_repr[country] = avg.mean()
 
-    ets_countries = set(f_ets["country"].unique())
+    map_rows = []
+    for country, schemes in f_ets.groupby("country")["name"].apply(list).items():
+        iso3 = to_iso3(country)
+        if not iso3: continue
+        price = country_price_repr.get(country)
+        map_rows.append({
+            "iso3": iso3, "country": country,
+            "price": price,
+            "n_schemes": len(schemes),
+            "schemes_str": "<br>".join(f"  · {s}" for s in schemes),
+        })
+    map_df = pd.DataFrame(map_rows) if map_rows else pd.DataFrame()
 
+    # Choropleth — color by price
     if not map_df.empty:
-        rows_both    = map_df[map_df["country"].apply(lambda c: c in ets_countries and c in ctx_countries)]
-        rows_ets     = map_df[map_df["country"].apply(lambda c: c in ets_countries and c not in ctx_countries)]
+        priced_df   = map_df[map_df["price"].notna()]
+        unpriced_df = map_df[map_df["price"].isna()]
 
-        def add_choro(df, color, label):
-            if df.empty: return
+        if not priced_df.empty:
             fig_ets_map.add_trace(go.Choropleth(
-                locations=df["iso3"],
-                z=[1]*len(df),
-                colorscale=[[0,color],[1,color]],
-                showscale=False,
+                locations=priced_df["iso3"],
+                z=priced_df["price"],
+                colorscale=[
+                    [0.0,  "#d4edff"],
+                    [0.25, "#6baed6"],
+                    [0.55, "#2171b5"],
+                    [1.0,  "#08306b"],
+                ],
+                zmin=0, zmax=100,
+                showscale=True,
+                colorbar=dict(
+                    title=dict(text="USD/tCO₂", font=dict(size=10)),
+                    thickness=12, len=0.45, tickfont=dict(size=10), x=1.01,
+                ),
                 hovertemplate=(
                     "<b>%{customdata[0]}</b><br>"
-                    f"<span style='color:{color}'>■</span> {label}<br>"
+                    "Price: USD %{z:.1f}/tCO₂<br>"
                     "%{customdata[1]} scheme(s)<br>"
-                    "─────────────<br>"
-                    "%{customdata[2]}<extra></extra>"
+                    "─────────<br>%{customdata[2]}<extra></extra>"
                 ),
-                customdata=df[["country","n_schemes","schemes_str"]].values,
+                customdata=priced_df[["country","n_schemes","schemes_str"]].values,
+                marker_line_color="#555", marker_line_width=0.8,
+            ))
+        if not unpriced_df.empty:
+            fig_ets_map.add_trace(go.Choropleth(
+                locations=unpriced_df["iso3"],
+                z=[0]*len(unpriced_df),
+                colorscale=[[0,"#e0e0e0"],[1,"#e0e0e0"]],
+                showscale=False,
+                hovertemplate=(
+                    "<b>%{customdata[0]}</b><br>Price: N/A<br>"
+                    "%{customdata[1]} scheme(s)<br>"
+                    "─────────<br>%{customdata[2]}<extra></extra>"
+                ),
+                customdata=unpriced_df[["country","n_schemes","schemes_str"]].values,
                 marker_line_color="#555", marker_line_width=0.8,
             ))
 
-        add_choro(rows_both, "#f4a261", "ETS + Carbon Tax")
-        add_choro(rows_ets,  "#457b9d", "ETS")
-
-    # ── One dot per country (representative scheme) ──────────────
-    COUNTRY_CENTROIDS = {
-        "Australia":      (-25.27,  133.78),
-        "Austria":        ( 47.52,   14.55),
-        "Canada":         ( 60.00,  -96.00),
-        "China":          ( 35.86,  104.20),
-        "European Union": ( 50.85,    4.35),
-        "Germany":        ( 51.17,   10.45),
-        "Indonesia":      ( -0.79,  113.92),
-        "Japan":          ( 36.20,  138.25),
-        "Kazakhstan":     ( 48.02,   66.92),
-        "Korea, Rep.":    ( 36.50,  127.98),
-        "Mexico":         ( 23.63, -102.55),
-        "Montenegro":     ( 42.71,   19.37),
-        "New Zealand":    (-40.90,  174.89),
-        "Switzerland":    ( 46.82,    8.23),
-        "United Kingdom": ( 55.38,   -3.44),
-        "United States":  ( 39.50,  -98.35),
-    }
-
-    # Pick representative scheme per country (national/federal first)
-    REPR_SCHEME = {}
-    for country, schemes in f_ets.groupby("country")["name"].apply(list).items():
-        national = [s for s in schemes if any(w in s.lower() for w in ["national","federal","safeguard"])]
-        REPR_SCHEME[country] = national[0] if national else schemes[0]
-
-    DOT_COLORS = [
-        "#e07b00","#2a9d8f","#e63946","#9b59b6",
-        "#4a90d9","#f4a261","#5a8a3a","#d63031",
-        "#00b894","#6c5ce7","#457b9d","#c97a3a",
-        "#fdcb6e","#0984e3","#a29bfe","#fd79a8",
-    ]
-    country_list = sorted(COUNTRY_CENTROIDS.keys())
-    country_color = {c: DOT_COLORS[i % len(DOT_COLORS)] for i, c in enumerate(country_list)}
-
-    dot_lons, dot_lats, dot_colors, dot_hovers, dot_custom = [], [], [], [], []
-    for country, coord in COUNTRY_CENTROIDS.items():
-        country_schemes = f_ets[f_ets["country"] == country]
-        if country_schemes.empty:
+    # All-scheme dots (including regional) at specific coordinates
+    dot_lons, dot_lats, dot_hovers, dot_custom = [], [], [], []
+    for _, row in f_ets.iterrows():
+        sname = row["name"]
+        coord = SCHEME_COORDS.get(sname)
+        if coord is None:
+            for k, v in SCHEME_COORDS.items():
+                if row["country"].lower() in k.lower():
+                    coord = v
+                    break
+        if coord is None:
             continue
-        repr_name = REPR_SCHEME.get(country, country_schemes["name"].iloc[0])
-        repr_row  = f_ets[f_ets["name"] == repr_name]
-        if repr_row.empty:
-            repr_row = country_schemes.iloc[[0]]
-        row = repr_row.iloc[0]
-        n   = len(country_schemes)
+        cLat, cLon = coord
         price_v = row.get("price", "N/A")
         year_v  = int(row["start_date"]) if pd.notna(row.get("start_date")) else "N/A"
-        schemes_list = "<br>".join(f"  · {s}" for s in country_schemes["name"].tolist())
-        hover = (f"<b>{country}</b><br>{n} scheme(s)<br>"
-                 f"Repr: {repr_name}<br>Est. {year_v} · {price_v}<br>"
-                 f"──────────<br>{schemes_list}<extra></extra>")
-        dot_lons.append(coord[1])
-        dot_lats.append(coord[0])
-        dot_colors.append(country_color[country])
-        dot_hovers.append(hover)
-        dot_custom.append([country])  # click → show country detail
+        dot_lons.append(cLon)
+        dot_lats.append(cLat)
+        dot_hovers.append(
+            f"<b>{sname}</b><br>{row['country']} · Est. {year_v}"
+            f"<br>Price: {price_v}<extra></extra>"
+        )
+        dot_custom.append([sname])
 
     if dot_lons:
         fig_ets_map.add_trace(go.Scattergeo(
             lon=dot_lons, lat=dot_lats,
             mode="markers",
             marker=dict(
-                size=11,
-                color=dot_colors,
-                symbol="diamond",
-                line=dict(width=1.5, color="white"),
+                size=7, color="white", symbol="circle",
+                line=dict(width=1.5, color="#1a1a2e"),
             ),
             hovertemplate=dot_hovers,
             customdata=dot_custom,
@@ -1308,7 +1286,6 @@ def page_ets():
             lonaxis=dict(range=[-180, 180], showgrid=False),
         ),
     )
-
         # ── Detail helper functions ─────────────────────────────────
     def fval(v):
         if v is None: return "—"
@@ -1346,7 +1323,7 @@ def page_ets():
                                   config={"scrollZoom": False, "doubleClick": False,
                                           "displayModeBar": False})
 
-    selected = None        # country name
+    selected = None
     selected_scheme = None
     if clicked and clicked.get("selection") and clicked["selection"].get("points"):
         pts = clicked["selection"]["points"]
@@ -1354,11 +1331,12 @@ def page_ets():
             cd = pts[0].get("customdata")
             if cd and len(cd) > 0:
                 val = cd[0]
-                # Dots return country name
-                if val in f_ets["country"].values:
-                    selected = val
+                # Dot → scheme name; choropleth → country name
+                scheme_match = f_ets[f_ets["name"] == val]
+                if not scheme_match.empty:
+                    selected_scheme = val
+                    selected = scheme_match["country"].iloc[0]
                 else:
-                    # choropleth fallback
                     selected = val
     if not selected and len(country_sel) == 1:
         selected = country_sel[0]
