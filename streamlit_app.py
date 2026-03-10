@@ -122,10 +122,10 @@ MECH_COLS = {
 }
 
 CARBON_PRICING_COLORS = {
-    "ETS + Carbon Tax": "#f4a261",
-    "Carbon Tax":       "#90be6d",
-    "ETS":              "#457b9d",
-    "No Carbon Pricing":"#f0f0f0",
+    "ETS + Carbon Tax": "#2a6496",
+    "Carbon Tax":       "#6baed6",
+    "ETS":              "#08306b",
+    "No Carbon Pricing":"#e8edf2",
 }
 
 MARKER_STYLES = {
@@ -138,14 +138,14 @@ MARKER_STYLES = {
 }
 
 MECH_BOX_COLORS = {
-    "Carbon Tax":     "#90be6d",
-    "ETS":            "#457b9d",
-    "Tax Incentives": "#7b2d8b",
-    "Fuel Mandates":  "#e07b00",
-    "Feebates":       "#e63946",
-    "VCM project":    "#2a9d8f",
-    "CBAM":           "#1d3557",
-    "AMC":            "#5e9bbd",
+    "VCM project":    "#08306b",
+    "Fuel Mandates":  "#1d3557",
+    "ETS":            "#2a6496",
+    "Carbon Tax":     "#4a90d9",
+    "Tax Incentives": "#6baed6",
+    "CBAM":           "#9ecae1",
+    "Feebates":       "#c6dbef",
+    "AMC":            "#deebf7",
 }
 
 MECH_OFFSETS = {
