@@ -1161,20 +1161,8 @@ def page_cbam():
     fig_map.add_trace(go.Choropleth(
         locations=map_agg["iso3"],
         z=map_agg["Trade Value USD M"],
-        colorscale=[
-            [0,    "#dceaf7"],
-            [0.2,  "#dceaf7"],
-            [0.2,  "#a8c8e8"],
-            [0.4,  "#a8c8e8"],
-            [0.4,  "#6baed6"],
-            [0.6,  "#6baed6"],
-            [0.6,  "#2a6496"],
-            [0.8,  "#2a6496"],
-            [0.8,  "#1d3557"],
-            [1.0,  "#1d3557"],
-        ],
+        colorscale=[[0, "#dceaf7"], [0.3, "#7fb3d9"], [0.7, "#2a6496"], [1, "#1d3557"]],
         showscale=False,
-        zmin=0,
         hovertemplate="%{customdata}<extra></extra>",
         customdata=map_agg[["hover"]].values,
         marker_line_color="#333333",
@@ -1218,8 +1206,8 @@ def page_cbam():
     # Legend: 5 kotak warna trade value
     VALUE_BINS = [
         ("< USD 500M",      "#dceaf7"),
-        ("USD 500M – 1B",   "#a8c8e8"),
-        ("USD 1B – 3B",     "#6baed6"),
+        ("USD 500M – 1B",   "#a8cbea"),
+        ("USD 1B – 3B",     "#7fb3d9"),
         ("USD 3B – 6B",     "#2a6496"),
         ("> USD 6B",        "#1d3557"),
     ]
