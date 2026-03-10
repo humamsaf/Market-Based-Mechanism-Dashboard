@@ -554,7 +554,7 @@ def render_country_card(country, region, long_df):
         tc = "white" if bg not in ("#90be6d", "#f0f0f0") else "#333"
         boxes += f'<div style="background:{bg};color:{tc};padding:5px 12px;border-radius:6px;font-weight:700;font-size:12px;border:1.5px solid #222;white-space:nowrap;">{m}</div>'
     st.markdown(f"""
-    <div style="background:#1d3557;border-radius:12px;padding:20px 18px;margin-bottom:12px;color:#ffffff;border:none;box-shadow:0 4px 16px rgba(29,53,87,0.25);">
+    <div style="background:linear-gradient(135deg,#1d3557 0%,#2a6496 100%);border-radius:12px;padding:20px 18px;margin-bottom:12px;color:#ffffff;border:none;box-shadow:0 4px 16px rgba(29,53,87,0.25);">
         <div style="font-size:22px;font-weight:800;letter-spacing:1px;margin-bottom:4px;color:#ffffff;">{country.upper()}</div>
         <div style="font-size:12px;color:rgba(255,255,255,0.55);margin-bottom:14px;">{region}</div>
         <div style="display:flex;gap:8px;margin-bottom:{'14px' if boxes else '0'};flex-wrap:wrap;align-items:center;">
