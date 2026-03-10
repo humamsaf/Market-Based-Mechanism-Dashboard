@@ -631,9 +631,6 @@ def page_mbm():
                 <div style="font-size:11px; color:#999; font-weight:700; text-transform:uppercase; letter-spacing:2px; margin-top:6px;">ETS and Carbon Tax</div>
             </div>
         </div>
-        <div style="font-size:11px;color:#aaa;line-height:1.8;max-width:540px;margin:0 auto 32px auto;text-align:center;">
-            This dashboard presents CBAM trade exposure data sourced from the <a href="https://wits.worldbank.org/about_wits.html" target="_blank" style="color:#999;text-decoration:underline;">World Integrated Trade Solution (WITS), World Bank</a>. The data has been curated and compiled as part of the research activities of the <span style="color:#777;font-weight:600;">Market-based Interventions for Deep Decarbonisation (MIDD) Lab</span>. All rights to the compiled dataset are retained by the MIDD Lab.
-        </div>
         <a onclick="
             var el = document.getElementById('map-section');
             var container = window.parent.document.querySelector('.main');
@@ -1035,9 +1032,6 @@ def page_cbam():
             {stat(n_products, "Product Codes")}
             {divv()}
             {stat(n_cat, "CBAM Sectors")}
-        </div>
-        <div style="font-size:11px;color:#aaa;line-height:1.8;max-width:540px;margin:0 auto 32px auto;text-align:center;">
-            This dashboard presents CBAM trade exposure data sourced from the <a href="https://wits.worldbank.org/about_wits.html" target="_blank" style="color:#999;text-decoration:underline;">World Integrated Trade Solution (WITS), World Bank</a>. The data has been curated and compiled as part of the research activities of the <span style="color:#777;font-weight:600;">Market-based Interventions for Deep Decarbonisation (MIDD) Lab</span>. All rights to the compiled dataset are retained by the MIDD Lab.
         </div>
         <a onclick="
             var el = document.getElementById('cbam-main-section');
