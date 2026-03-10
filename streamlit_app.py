@@ -1447,53 +1447,64 @@ def page_ets():
                     try: bar_visual("Price vs Max ETS", float(price_num)/float(max_price), f"USD {float(price_num):.2f} / {float(max_price):.0f}", "#2a9d8f")
                     except: pass
 
-                # ── h–i: Coverage ──
-                section_title("Coverage")
+                if scheme_idx < len(schemes_display) - 1:
+                    st.divider()
+
+    # ── Detail section below map (full width) ─────────────────────
+    if selected and not schemes_display.empty:
+        st.markdown("<hr style='border:none;border-top:1px solid #e0e0e0;margin:24px 0 20px 0'>", unsafe_allow_html=True)
+        st.markdown(f'<div style="font-size:20px;font-weight:900;color:#1a1a2e;margin-bottom:20px;">Scheme Details — {selected}</div>', unsafe_allow_html=True)
+
+        for scheme_idx, (_, r) in enumerate(schemes_display.iterrows()):
+            if len(schemes_display) > 1:
+                st.markdown(f'<div style="background:#457b9d;color:white;font-size:13px;font-weight:800;border-radius:8px;padding:8px 16px;margin-bottom:16px;">{r["name"]}</div>', unsafe_allow_html=True)
+
+            c1, c2, c3 = st.columns(3)
+
+            with c1:
+                # Coverage
+                st.markdown('<div style="font-size:11px;font-weight:800;color:#457b9d;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;border-bottom:2px solid #e8f0f8;padding-bottom:4px;">Coverage</div>', unsafe_allow_html=True)
                 text_field("GHG Coverage", fval(r.get("ghg")))
                 text_field("Sector Coverage", fval(r.get("sectors")))
 
-                # ── j–k: Threshold description ──
-                desc_v = fval(r.get("description"))
-                if desc_v != "—":
-                    section_title("Threshold")
-                    text_field("Description of Threshold", desc_v)
+            with c2:
+                # Threshold
+                st.markdown('<div style="font-size:11px;font-weight:800;color:#457b9d;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;border-bottom:2px solid #e8f0f8;padding-bottom:4px;">Threshold</div>', unsafe_allow_html=True)
+                text_field("Description of Threshold", fval(r.get("description")))
 
-                # ── l: Additional Information ──
+            with c3:
+                # Additional Info
+                st.markdown('<div style="font-size:11px;font-weight:800;color:#457b9d;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;border-bottom:2px solid #e8f0f8;padding-bottom:4px;">Additional Information</div>', unsafe_allow_html=True)
                 ai = fval(r.get("additional_info"))
-                if ai != "—":
-                    section_title("Additional Information")
-                    text_field("", ai)
+                text_field("", ai if ai != "—" else "No additional information available.")
 
-                # ── m–o: Cap & Allocation ──
-                cap_v   = fval(r.get("cap"))
-                tr_v    = fval(r.get("tightening_rate"))
-                alloc_v = fval(r.get("allocation"))
-                if any(v != "—" for v in [cap_v, tr_v, alloc_v]):
-                    section_title("Cap & Allocation")
-                    text_field("Cap Emissions", cap_v)
-                    text_field("Tightening Rate", tr_v)
-                    text_field("Allocation Method", alloc_v)
+            c4, c5, c6 = st.columns(3)
 
-                # ── p–q: Revenue & Funding ──
-                rr_v = fval(r.get("revenue_recycling"))
-                fp_v = fval(r.get("funding_program"))
-                if any(v != "—" for v in [rr_v, fp_v]):
-                    section_title("Revenue & Funding")
-                    text_field("Revenue Recycling", rr_v)
-                    text_field("Funding Program", fp_v)
+            with c4:
+                st.markdown('<div style="font-size:11px;font-weight:800;color:#457b9d;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;border-bottom:2px solid #e8f0f8;padding-bottom:4px;">Cap & Allocation</div>', unsafe_allow_html=True)
+                text_field("Cap Emissions", fval(r.get("cap")))
+                text_field("Tightening Rate", fval(r.get("tightening_rate")))
+                text_field("Allocation Method", fval(r.get("allocation")))
 
-                # ── r: Source ──
+            with c5:
+                st.markdown('<div style="font-size:11px;font-weight:800;color:#457b9d;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;border-bottom:2px solid #e8f0f8;padding-bottom:4px;">Revenue & Funding</div>', unsafe_allow_html=True)
+                text_field("Revenue Recycling", fval(r.get("revenue_recycling")))
+                text_field("Funding Program", fval(r.get("funding_program")))
+
+            with c6:
                 src = fval(r.get("source"))
+                st.markdown('<div style="font-size:11px;font-weight:800;color:#457b9d;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;border-bottom:2px solid #e8f0f8;padding-bottom:4px;">Source</div>', unsafe_allow_html=True)
                 if src != "—":
-                    section_title("Source")
                     for lnk in [s.strip() for s in src.split(";") if s.strip()]:
                         if lnk.startswith("http"):
                             st.markdown(f'<a href="{lnk}" target="_blank" style="font-size:10px;color:#457b9d;word-break:break-all;display:block;margin-bottom:4px;">{lnk}</a>', unsafe_allow_html=True)
                         else:
                             st.markdown(f'<div style="font-size:11px;color:#555;">{lnk}</div>', unsafe_allow_html=True)
+                else:
+                    st.markdown('<div style="font-size:11px;color:#aaa;">—</div>', unsafe_allow_html=True)
 
-                if scheme_idx < len(schemes_display) - 1:
-                    st.divider()
+            if scheme_idx < len(schemes_display) - 1:
+                st.markdown("<hr style='border:none;border-top:1px solid #e8e8e8;margin:16px 0'>", unsafe_allow_html=True)
 
     st.divider()
 
