@@ -1466,20 +1466,17 @@ def page_ets():
                 thv  = fval(r.get("threshold"))
                 secv = fval(r.get("sectors"))
 
-                # ── Instrument Name ──
                 section_title("Emission Trading Scheme")
+
+                # Threshold — big centered
                 st.markdown(f"""
-                <div style="background:#ddeef8;border-radius:7px;padding:9px 10px;text-align:center;margin-bottom:6px;">
-                  <div style="font-size:9px;font-weight:700;color:#457b9d;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Instrument Name</div>
-                  <div style="font-size:12px;font-weight:900;color:#1a3a5e;">{r["name"]}</div>
+                <div style="background:#f0f4ff;border:1px solid #c8d8f8;border-radius:10px;padding:14px 12px;text-align:center;margin-bottom:6px;">
+                  <div style="font-size:9px;font-weight:700;color:#5a6aae;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Threshold</div>
+                  <div style="font-size:20px;font-weight:900;color:#1a2a5e;line-height:1.2;">{thv}</div>
                 </div>
                 """, unsafe_allow_html=True)
 
-                # ── Threshold ──
-                if thv != "—":
-                    text_field("Threshold", thv)
-
-                # ── Gov Revenue — big number ──
+                # Gov Revenue — big centered
                 st.markdown(f"""
                 <div style="background:#f0faf4;border:1px solid #c8ecd6;border-radius:10px;padding:14px 12px;text-align:center;margin-bottom:6px;">
                   <div style="font-size:9px;font-weight:700;color:#3a7a3a;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Gov. Revenue (2024)</div>
@@ -1487,8 +1484,13 @@ def page_ets():
                 </div>
                 """, unsafe_allow_html=True)
 
-                # ── Sector Coverage ──
-                text_field("Sector Coverage", secv)
+                # Sector Coverage — smaller font, centered
+                st.markdown(f"""
+                <div style="background:#f8f8f8;border:1px solid #e0e0e0;border-radius:10px;padding:12px;text-align:center;margin-bottom:6px;">
+                  <div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Sector Coverage</div>
+                  <div style="font-size:12px;font-weight:600;color:#333;line-height:1.5;">{secv}</div>
+                </div>
+                """, unsafe_allow_html=True)
 
                 if scheme_idx < len(schemes_display) - 1:
                     st.divider()
