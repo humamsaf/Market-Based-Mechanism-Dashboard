@@ -909,34 +909,54 @@ def load_ets_data():
     import re
     xl = pd.ExcelFile(FILE_PATH)
     ets = xl.parse("1.a ETS")
+
+    # Strip semua spasi leading/trailing di nama kolom
     ets.columns = [str(c).strip() for c in ets.columns]
+
+    # Mapping fleksibel berdasarkan keyword — tahan terhadap variasi nama kolom
+    TARGET = {
+        "name":              lambda cl: "instrument name" in cl,
+        "country":           lambda cl: cl == "jurisdiction",
+        "region":            lambda cl: cl == "region",
+        "start_date":        lambda cl: "start date" in cl,
+        "price":             lambda cl: "price rate" in cl,
+        "ghg":               lambda cl: cl in ("ghg", "ghg coverage") or cl.startswith("ghg"),
+        "sectors":           lambda cl: "sector coverage" in cl or "sectoral coverage" in cl,
+        "threshold":         lambda cl: cl == "threshold",
+        "description":       lambda cl: cl == "description",
+        "additional_info":   lambda cl: "additional information" in cl,
+        "cap":               lambda cl: "cap emission" in cl,
+        "tightening_rate":   lambda cl: "tighten" in cl,
+        "allocation":        lambda cl: "allocation method" in cl,
+        "revenue":           lambda cl: "government revenue" in cl,
+        "revenue_recycling": lambda cl: "revenue recycling" in cl,
+        "funding_program":   lambda cl: "funding program" in cl,
+        "share":             lambda cl: "share of" in cl,
+        "source":            lambda cl: cl == "source",
+    }
+
     col_map = {}
     for c in ets.columns:
-        cl = c.lower()
-        if "instrument name" in cl:           col_map[c] = "name"
-        elif cl == "jurisdiction":            col_map[c] = "country"
-        elif cl == "region":                  col_map[c] = "region"
-        elif "start date" in cl:              col_map[c] = "start_date"
-        elif "price rate" in cl:              col_map[c] = "price"
-        elif "sector coverage" in cl:         col_map[c] = "sectors"
-        elif "allocation method" in cl:       col_map[c] = "allocation"
-        elif "government revenue" in cl:      col_map[c] = "revenue"
-        elif "cap emission" in cl:            col_map[c] = "cap"
-        elif cl == "description":             col_map[c] = "description"
-        elif "additional information" in cl:  col_map[c] = "additional_info"
-        elif cl in ("ghg", "ghg coverage"):  col_map[c] = "ghg"
-        elif "share of" in cl:               col_map[c] = "share"
-        elif "tighten" in cl:                col_map[c] = "tightening_rate"
-        elif "threshold" in cl:              col_map[c] = "threshold"
-        elif "revenue recycling" in cl:      col_map[c] = "revenue_recycling"
-        elif "funding program" in cl:        col_map[c] = "funding_program"
-        elif cl == "source":                  col_map[c] = "source"
+        cl = c.lower().strip()
+        for target_name, matcher in TARGET.items():
+            if target_name not in col_map.values() and matcher(cl):
+                col_map[c] = target_name
+                break
+
     ets = ets.rename(columns=col_map)
+
+    # Pastikan semua kolom target ada, isi None kalau tidak ada
+    for col in TARGET.keys():
+        if col not in ets.columns:
+            ets[col] = None
+
     ets = ets[ets["country"].notna()].copy()
+
     def parse_price(p):
         if pd.isna(p): return None
         m = re.search(r"[\d]+\.?\d*", str(p))
         return float(m.group()) if m else None
+
     ets["price_num"] = ets["price"].apply(parse_price)
     ets["start_date"] = pd.to_numeric(ets["start_date"], errors="coerce")
     return ets
