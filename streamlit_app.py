@@ -245,7 +245,7 @@ def load_detail_data():
     xl = pd.ExcelFile(FILE_PATH)
 
     # ETS — name + price per jurisdiction
-    ets = xl.parse("1. ETS")
+    ets = xl.parse("1.a ETS")
     ets = ets[["Instrument name", "Jurisdiction", "Price rate ", "Start date", "Sector coverage"]].copy()
     ets.columns = ["name", "country", "price", "start_date", "sectors"]
     ets["country"] = ets["country"].str.strip()
@@ -907,7 +907,7 @@ def page_placeholder(title, icon):
 def load_ets_data():
     import re
     xl = pd.ExcelFile(FILE_PATH)
-    ets = xl.parse("1. ETS")
+    ets = xl.parse("1.a ETS")
     ets.columns = [str(c).strip() for c in ets.columns]
     col_map = {}
     for c in ets.columns:
