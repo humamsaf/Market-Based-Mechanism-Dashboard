@@ -1455,26 +1455,24 @@ def page_ets():
                     </div>'''
                 except: pass
 
-            st.markdown(f"""
-            <div style="background:linear-gradient(135deg,#1a3a5e 0%,#457b9d 100%);
-                    border-radius:14px;padding:24px 28px;margin-bottom:20px;color:white;">
-              <div style="font-size:28px;font-weight:900;letter-spacing:1px;margin-bottom:4px;">{selected.upper()}{prov_note}</div>
-              <div style="font-size:13px;opacity:0.8;margin-bottom:14px;">{region_lbl}</div>
-              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;">
-                <div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;min-width:70px;text-align:center;">
-                  <div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Since</div>
-                  <div style="font-size:22px;font-weight:900;">{start_lbl}</div>
-                </div>
-                <div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;min-width:70px;text-align:center;">
-                  <div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Schemes</div>
-                  <div style="font-size:22px;font-weight:900;">{len(schemes)}</div>
-                </div>
-                {share_gauge_html}
-                {price_gauge_html}
-                {scheme_badge}
-              </div>
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown(
+                '<div style="background:linear-gradient(135deg,#1a3a5e 0%,#457b9d 100%);'
+                'border-radius:14px;padding:24px 28px;margin-bottom:20px;color:white;">'
+                f'<div style="font-size:28px;font-weight:900;letter-spacing:1px;margin-bottom:4px;">{selected.upper()}{prov_note}</div>'
+                f'<div style="font-size:13px;opacity:0.8;margin-bottom:14px;">{region_lbl}</div>'
+                '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;">'
+                '<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;min-width:70px;text-align:center;">'
+                '<div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Since</div>'
+                f'<div style="font-size:22px;font-weight:900;">{start_lbl}</div></div>'
+                '<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;min-width:70px;text-align:center;">'
+                '<div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Schemes</div>'
+                f'<div style="font-size:22px;font-weight:900;">{len(schemes)}</div></div>'
+                + share_gauge_html
+                + price_gauge_html
+                + scheme_badge
+                + '</div></div>',
+                unsafe_allow_html=True
+            )
 
             for scheme_idx, (_, r) in enumerate(schemes_display.iterrows()):
                 # Scheme header (only if multiple)
