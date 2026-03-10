@@ -1447,7 +1447,12 @@ def page_ets():
                 + (('<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;min-width:70px;text-align:center;">'
                     '<div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Price Rate</div>'
                     f'<div style="font-size:22px;font-weight:900;">{_price_hdr}</div></div>') if _price_hdr else "")
-                + '</div></div>',
+                + '</div>'
+                + (f'<div style="margin-top:12px;background:rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;">'
+                   f'<div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Sector Coverage</div>'
+                   f'<div style="font-size:12px;font-weight:600;opacity:0.95;">{fval(_r0.get("sectors")) if _r0 is not None else "—"}</div>'
+                   f'</div>' if _r0 is not None else "")
+                + '</div>',
                 unsafe_allow_html=True
             )
 
@@ -1481,14 +1486,6 @@ def page_ets():
                 <div style="background:#f0faf4;border:1px solid #c8ecd6;border-radius:10px;padding:14px 12px;text-align:center;margin-bottom:6px;">
                   <div style="font-size:9px;font-weight:700;color:#3a7a3a;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Gov. Revenue (2024)</div>
                   <div style="font-size:22px;font-weight:900;color:#1a4a2a;line-height:1;">{rv}</div>
-                </div>
-                """, unsafe_allow_html=True)
-
-                # Sector Coverage — smaller font, centered
-                st.markdown(f"""
-                <div style="background:#f8f8f8;border:1px solid #e0e0e0;border-radius:10px;padding:12px;text-align:center;margin-bottom:6px;">
-                  <div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Sector Coverage</div>
-                  <div style="font-size:12px;font-weight:600;color:#333;line-height:1.5;">{secv}</div>
                 </div>
                 """, unsafe_allow_html=True)
 
