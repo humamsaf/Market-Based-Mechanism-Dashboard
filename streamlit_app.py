@@ -1463,44 +1463,32 @@ def page_ets():
                 pv   = fval(r.get("price"))
                 sv   = int(r["start_date"]) if pd.notna(r.get("start_date")) else "—"
                 rv   = fval(r.get("revenue"))
-                jv   = fval(r.get("country"))
-                regv = fval(r.get("region"))
                 thv  = fval(r.get("threshold"))
+                secv = fval(r.get("sectors"))
 
-                # ── Instrument info grid ──
+                # ── Instrument Name ──
                 section_title("Emission Trading Scheme")
                 st.markdown(f"""
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
-                  <div style="background:#ddeef8;border-radius:7px;padding:9px 10px;text-align:center;grid-column:span 2;">
-                    <div style="font-size:9px;font-weight:700;color:#457b9d;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Instrument Name</div>
-                    <div style="font-size:11px;font-weight:900;color:#1a3a5e;">{r["name"]}</div>
-                  </div>
-                  <div style="background:#eef3fb;border-radius:7px;padding:9px 10px;text-align:center;">
-                    <div style="font-size:9px;font-weight:700;color:#3a5a9e;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Start Date</div>
-                    <div style="font-size:13px;font-weight:900;color:#1a2a5e;">{sv}</div>
-                  </div>
-                  <div style="background:#eef3fb;border-radius:7px;padding:9px 10px;text-align:center;">
-                    <div style="font-size:9px;font-weight:700;color:#3a5a9e;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Jurisdiction</div>
-                    <div style="font-size:11px;font-weight:900;color:#1a2a5e;">{jv}</div>
-                  </div>
-                  <div style="background:#f0f4ff;border-radius:7px;padding:9px 10px;text-align:center;">
-                    <div style="font-size:9px;font-weight:700;color:#5a6aae;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Region</div>
-                    <div style="font-size:11px;font-weight:900;color:#1a2a5e;">{regv}</div>
-                  </div>
-                  <div style="background:#f0f4ff;border-radius:7px;padding:9px 10px;text-align:center;">
-                    <div style="font-size:9px;font-weight:700;color:#5a6aae;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Threshold</div>
-                    <div style="font-size:11px;font-weight:900;color:#1a2a5e;">{thv}</div>
-                  </div>
+                <div style="background:#ddeef8;border-radius:7px;padding:9px 10px;text-align:center;margin-bottom:6px;">
+                  <div style="font-size:9px;font-weight:700;color:#457b9d;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Instrument Name</div>
+                  <div style="font-size:12px;font-weight:900;color:#1a3a5e;">{r["name"]}</div>
                 </div>
                 """, unsafe_allow_html=True)
+
+                # ── Threshold ──
+                if thv != "—":
+                    text_field("Threshold", thv)
 
                 # ── Gov Revenue — big number ──
                 st.markdown(f"""
-                <div style="background:#f0faf4;border:1px solid #c8ecd6;border-radius:10px;padding:14px 12px;text-align:center;margin-bottom:8px;">
+                <div style="background:#f0faf4;border:1px solid #c8ecd6;border-radius:10px;padding:14px 12px;text-align:center;margin-bottom:6px;">
                   <div style="font-size:9px;font-weight:700;color:#3a7a3a;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Gov. Revenue (2024)</div>
-                  <div style="font-size:26px;font-weight:900;color:#1a4a2a;line-height:1;">{rv}</div>
+                  <div style="font-size:22px;font-weight:900;color:#1a4a2a;line-height:1;">{rv}</div>
                 </div>
                 """, unsafe_allow_html=True)
+
+                # ── Sector Coverage ──
+                text_field("Sector Coverage", secv)
 
                 if scheme_idx < len(schemes_display) - 1:
                     st.divider()
