@@ -1427,31 +1427,7 @@ def page_ets():
                 </svg>'''
 
             share_gauge_html = ""
-
-            # Price Rate — horizontal bar chart
             price_gauge_html = ""
-            if _price_hdr:
-                try:
-                    pp     = float(_r0.get("price_num"))
-                    lo_p   = f_ets["price_num"].dropna().min()
-                    bar_w  = round((pp / max_price) * 100, 1)
-                    pc     = "#e63946" if bar_w >= 66 else ("#f4a261" if bar_w >= 33 else "#2a9d8f")
-                    price_gauge_html = (
-                        '<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:8px 10px 8px;width:130px;text-align:center;">'
-                        '<div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Price Rate</div>'
-                        f'<div style="font-size:16px;font-weight:900;color:{pc};margin-bottom:6px;">{_price_hdr}</div>'
-                        # bar track (max = transparent white)
-                        '<div style="position:relative;height:10px;background:rgba(255,255,255,0.15);border-radius:99px;overflow:hidden;margin:0 4px;">'
-                        # gradient fill bar
-                        f'<div style="position:absolute;left:0;top:0;height:100%;width:{bar_w}%;'
-                        f'background:linear-gradient(90deg,#2a9d8f,#f4a261,#e63946);border-radius:99px;"></div>'
-                        '</div>'
-                        '<div style="display:flex;justify-content:space-between;margin:3px 4px 0;font-size:7px;opacity:0.5;">'
-                        f'<span>${lo_p:.0f}</span><span>${max_price:.0f}</span>'
-                        '</div>'
-                        '</div>'
-                    )
-                except: pass
 
             st.markdown(
                 '<div style="background:linear-gradient(135deg,#1a3a5e 0%,#457b9d 100%);'
@@ -1465,9 +1441,12 @@ def page_ets():
                 '<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;min-width:70px;text-align:center;">'
                 '<div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Schemes</div>'
                 f'<div style="font-size:22px;font-weight:900;">{len(schemes)}</div></div>'
-                + share_gauge_html
-                + price_gauge_html
-                + scheme_badge
+                + (('<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;min-width:70px;text-align:center;">'
+                    '<div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Share</div>'
+                    f'<div style="font-size:22px;font-weight:900;">{_share_hdr}</div></div>') if _share_hdr else "")
+                + (('<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;min-width:70px;text-align:center;">'
+                    '<div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Price Rate</div>'
+                    f'<div style="font-size:22px;font-weight:900;">{_price_hdr}</div></div>') if _price_hdr else "")
                 + '</div></div>',
                 unsafe_allow_html=True
             )
