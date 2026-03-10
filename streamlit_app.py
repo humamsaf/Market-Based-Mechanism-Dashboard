@@ -1330,7 +1330,9 @@ def page_ets():
         if v == "—": return
         lbl_html = f'<div style="font-size:9px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:3px;">{label}</div>' if label else ""
         st.markdown(
-            f'<div style="margin-bottom:10px;">{lbl_html}'            f'<div style="font-size:11px;color:#1a1a2e;line-height:1.6;background:#f7fafd;border-radius:6px;padding:8px 10px;">{v}</div>'            f'</div>',
+            f'<div style="margin-bottom:10px;">{lbl_html}'
+            f'<div style="font-size:13px;color:#1a1a2e;line-height:1.6;background:#f7fafd;border-radius:6px;padding:8px 10px;">{v}</div>'
+            f'</div>',
             unsafe_allow_html=True
         )
 
@@ -1508,13 +1510,18 @@ def page_ets():
                 src = fval(r.get("source"))
                 st.markdown('<div style="font-size:11px;font-weight:800;color:#457b9d;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;border-bottom:2px solid #e8f0f8;padding-bottom:4px;">Source</div>', unsafe_allow_html=True)
                 if src != "—":
+                    links_html = ""
                     for lnk in [s.strip() for s in src.split(";") if s.strip()]:
                         if lnk.startswith("http"):
-                            st.markdown(f'<a href="{lnk}" target="_blank" style="font-size:10px;color:#457b9d;word-break:break-all;display:block;margin-bottom:4px;">{lnk}</a>', unsafe_allow_html=True)
+                            links_html += f'<a href="{lnk}" target="_blank" style="color:#457b9d;word-break:break-all;display:block;margin-bottom:6px;text-decoration:underline;">{lnk}</a>'
                         else:
-                            st.markdown(f'<div style="font-size:11px;color:#555;">{lnk}</div>', unsafe_allow_html=True)
+                            links_html += f'<span style="display:block;margin-bottom:6px;">{lnk}</span>'
+                    st.markdown(
+                        f'<div style="font-size:13px;color:#1a1a2e;line-height:1.6;background:#f7fafd;border-radius:6px;padding:8px 10px;">{links_html}</div>',
+                        unsafe_allow_html=True
+                    )
                 else:
-                    st.markdown('<div style="font-size:11px;color:#aaa;">—</div>', unsafe_allow_html=True)
+                    st.markdown('<div style="font-size:13px;color:#aaa;background:#f7fafd;border-radius:6px;padding:8px 10px;">—</div>', unsafe_allow_html=True)
 
             if scheme_idx < len(schemes_display) - 1:
                 st.markdown("<hr style='border:none;border-top:1px solid #e8e8e8;margin:16px 0'>", unsafe_allow_html=True)
