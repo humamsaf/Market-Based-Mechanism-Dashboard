@@ -1162,12 +1162,7 @@ def page_cbam():
         locations=map_agg["iso3"],
         z=map_agg["Trade Value USD M"],
         colorscale=[[0, "#dceaf7"], [0.3, "#7fb3d9"], [0.7, "#2a6496"], [1, "#1d3557"]],
-        showscale=True,
-        colorbar=dict(
-            title=dict(text="USD Million", font=dict(size=11)),
-            thickness=12, len=0.6, x=1.0,
-            tickfont=dict(size=10),
-        ),
+        showscale=False,
         hovertemplate="%{customdata}<extra></extra>",
         customdata=map_agg[["hover"]].values,
         marker_line_color="#333333",
@@ -1205,19 +1200,12 @@ def page_cbam():
             name=cat,
             text=df_cat["partner"],
             hoverinfo="skip",
-            showlegend=True,
-            legendgroup="sectors",
-            legendgrouptitle_text="Sectors" if i == 0 else "",
+            showlegend=False,
         ))
 
     fig_map.update_layout(
         height=480, margin=dict(l=0, r=0, t=0, b=0),
         paper_bgcolor="white",
-        legend=dict(
-            bgcolor="rgba(255,255,255,0.9)", bordercolor="#e0e0e0", borderwidth=1,
-            x=0.01, y=0.01, xanchor="left", yanchor="bottom",
-            font=dict(size=10), tracegroupgap=4, itemsizing="constant",
-        ),
         geo=dict(
             projection_type="equirectangular",
             showframe=False,
@@ -1236,6 +1224,31 @@ def page_cbam():
         ),
     )
     st.plotly_chart(fig_map, use_container_width=True, key="cbam_map", config={"displayModeBar": False, "scrollZoom": False})
+
+    # ── Custom legend: gradient warna + sektor icons ──────────────
+    active_cats_legend = [c for c in categories if c in map_df["Category"].unique()]
+    cat_legend_items = "".join([
+        f'<div style="display:flex;align-items:center;gap:6px;">' +
+        f'<span style="display:inline-block;width:10px;height:10px;background:{CAT_COLORS[c]};border:1px solid #333;border-radius:{"50%" if CAT_MARKER[c]["symbol"]=="circle" else "0"};transform:{"rotate(45deg)" if CAT_MARKER[c]["symbol"]=="diamond" else "none"};"></span>' +
+        f'<span style="font-size:10px;color:#555;">{c}</span></div>'
+        for c in active_cats_legend
+    ])
+    st.markdown(
+        '<div style="display:flex;align-items:flex-start;gap:32px;padding:8px 4px;margin-top:-8px;">' +
+        '<div>' +
+        '<div style="font-size:10px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;">Trade Value</div>' +
+        '<div style="display:flex;align-items:center;gap:6px;">' +
+        '<span style="font-size:10px;color:#aaa;">Low</span>' +
+        '<div style="width:120px;height:10px;background:linear-gradient(to right,#dceaf7,#7fb3d9,#2a6496,#1d3557);border-radius:2px;"></div>' +
+        '<span style="font-size:10px;color:#aaa;">High</span>' +
+        '<span style="font-size:10px;color:#bbb;margin-left:4px;">(USD Million)</span>' +
+        '</div></div>' +
+        '<div>' +
+        '<div style="font-size:10px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;">Sectors</div>' +
+        '<div style="display:flex;gap:12px;flex-wrap:wrap;">' + cat_legend_items + '</div>' +
+        '</div></div>',
+        unsafe_allow_html=True
+    )
 
     # ── Charts ────────────────────────────────────────────────────
     st.markdown("<hr style='border:none;border-top:1px solid #e8e8e8;margin:8px 0 20px 0'>", unsafe_allow_html=True)
