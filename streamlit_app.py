@@ -1016,7 +1016,7 @@ def page_cbam():
             <div style="font-size:16px;color:#666;line-height:1.9;">
                 The Carbon Border Adjustment Mechanism (CBAM) is the EU's instrument to put a fair carbon price
                 on imports of carbon-intensive goods from outside the EU. It levels the playing field between
-                EU producers — who pay for carbon under the ETS — and foreign producers, preventing carbon leakage.
+                EU producers, who pay for carbon under the ETS, and foreign producers, preventing carbon leakage.
                 This dashboard explores the trade exposure of the EU and UK across CBAM-covered sectors.
             </div>
         </div>
@@ -1586,7 +1586,7 @@ def page_ets():
         <div style="font-size:56px;font-weight:900;color:#1a1a2e;line-height:1.05;margin-bottom:40px;white-space:nowrap;">Emissions Trading Systems (ETS)</div>
         <div style="max-width:960px;margin:0 auto 72px auto;">
             <div style="font-size:16px;color:#666;line-height:1.9;">
-                An Emissions Trading System is a market-based approach to controlling pollution by providing economic incentives for reducing emissions. Governments set a cap on total emissions and issue allowances — companies must hold allowances equal to their emissions and can trade them, creating a carbon price signal.
+                An Emissions Trading System is a market-based approach to controlling pollution by providing economic incentives for reducing emissions. Governments set a cap on total emissions and issue allowances, companies must hold allowances equal to their emissions and can trade them, creating a carbon price signal.
             </div>
         </div>
         <div style="display:flex;justify-content:center;align-items:center;gap:40px;flex-wrap:nowrap;margin-bottom:56px;">
@@ -1605,7 +1605,7 @@ def page_ets():
             {stat(n_funding, "Funding Programs")}
         </div>
         <div style="font-size:13px;color:#888;line-height:2;max-width:960px;margin:0 auto 40px auto;">
-            <b>{n_schemes} active ETS schemes</b> operate across <b>{n_countries} jurisdictions</b> — <b>15 in North America</b>, <b>15 in East Asia &amp; Pacific</b>, <b>7 in Europe &amp; Central Asia</b>, and <b>1 in Latin America</b> — with carbon prices ranging from <b>USD {min_price:.0f} to USD {max_price_v:.0f}</b> (avg. <b>USD {avg_price:.0f}/tCO₂</b>). Sectors covered include <b>{", ".join(sectors_list[:-1])}, and {sectors_list[-1]}</b>. Regulated greenhouse gases include CO₂, CH₄, N₂O, HFCs, PFCs, SF₆, and NF₃.
+            Today, <b>{n_schemes} active ETS schemes</b> operate across <b>{n_countries} jurisdictions</b>, including <b>15 in North America</b>, <b>15 in East Asia &amp; Pacific</b>, <b>7 in Europe &amp; Central Asia</b>, and <b>1 in Latin America</b>, with carbon prices ranging from <b>USD {min_price:.0f} to USD {max_price_v:.0f}</b> (avg. <b>USD {avg_price:.0f}/tCO₂</b>). Sectors covered include <b>{", ".join(sectors_list[:-1])}, and {sectors_list[-1]}</b>. Regulated greenhouse gases include CO₂, CH₄, N₂O, HFCs, PFCs, SF₆, and NF₃.
         </div>
         <a onclick="
             var el = document.getElementById('ets-map-section');
