@@ -1100,39 +1100,42 @@ def page_cbam():
     if partner_sel:  f = f[f["Partner"].isin(partner_sel)]
 
     # ── Inline summary stats (styled like hero, no boxes) ────────
-    cat_parts = ""
+    total_f = f["Trade Value 1000USD"].sum() / 1_000_000
+
+    divider = '<div style="width:1px;height:50px;background:#e8e8e8;align-self:center;"></div>'
+
+    total_html = (
+        '<div style="display:flex;flex-direction:column;align-items:center;text-align:center;min-width:120px;">'
+        '<div style="font-size:10px;font-weight:700;color:#1d3557;text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;">🌐 Total</div>'
+        '<div style="font-size:32px;font-weight:900;color:#1d3557;line-height:1;">USD ' + f"{total_f:.2f}" + 'B</div>'
+        '<div style="font-size:11px;color:#aaa;margin-top:4px;">all sectors</div>'
+        '</div>'
+    )
+
+    cat_items = []
     for cat in categories:
         val = f[f["Category"] == cat]["Trade Value 1000USD"].sum() / 1_000
         color = CAT_COLORS.get(cat, "#888")
         icon  = CAT_ICONS.get(cat, "📦")
         n_p   = f[f["Category"] == cat]["Partner"].nunique()
-        cat_parts += f'''
-        <div style="display:flex;flex-direction:column;align-items:center;text-align:center;min-width:120px;">
-            <div style="font-size:10px;font-weight:700;color:{color};text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;">{icon} {cat}</div>
-            <div style="font-size:32px;font-weight:900;color:#1a1a2e;line-height:1;">USD {val:,.0f}M</div>
-            <div style="font-size:11px;color:#aaa;margin-top:4px;">{n_p} partners</div>
-        </div>
-        <div style="width:1px;height:50px;background:#e8e8e8;align-self:center;"></div>
-        '''
+        cat_items.append(
+            '<div style="display:flex;flex-direction:column;align-items:center;text-align:center;min-width:120px;">'
+            '<div style="font-size:10px;font-weight:700;color:' + color + ';text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;">' + icon + ' ' + cat + '</div>'
+            '<div style="font-size:32px;font-weight:900;color:#1a1a2e;line-height:1;">USD ' + f"{val:,.0f}" + 'M</div>'
+            '<div style="font-size:11px;color:#aaa;margin-top:4px;">' + str(n_p) + ' partners</div>'
+            '</div>'
+        )
 
-    # Remove last divider
-    cat_parts = cat_parts.rsplit('<div style="width:1px;height:50px;background:#e8e8e8;align-self:center;"></div>', 1)[0]
+    inner = divider.join([total_html] + cat_items)
 
-    total_f = f["Trade Value 1000USD"].sum() / 1_000_000
-    st.markdown(f"""
-    <div style="padding:24px 0 28px 0;border-bottom:1px solid #e8e8e8;margin-bottom:28px;">
-        <div style="font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:2px;margin-bottom:16px;">Sector Breakdown</div>
-        <div style="display:flex;align-items:center;gap:32px;flex-wrap:wrap;">
-            <div style="display:flex;flex-direction:column;align-items:center;text-align:center;min-width:120px;">
-                <div style="font-size:10px;font-weight:700;color:#1d3557;text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;">🌐 Total</div>
-                <div style="font-size:32px;font-weight:900;color:#1d3557;line-height:1;">USD {total_f:.2f}B</div>
-                <div style="font-size:11px;color:#aaa;margin-top:4px;">all sectors</div>
-            </div>
-            <div style="width:1px;height:50px;background:#e8e8e8;align-self:center;"></div>
-            {cat_parts}
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    summary_html = (
+        '<div style="padding:24px 0 28px 0;border-bottom:1px solid #e8e8e8;margin-bottom:28px;">'
+        '<div style="font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:2px;margin-bottom:16px;">Sector Breakdown</div>'
+        '<div style="display:flex;align-items:center;gap:32px;flex-wrap:wrap;">'
+        + inner +
+        '</div></div>'
+    )
+    st.markdown(summary_html, unsafe_allow_html=True)
 
     # ── Row 2: EU vs UK comparison + Choropleth Map ────────────
     st.markdown("<hr style='border:none;border-top:1px solid #e8e8e8;margin:8px 0 20px 0'>", unsafe_allow_html=True)
