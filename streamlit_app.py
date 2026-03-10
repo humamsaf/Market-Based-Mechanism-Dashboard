@@ -1074,14 +1074,6 @@ def page_cbam():
         st.session_state["cbam_reset"] = 0
     rc = st.session_state["cbam_reset"]
 
-    # Map reporter selector
-    map_reporter = st.radio(
-        "Show map for:",
-        options=["Both (EU + UK)", "European Union", "United Kingdom"],
-        horizontal=True,
-        key=f"cbam_map_rep_{rc}",
-    )
-
     fc1, fc2, fc3, fc4 = st.columns([1.5, 1.5, 2, 0.7])
     with fc1:
         reporter_opts = sorted(df_real["Reporter"].unique())
@@ -1131,10 +1123,6 @@ def page_cbam():
     )
 
     map_df = f.copy()
-    if map_reporter == "European Union":
-        map_df = map_df[map_df["Reporter"] == "European Union"]
-    elif map_reporter == "United Kingdom":
-        map_df = map_df[map_df["Reporter"] == "United Kingdom"]
 
     # Aggregate by partner
     map_agg = map_df.groupby("Partner")["Trade Value 1000USD"].sum().reset_index()
@@ -1173,9 +1161,6 @@ def page_cbam():
         marker_line_width=0.8,
         name="",
     ))
-
-    # Highlight EU/UK as reporter (grey out)
-    reporters_iso3 = ["EUU", "GBR"] if map_reporter == "Both (EU + UK)" else (["EUU"] if map_reporter == "European Union" else ["GBR"])
 
     fig_map.update_layout(
         height=480, margin=dict(l=0, r=0, t=0, b=0),
