@@ -1382,68 +1382,113 @@ def page_ets():
             """, unsafe_allow_html=True)
 
             for scheme_idx, (_, r) in enumerate(schemes_display.iterrows()):
+                # Scheme header (only if multiple)
                 if len(schemes_display) > 1:
-                    st.markdown(f'<div style="background:#457b9d;color:white;font-size:12px;font-weight:800;border-radius:8px;padding:7px 14px;margin-bottom:10px;">Scheme {scheme_idx+1}: {r["name"]}</div>', unsafe_allow_html=True)
-                else:
-                    st.markdown(f'<div style="font-size:15px;font-weight:800;color:#457b9d;margin-bottom:12px;">{r["name"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div style="background:#457b9d;color:white;font-size:12px;font-weight:800;border-radius:8px;padding:7px 14px;margin-bottom:14px;">Scheme {scheme_idx+1}: {r["name"]}</div>', unsafe_allow_html=True)
 
-                # ── Key Metrics ──
-                section_title("Key Metrics")
-                price_num = r.get("price_num")
-                share_num = r.get("share")
                 all_prices = f_ets["price_num"].dropna()
                 max_price  = all_prices.max() if len(all_prices) else 100
-                pv = fval(r.get("price"))
-                sv = int(r["start_date"]) if pd.notna(r.get("start_date")) else "—"
-                rv = fval(r.get("revenue"))
-                st.markdown(
-                    f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">'                    f'<div style="background:#ddeef8;border-radius:7px;padding:9px 10px;text-align:center;">'                    f'<div style="font-size:9px;font-weight:700;color:#457b9d;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Price Rate</div>'                    f'<div style="font-size:12px;font-weight:900;color:#1a3a5e;">{pv}</div></div>'                    f'<div style="background:#e8f0fe;border-radius:7px;padding:9px 10px;text-align:center;">'                    f'<div style="font-size:9px;font-weight:700;color:#3a5a9e;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Start Date</div>'                    f'<div style="font-size:12px;font-weight:900;color:#1a2a5e;">{sv}</div></div>'                    f'<div style="background:#e8f5e9;border-radius:7px;padding:9px 10px;text-align:center;grid-column:span 2;">'                    f'<div style="font-size:9px;font-weight:700;color:#3a7a3a;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Gov. Revenue (2024)</div>'                    f'<div style="font-size:12px;font-weight:900;color:#1a4a1a;">{rv}</div></div>'                    f'</div>',
-                    unsafe_allow_html=True
-                )
+                price_num  = r.get("price_num")
+                share_num  = r.get("share")
+                pv   = fval(r.get("price"))
+                sv   = int(r["start_date"]) if pd.notna(r.get("start_date")) else "—"
+                rv   = fval(r.get("revenue"))
+                jv   = fval(r.get("country"))
+                regv = fval(r.get("region"))
+                thv  = fval(r.get("threshold"))
+
+                # ── a–e: Instrument info + Threshold ──
+                section_title("Emission Trading Scheme")
+                st.markdown(f"""
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+                  <div style="background:#ddeef8;border-radius:7px;padding:9px 10px;text-align:center;grid-column:span 2;">
+                    <div style="font-size:9px;font-weight:700;color:#457b9d;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Instrument Name</div>
+                    <div style="font-size:11px;font-weight:900;color:#1a3a5e;">{r["name"]}</div>
+                  </div>
+                  <div style="background:#eef3fb;border-radius:7px;padding:9px 10px;text-align:center;">
+                    <div style="font-size:9px;font-weight:700;color:#3a5a9e;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Start Date</div>
+                    <div style="font-size:13px;font-weight:900;color:#1a2a5e;">{sv}</div>
+                  </div>
+                  <div style="background:#eef3fb;border-radius:7px;padding:9px 10px;text-align:center;">
+                    <div style="font-size:9px;font-weight:700;color:#3a5a9e;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Jurisdiction</div>
+                    <div style="font-size:11px;font-weight:900;color:#1a2a5e;">{jv}</div>
+                  </div>
+                  <div style="background:#f0f4ff;border-radius:7px;padding:9px 10px;text-align:center;">
+                    <div style="font-size:9px;font-weight:700;color:#5a6aae;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Region</div>
+                    <div style="font-size:11px;font-weight:900;color:#1a2a5e;">{regv}</div>
+                  </div>
+                  <div style="background:#f0f4ff;border-radius:7px;padding:9px 10px;text-align:center;">
+                    <div style="font-size:9px;font-weight:700;color:#5a6aae;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Threshold</div>
+                    <div style="font-size:11px;font-weight:900;color:#1a2a5e;">{thv}</div>
+                  </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                # e. Share of jurisdiction
                 if pd.notna(share_num) and share_num not in (None, ""):
                     try: bar_visual("Share of Jurisdiction", float(share_num), f"{float(share_num)*100:.0f}%", "#457b9d")
                     except: pass
+
+                # ── f–g: Revenue + Price ──
+                st.markdown(f"""
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;margin-top:4px;">
+                  <div style="background:#e8f5e9;border-radius:7px;padding:9px 10px;text-align:center;grid-column:span 2;">
+                    <div style="font-size:9px;font-weight:700;color:#3a7a3a;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Gov. Revenue (2024)</div>
+                    <div style="font-size:13px;font-weight:900;color:#1a4a1a;">{rv}</div>
+                  </div>
+                  <div style="background:#ddeef8;border-radius:7px;padding:9px 10px;text-align:center;grid-column:span 2;">
+                    <div style="font-size:9px;font-weight:700;color:#457b9d;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Price Rate</div>
+                    <div style="font-size:13px;font-weight:900;color:#1a3a5e;">{pv}</div>
+                  </div>
+                </div>
+                """, unsafe_allow_html=True)
+
                 if pd.notna(price_num) and max_price > 0:
                     try: bar_visual("Price vs Max ETS", float(price_num)/float(max_price), f"USD {float(price_num):.2f} / {float(max_price):.0f}", "#2a9d8f")
                     except: pass
 
-                # ── Coverage ──
+                # ── h–i: Coverage ──
                 section_title("Coverage")
                 text_field("GHG Coverage", fval(r.get("ghg")))
                 text_field("Sector Coverage", fval(r.get("sectors")))
 
-                # ── Threshold ──
-                t1 = fval(r.get("threshold"))
-                t2 = fval(r.get("description"))
-                if t1 != "—" or t2 != "—":
+                # ── j–k: Threshold description ──
+                desc_v = fval(r.get("description"))
+                if desc_v != "—":
                     section_title("Threshold")
-                    text_field("Threshold", t1)
-                    text_field("Description of Threshold", t2)
+                    text_field("Description of Threshold", desc_v)
 
-                # ── Cap & Allocation ──
-                section_title("Cap & Allocation")
-                text_field("Cap Emissions", fval(r.get("cap")))
-                text_field("Tightening Rate", fval(r.get("tightening_rate")))
-                text_field("Allocation Method", fval(r.get("allocation")))
-
-                # ── Revenue & Funding ──
-                section_title("Revenue & Funding")
-                text_field("Revenue Recycling", fval(r.get("revenue_recycling")))
-                text_field("Funding Program", fval(r.get("funding_program")))
-
-                # ── Additional Info ──
+                # ── l: Additional Information ──
                 ai = fval(r.get("additional_info"))
                 if ai != "—":
                     section_title("Additional Information")
                     text_field("", ai)
 
-                # ── Source ──
+                # ── m–o: Cap & Allocation ──
+                cap_v   = fval(r.get("cap"))
+                tr_v    = fval(r.get("tightening_rate"))
+                alloc_v = fval(r.get("allocation"))
+                if any(v != "—" for v in [cap_v, tr_v, alloc_v]):
+                    section_title("Cap & Allocation")
+                    text_field("Cap Emissions", cap_v)
+                    text_field("Tightening Rate", tr_v)
+                    text_field("Allocation Method", alloc_v)
+
+                # ── p–q: Revenue & Funding ──
+                rr_v = fval(r.get("revenue_recycling"))
+                fp_v = fval(r.get("funding_program"))
+                if any(v != "—" for v in [rr_v, fp_v]):
+                    section_title("Revenue & Funding")
+                    text_field("Revenue Recycling", rr_v)
+                    text_field("Funding Program", fp_v)
+
+                # ── r: Source ──
                 src = fval(r.get("source"))
                 if src != "—":
                     section_title("Source")
                     for lnk in [s.strip() for s in src.split(";") if s.strip()]:
                         if lnk.startswith("http"):
-                            st.markdown(f'<a href="{lnk}" target="_blank" style="font-size:10px;color:#457b9d;word-break:break-all;display:block;margin-bottom:3px;">{lnk}</a>', unsafe_allow_html=True)
+                            st.markdown(f'<a href="{lnk}" target="_blank" style="font-size:10px;color:#457b9d;word-break:break-all;display:block;margin-bottom:4px;">{lnk}</a>', unsafe_allow_html=True)
                         else:
                             st.markdown(f'<div style="font-size:11px;color:#555;">{lnk}</div>', unsafe_allow_html=True)
 
