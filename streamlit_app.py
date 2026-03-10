@@ -1264,8 +1264,8 @@ def page_ets():
             lon=dot_lons, lat=dot_lats,
             mode="markers",
             marker=dict(
-                size=7, color="white", symbol="circle",
-                line=dict(width=1.5, color="#1a1a2e"),
+                size=7, color="#e63946", symbol="circle",
+                line=dict(width=1.5, color="white"),
             ),
             hovertemplate=dot_hovers,
             customdata=dot_custom,
