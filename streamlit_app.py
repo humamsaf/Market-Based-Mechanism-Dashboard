@@ -1456,42 +1456,6 @@ def page_ets():
                 unsafe_allow_html=True
             )
 
-            for scheme_idx, (_, r) in enumerate(schemes_display.iterrows()):
-                # Scheme header (only if multiple)
-                if len(schemes_display) > 1:
-                    st.markdown(f'<div style="background:#457b9d;color:white;font-size:12px;font-weight:800;border-radius:8px;padding:7px 14px;margin-bottom:14px;">Scheme {scheme_idx+1}: {r["name"]}</div>', unsafe_allow_html=True)
-
-                all_prices = f_ets["price_num"].dropna()
-                max_price  = all_prices.max() if len(all_prices) else 100
-                price_num  = r.get("price_num")
-                share_num  = r.get("share")
-                pv   = fval(r.get("price"))
-                sv   = int(r["start_date"]) if pd.notna(r.get("start_date")) else "—"
-                rv   = fval(r.get("revenue"))
-                thv  = fval(r.get("threshold"))
-                secv = fval(r.get("sectors"))
-
-                section_title("Emission Trading Scheme")
-
-                # Threshold — big centered
-                st.markdown(f"""
-                <div style="background:#f0f4ff;border:1px solid #c8d8f8;border-radius:10px;padding:14px 12px;text-align:center;margin-bottom:6px;">
-                  <div style="font-size:9px;font-weight:700;color:#5a6aae;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Threshold</div>
-                  <div style="font-size:20px;font-weight:900;color:#1a2a5e;line-height:1.2;">{thv}</div>
-                </div>
-                """, unsafe_allow_html=True)
-
-                # Gov Revenue — big centered
-                st.markdown(f"""
-                <div style="background:#f0faf4;border:1px solid #c8ecd6;border-radius:10px;padding:14px 12px;text-align:center;margin-bottom:6px;">
-                  <div style="font-size:9px;font-weight:700;color:#3a7a3a;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Gov. Revenue (2024)</div>
-                  <div style="font-size:22px;font-weight:900;color:#1a4a2a;line-height:1;">{rv}</div>
-                </div>
-                """, unsafe_allow_html=True)
-
-                if scheme_idx < len(schemes_display) - 1:
-                    st.divider()
-
     # ── Detail section below map (full width) ─────────────────────
     if selected and not schemes_display.empty:
         st.markdown("<hr style='border:none;border-top:1px solid #e0e0e0;margin:24px 0 20px 0'>", unsafe_allow_html=True)
@@ -1504,21 +1468,21 @@ def page_ets():
             c1, c2, c3 = st.columns(3)
 
             with c1:
-                # Coverage
                 st.markdown('<div style="font-size:11px;font-weight:800;color:#457b9d;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;border-bottom:2px solid #e8f0f8;padding-bottom:4px;">Coverage</div>', unsafe_allow_html=True)
                 text_field("GHG Coverage", fval(r.get("ghg")))
                 text_field("Sector Coverage", fval(r.get("sectors")))
 
             with c2:
-                # Threshold
                 st.markdown('<div style="font-size:11px;font-weight:800;color:#457b9d;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;border-bottom:2px solid #e8f0f8;padding-bottom:4px;">Threshold</div>', unsafe_allow_html=True)
-                text_field("Description of Threshold", fval(r.get("description")))
+                text_field("Threshold", fval(r.get("threshold")))
+                text_field("Description", fval(r.get("description")))
 
             with c3:
-                # Additional Info
-                st.markdown('<div style="font-size:11px;font-weight:800;color:#457b9d;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;border-bottom:2px solid #e8f0f8;padding-bottom:4px;">Additional Information</div>', unsafe_allow_html=True)
+                st.markdown('<div style="font-size:11px;font-weight:800;color:#457b9d;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;border-bottom:2px solid #e8f0f8;padding-bottom:4px;">Revenue & Additional</div>', unsafe_allow_html=True)
+                text_field("Gov. Revenue (2024)", fval(r.get("revenue")))
                 ai = fval(r.get("additional_info"))
-                text_field("", ai if ai != "—" else "No additional information available.")
+                if ai != "—":
+                    text_field("Additional Info", ai)
 
             c4, c5, c6 = st.columns(3)
 
