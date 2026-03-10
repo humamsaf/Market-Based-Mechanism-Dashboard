@@ -1164,25 +1164,74 @@ def page_ets():
                     .replace(" Performance Standards System","")
                     .replace(" safeguard mechanism",""))
 
-    # ── Build all-marker map (one dot per scheme, color = price) ───
+    # ── Build map: choropleth by avg price + orange dots per scheme ─
+    country_ets_map   = f_ets.groupby("country")["name"].apply(list).to_dict()
+    country_price_map = f_ets.groupby("country")["price_num"].mean().to_dict()
+
+    map_rows = []
+    for country, schemes in country_ets_map.items():
+        iso3 = to_iso3(country)
+        if iso3:
+            avg_p = country_price_map.get(country)
+            map_rows.append({
+                "iso3": iso3, "country": country,
+                "avg_price": avg_p if pd.notna(avg_p) else None,
+                "n_schemes": len(schemes),
+                "schemes_str": "<br>".join(f"  · {s}" for s in schemes),
+            })
+    map_df = pd.DataFrame(map_rows) if map_rows else pd.DataFrame()
+
     fig_ets_map = go.Figure()
 
-    # Light base map (no choropleth)
-    fig_ets_map.add_trace(go.Choropleth(
-        locations=["USA"],  # dummy to enable geo base
-        z=[0], showscale=False, colorscale=[[0,"rgba(0,0,0,0)"],[1,"rgba(0,0,0,0)"]],
-        marker_line_width=0, hoverinfo="skip",
-    ))
+    # ── Choropleth: color = avg carbon price ──
+    if not map_df.empty:
+        priced_df   = map_df[map_df["avg_price"].notna()]
+        unpriced_df = map_df[map_df["avg_price"].isna()]
 
-    # Collect all scheme marker data
-    lons, lats, prices, labels, hovers, customdata_list = [], [], [], [], [], []
+        if not priced_df.empty:
+            fig_ets_map.add_trace(go.Choropleth(
+                locations=priced_df["iso3"],
+                z=priced_df["avg_price"],
+                colorscale=[[0,"#d4edff"],[0.3,"#6baed6"],[0.65,"#2171b5"],[1,"#08306b"]],
+                zmin=0, zmax=100,
+                showscale=True,
+                colorbar=dict(
+                    title=dict(text="Avg Price<br>USD/tCO₂", font=dict(size=10)),
+                    thickness=12, len=0.45, tickfont=dict(size=10), x=1.01,
+                ),
+                hovertemplate=(
+                    "<b>%{customdata[0]}</b><br>"
+                    "Avg price: USD %{z:.1f}/tCO₂<br>"
+                    "%{customdata[1]} scheme(s)<br>"
+                    "─────────────<br>"
+                    "%{customdata[2]}<extra></extra>"
+                ),
+                customdata=priced_df[["country","n_schemes","schemes_str"]].values,
+                marker_line_color="#999", marker_line_width=0.8,
+            ))
+        if not unpriced_df.empty:
+            fig_ets_map.add_trace(go.Choropleth(
+                locations=unpriced_df["iso3"],
+                z=[0]*len(unpriced_df),
+                colorscale=[[0,"#e0e0e0"],[1,"#e0e0e0"]],
+                showscale=False,
+                hovertemplate=(
+                    "<b>%{customdata[0]}</b><br>"
+                    "Price: No data<br>"
+                    "%{customdata[1]} scheme(s)<br>"
+                    "─────────────<br>"
+                    "%{customdata[2]}<extra></extra>"
+                ),
+                customdata=unpriced_df[["country","n_schemes","schemes_str"]].values,
+                marker_line_color="#999", marker_line_width=0.8,
+            ))
+
+    # ── Orange dots: one per scheme at scheme coordinates ──
+    dot_lons, dot_lats, dot_hovers, dot_custom = [], [], [], []
     for _, row in f_ets.iterrows():
         sname = row["name"]
-        # Find coords: check SCHEME_COORDS by name, else by country centroid
         coord = SCHEME_COORDS.get(sname)
         if coord is None:
-            # Try country centroid
-            country_key = f"{row['country']} ETS" if f"{row['country']} ETS" not in SCHEME_COORDS else None
             for k, v in SCHEME_COORDS.items():
                 if row["country"].lower() in k.lower():
                     coord = v
@@ -1190,58 +1239,23 @@ def page_ets():
         if coord is None:
             continue
         cLat, cLon = coord
-        price_num = row.get("price_num")
-        price_v   = row.get("price", "N/A")
-        year_v    = int(row["start_date"]) if pd.notna(row.get("start_date")) else "N/A"
-        lats.append(cLat)
-        lons.append(cLon)
-        prices.append(price_num if pd.notna(price_num) else None)
-        labels.append(shorten(sname))
-        hovers.append(f"<b>{sname}</b><br>{row['country']} · Est. {year_v}<br>Price: {price_v}")
-        customdata_list.append([sname])
+        price_v = row.get("price", "N/A")
+        year_v  = int(row["start_date"]) if pd.notna(row.get("start_date")) else "N/A"
+        dot_lons.append(cLon)
+        dot_lats.append(cLat)
+        dot_hovers.append(f"<b>{sname}</b><br>{row['country']} · Est. {year_v}<br>Price: {price_v}<extra></extra>")
+        dot_custom.append([sname])
 
-    # Split into priced and unpriced
-    priced_idx   = [i for i,p in enumerate(prices) if p is not None]
-    unpriced_idx = [i for i,p in enumerate(prices) if p is None]
-
-    # Unpriced — grey markers
-    if unpriced_idx:
+    if dot_lons:
         fig_ets_map.add_trace(go.Scattergeo(
-            lon=[lons[i] for i in unpriced_idx],
-            lat=[lats[i] for i in unpriced_idx],
-            mode="markers",
-            marker=dict(size=10, color="#bbb", symbol="circle",
-                        line=dict(width=1.5, color="white")),
-            text=[labels[i] for i in unpriced_idx],
-            hovertemplate=[hovers[i]+"<extra></extra>" for i in unpriced_idx],
-            customdata=[customdata_list[i] for i in unpriced_idx],
-            showlegend=False, name="No price data",
-        ))
-
-    # Priced — color gradient from price
-    if priced_idx:
-        fig_ets_map.add_trace(go.Scattergeo(
-            lon=[lons[i] for i in priced_idx],
-            lat=[lats[i] for i in priced_idx],
+            lon=dot_lons, lat=dot_lats,
             mode="markers",
             marker=dict(
-                size=12,
-                color=[prices[i] for i in priced_idx],
-                colorscale=[[0,"#c6f0e0"],[0.3,"#2a9d8f"],[0.65,"#457b9d"],[1,"#1a3a5e"]],
-                cmin=0, cmax=100,
-                symbol="circle",
+                size=10, color="#f4a261", symbol="circle",
                 line=dict(width=1.5, color="white"),
-                colorbar=dict(
-                    title=dict(text="USD/tCO₂", font=dict(size=11)),
-                    thickness=12, len=0.45,
-                    tickfont=dict(size=10),
-                    x=1.01,
-                ),
-                showscale=True,
             ),
-            text=[labels[i] for i in priced_idx],
-            hovertemplate=[hovers[i]+"<extra></extra>" for i in priced_idx],
-            customdata=[customdata_list[i] for i in priced_idx],
+            hovertemplate=dot_hovers,
+            customdata=dot_custom,
             showlegend=False,
         ))
 
@@ -1251,9 +1265,9 @@ def page_ets():
         hoverlabel=dict(bgcolor="white", bordercolor="#ccc", font=dict(size=12), align="left"),
         geo=dict(
             projection_type="equirectangular", showframe=False,
-            showcoastlines=True, coastlinecolor="#ccc", coastlinewidth=0.8,
-            showcountries=True, countrycolor="#ddd", countrywidth=0.8,
-            showland=True, landcolor="#f5f5f5",
+            showcoastlines=True, coastlinecolor="#aaa", coastlinewidth=0.8,
+            showcountries=True, countrycolor="#aaa", countrywidth=0.8,
+            showland=True, landcolor="#f0f0f0",
             showocean=True, oceancolor="#eaf4fb",
             bgcolor="white",
             lataxis=dict(range=[-60, 85], showgrid=False),
