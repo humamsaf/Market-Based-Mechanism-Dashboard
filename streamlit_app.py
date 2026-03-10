@@ -1099,7 +1099,7 @@ def page_cbam():
     divider = '<div style="width:1px;height:50px;background:#e0e0e0;align-self:center;"></div>'
     total_item = (
         '<div style="text-align:center;">'
-        '<div style="font-size:44px;font-weight:900;color:#1d3557;line-height:1;white-space:nowrap;">USD ' + f"{total_all:.2f}" + 'B</div>'
+        '<div style="font-size:28px;font-weight:900;color:#1d3557;line-height:1;white-space:nowrap;">USD ' + f"{total_all:.2f}" + 'B</div>'
         '<div style="font-size:10px;color:#999;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-top:7px;">Total</div>'
         '</div>'
     )
@@ -1110,7 +1110,7 @@ def page_cbam():
         n_p   = f[f["Category"] == cat]["Partner"].nunique()
         cat_summary_items.append(
             '<div style="text-align:center;">'
-            '<div style="font-size:44px;font-weight:900;color:#1a1a2e;line-height:1;white-space:nowrap;">USD ' + f"{val:,.0f}" + 'M</div>'
+            '<div style="font-size:28px;font-weight:900;color:#1a1a2e;line-height:1;white-space:nowrap;">USD ' + f"{val:,.0f}" + 'M</div>'
             '<div style="font-size:10px;color:' + color + ';font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-top:7px;">' + cat + '</div>'
             '<div style="font-size:11px;color:#aaa;margin-top:4px;">' + str(n_p) + ' partners</div>'
             '</div>'
