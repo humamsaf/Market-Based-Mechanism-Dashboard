@@ -1080,11 +1080,10 @@ def page_cbam():
     col_bar, col_donut = st.columns([3, 2])
 
     with col_bar:
-        st.markdown('<div style="font-size:16px;font-weight:800;color:#1a1a2e;margin-bottom:8px;">Top 15 Partners by Trade Value</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:16px;font-weight:800;color:#1a1a2e;margin-bottom:8px;">All Partners by Trade Value</div>', unsafe_allow_html=True)
         top_partners = (
             f.groupby("Partner")["Trade Value 1000USD"].sum()
             .sort_values(ascending=False)
-            .head(15)
             .reset_index()
         )
         top_partners["Trade Value USD M"] = top_partners["Trade Value 1000USD"] / 1_000
@@ -1107,7 +1106,7 @@ def page_cbam():
             hovertemplate="<b>%{y}</b><br>USD %{x:.2f}B<extra></extra>",
         ))
         fig_bar.update_layout(
-            height=420, margin=dict(l=0, r=60, t=10, b=0),
+            height=700, margin=dict(l=0, r=60, t=10, b=0),
             paper_bgcolor="white", plot_bgcolor="white",
             xaxis=dict(title="Trade Value (USD Million)", showgrid=True, gridcolor="#f0f0f0", zeroline=False),
             yaxis=dict(title="", showgrid=False, tickfont=dict(size=11)),
