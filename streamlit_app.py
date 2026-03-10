@@ -1426,33 +1426,64 @@ def page_ets():
                   <text x="90" y="57" font-size="7" fill="rgba(255,255,255,0.5)" text-anchor="middle">{hi_lbl}</text>
                 </svg>'''
 
-            # Share gauge
+            # Share gauge — gradient arc using defs linearGradient mapped to arc
             share_gauge_html = ""
             if _share_hdr:
                 try:
-                    sp = float(_r0.get("share"))
-                    sc = "#2a9d8f" if sp >= 0.6 else ("#f4a261" if sp >= 0.3 else "#e63946")
-                    share_gauge_html = f'''
-                    <div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 12px 6px;min-width:110px;text-align:center;">
-                      <div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Share of Jurisdiction</div>
-                      {gauge_svg(sp, sc, "rgba(255,255,255,0.2)", "0%", "100%")}
-                      <div style="font-size:18px;font-weight:900;color:{sc};margin-top:-4px;">{_share_hdr}</div>
-                    </div>'''
+                    sp  = float(_r0.get("share"))
+                    spx = 50 + 38 * math.cos(math.radians(180 - sp * 180))
+                    spy = 50 - 38 * math.sin(math.radians(180 - sp * 180))
+                    lf  = 1 if sp >= 0.5 else 0
+                    # needle color based on value
+                    sc  = "#2a9d8f" if sp >= 0.6 else ("#f4a261" if sp >= 0.3 else "#e63946")
+                    share_gauge_html = (
+                        '<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:8px 10px 4px;width:130px;text-align:center;">'
+                        '<div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Share</div>'
+                        '<svg viewBox="0 0 100 58" width="110" height="55" style="display:block;margin:0 auto;">'
+                        '<defs>'
+                        '<linearGradient id="sgGrad" x1="0%" y1="0%" x2="100%" y2="0%">'
+                        '<stop offset="0%" stop-color="#2a9d8f"/>'
+                        '<stop offset="50%" stop-color="#f4a261"/>'
+                        '<stop offset="100%" stop-color="#e63946"/>'
+                        '</linearGradient>'
+                        '</defs>'
+                        # full track (gradient)
+                        '<path d="M 12 50 A 38 38 0 0 1 88 50" fill="none" stroke="url(#sgGrad)" stroke-width="9" stroke-linecap="round" opacity="0.35"/>'
+                        # active arc
+                        f'<path d="M 12 50 A 38 38 0 {lf} 1 {spx:.1f} {spy:.1f}" fill="none" stroke="url(#sgGrad)" stroke-width="9" stroke-linecap="round"/>'
+                        # needle dot
+                        f'<circle cx="{spx:.1f}" cy="{spy:.1f}" r="4" fill="white" stroke="{sc}" stroke-width="2"/>'
+                        '<text x="10" y="57" font-size="7" fill="rgba(255,255,255,0.5)" text-anchor="middle">0%</text>'
+                        '<text x="90" y="57" font-size="7" fill="rgba(255,255,255,0.5)" text-anchor="middle">100%</text>'
+                        '</svg>'
+                        f'<div style="font-size:16px;font-weight:900;color:{sc};margin-top:-2px;">{_share_hdr}</div>'
+                        '</div>'
+                    )
                 except: pass
 
-            # Price gauge
+            # Price Rate — horizontal bar chart
             price_gauge_html = ""
             if _price_hdr:
                 try:
-                    pp = float(_r0.get("price_num")) / float(max_price)
-                    pc = "#e63946" if pp >= 0.66 else ("#f4a261" if pp >= 0.33 else "#2a9d8f")
-                    lo_p = f_ets["price_num"].dropna().min()
-                    price_gauge_html = f'''
-                    <div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 12px 6px;min-width:110px;text-align:center;">
-                      <div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Price Rate</div>
-                      {gauge_svg(pp, pc, "rgba(255,255,255,0.2)", f"${lo_p:.0f}", f"${max_price:.0f}")}
-                      <div style="font-size:18px;font-weight:900;color:{pc};margin-top:-4px;">{_price_hdr}</div>
-                    </div>'''
+                    pp     = float(_r0.get("price_num"))
+                    lo_p   = f_ets["price_num"].dropna().min()
+                    bar_w  = round((pp / max_price) * 100, 1)
+                    pc     = "#e63946" if bar_w >= 66 else ("#f4a261" if bar_w >= 33 else "#2a9d8f")
+                    price_gauge_html = (
+                        '<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:8px 10px 8px;width:130px;text-align:center;">'
+                        '<div style="font-size:8px;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Price Rate</div>'
+                        f'<div style="font-size:16px;font-weight:900;color:{pc};margin-bottom:6px;">{_price_hdr}</div>'
+                        # bar track (max = transparent white)
+                        '<div style="position:relative;height:10px;background:rgba(255,255,255,0.15);border-radius:99px;overflow:hidden;margin:0 4px;">'
+                        # gradient fill bar
+                        f'<div style="position:absolute;left:0;top:0;height:100%;width:{bar_w}%;'
+                        f'background:linear-gradient(90deg,#2a9d8f,#f4a261,#e63946);border-radius:99px;"></div>'
+                        '</div>'
+                        '<div style="display:flex;justify-content:space-between;margin:3px 4px 0;font-size:7px;opacity:0.5;">'
+                        f'<span>${lo_p:.0f}</span><span>${max_price:.0f}</span>'
+                        '</div>'
+                        '</div>'
+                    )
                 except: pass
 
             st.markdown(
