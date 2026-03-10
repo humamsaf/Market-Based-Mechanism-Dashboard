@@ -1107,7 +1107,7 @@ def page_cbam():
         '</div>'
     )
     cat_summary_items = []
-    for cat in categories:
+    for i_cat, cat in enumerate(categories):
         val = f[f["Category"] == cat]["Trade Value 1000USD"].sum() / 1_000
         color = CAT_COLORS.get(cat, "#888")
         n_p   = f[f["Category"] == cat]["Partner"].nunique()
@@ -1341,7 +1341,7 @@ def page_cbam():
             values=cat_agg["USD B"],
             hole=0.55,
             marker=dict(
-                colors=[CAT_COLORS.get(c, "#888") for c in cat_agg["Category"]],
+                colors=["#1d3557", "#2a6496", "#7fb3d9", "#c8dff4"],  # monokrom biru
                 line=dict(color="white", width=2),
             ),
             textinfo="label+percent",
@@ -1377,13 +1377,13 @@ def page_cbam():
         rep_cat["USD M"] = rep_cat["Trade Value 1000USD"] / 1_000
 
         fig_grouped = go.Figure()
-        for cat in categories:
+        for i_cat, cat in enumerate(categories):
             sub = rep_cat[rep_cat["Category"] == cat]
             fig_grouped.add_trace(go.Bar(
                 x=sub["Reporter"],
                 y=sub["USD M"],
                 name=cat,
-                marker_color=CAT_COLORS.get(cat, "#888"),
+                marker_color=MONO_BLUES[i_cat % len(MONO_BLUES)],
                 marker_line_color="#222", marker_line_width=0.8,
                 text=[f"{v:,.0f}M" for v in sub["USD M"]],
                 textposition="inside",
@@ -1415,7 +1415,7 @@ def page_cbam():
         prod_agg = prod_agg.sort_values("USD M", ascending=True)
 
         fig_prod = go.Figure()
-        for cat in categories:
+        for i_cat, cat in enumerate(categories):
             sub = prod_agg[prod_agg["Category"] == cat]
             if sub.empty: continue
             fig_prod.add_trace(go.Bar(
@@ -1423,7 +1423,7 @@ def page_cbam():
                 x=sub["USD M"],
                 orientation="h",
                 name=cat,
-                marker_color=CAT_COLORS.get(cat, "#888"),
+                marker_color=MONO_BLUES[i_cat % len(MONO_BLUES)],
                 marker_line_width=0,
                 hovertemplate="<b>%{y}</b><br>USD %{x:.2f}B<extra></extra>",
             ))
