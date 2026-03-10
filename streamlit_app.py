@@ -1183,48 +1183,43 @@ def page_ets():
 
     fig_ets_map = go.Figure()
 
-    # ── Choropleth: color = avg carbon price ──
-    if not map_df.empty:
-        priced_df   = map_df[map_df["avg_price"].notna()]
-        unpriced_df = map_df[map_df["avg_price"].isna()]
+    # ── Choropleth: same color scheme as MBM map ─────────────────
+    # ETS-only countries = #457b9d (blue), also has carbon tax = #f4a261 (orange)
+    # Load carbon tax sheet to check overlap
+    try:
+        ctx_sheet = pd.read_excel(DATA_PATH, sheet_name="1.b Carbon Tax")
+        ctx_sheet.columns = [str(c).strip() for c in ctx_sheet.columns]
+        ctx_col = next((c for c in ctx_sheet.columns if "jurisdiction" in c.lower()), ctx_sheet.columns[0])
+        ctx_countries = set(ctx_sheet[ctx_col].dropna().astype(str).str.strip().tolist())
+    except:
+        ctx_countries = set()
 
-        if not priced_df.empty:
+    ets_countries = set(f_ets["country"].unique())
+
+    if not map_df.empty:
+        rows_both    = map_df[map_df["country"].apply(lambda c: c in ets_countries and c in ctx_countries)]
+        rows_ets     = map_df[map_df["country"].apply(lambda c: c in ets_countries and c not in ctx_countries)]
+
+        def add_choro(df, color, label):
+            if df.empty: return
             fig_ets_map.add_trace(go.Choropleth(
-                locations=priced_df["iso3"],
-                z=priced_df["avg_price"],
-                colorscale=[[0,"#d4edff"],[0.3,"#6baed6"],[0.65,"#2171b5"],[1,"#08306b"]],
-                zmin=0, zmax=100,
-                showscale=True,
-                colorbar=dict(
-                    title=dict(text="Avg Price<br>USD/tCO₂", font=dict(size=10)),
-                    thickness=12, len=0.45, tickfont=dict(size=10), x=1.01,
-                ),
-                hovertemplate=(
-                    "<b>%{customdata[0]}</b><br>"
-                    "Avg price: USD %{z:.1f}/tCO₂<br>"
-                    "%{customdata[1]} scheme(s)<br>"
-                    "─────────────<br>"
-                    "%{customdata[2]}<extra></extra>"
-                ),
-                customdata=priced_df[["country","n_schemes","schemes_str"]].values,
-                marker_line_color="#999", marker_line_width=0.8,
-            ))
-        if not unpriced_df.empty:
-            fig_ets_map.add_trace(go.Choropleth(
-                locations=unpriced_df["iso3"],
-                z=[0]*len(unpriced_df),
-                colorscale=[[0,"#e0e0e0"],[1,"#e0e0e0"]],
+                locations=df["iso3"],
+                z=[1]*len(df),
+                colorscale=[[0,color],[1,color]],
                 showscale=False,
                 hovertemplate=(
                     "<b>%{customdata[0]}</b><br>"
-                    "Price: No data<br>"
+                    f"<span style='color:{color}'>■</span> {label}<br>"
                     "%{customdata[1]} scheme(s)<br>"
                     "─────────────<br>"
                     "%{customdata[2]}<extra></extra>"
                 ),
-                customdata=unpriced_df[["country","n_schemes","schemes_str"]].values,
-                marker_line_color="#999", marker_line_width=0.8,
+                customdata=df[["country","n_schemes","schemes_str"]].values,
+                marker_line_color="#555", marker_line_width=0.8,
             ))
+
+        add_choro(rows_both, "#f4a261", "ETS + Carbon Tax")
+        add_choro(rows_ets,  "#457b9d", "ETS")
 
     # ── One dot per country (representative scheme) ──────────────
     COUNTRY_CENTROIDS = {
@@ -1289,10 +1284,10 @@ def page_ets():
             lon=dot_lons, lat=dot_lats,
             mode="markers",
             marker=dict(
-                size=12,
+                size=11,
                 color=dot_colors,
-                symbol="circle",
-                line=dict(width=2, color="white"),
+                symbol="diamond",
+                line=dict(width=1.5, color="white"),
             ),
             hovertemplate=dot_hovers,
             customdata=dot_custom,
@@ -1300,16 +1295,15 @@ def page_ets():
         ))
 
     fig_ets_map.update_layout(
-        height=480, margin=dict(l=0, r=0, t=0, b=0),
+        height=520, margin=dict(l=0, r=0, t=0, b=0),
         paper_bgcolor="white",
         hoverlabel=dict(bgcolor="white", bordercolor="#ccc", font=dict(size=12), align="left"),
         geo=dict(
             projection_type="equirectangular", showframe=False,
-            showcoastlines=True, coastlinecolor="#aaa", coastlinewidth=0.8,
-            showcountries=True, countrycolor="#aaa", countrywidth=0.8,
+            showcoastlines=True, coastlinecolor="#333", coastlinewidth=1.2,
+            showcountries=True, countrycolor="#333", countrywidth=1.2,
             showland=True, landcolor="#f0f0f0",
-            showocean=True, oceancolor="#eaf4fb",
-            bgcolor="white",
+            showocean=False, bgcolor="white",
             lataxis=dict(range=[-60, 85], showgrid=False),
             lonaxis=dict(range=[-180, 180], showgrid=False),
         ),
