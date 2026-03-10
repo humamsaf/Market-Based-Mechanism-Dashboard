@@ -1099,98 +1099,40 @@ def page_cbam():
     if cat_sel:      f = f[f["Category"].isin(cat_sel)]
     if partner_sel:  f = f[f["Partner"].isin(partner_sel)]
 
-    # ── KPI Cards per Category ─────────────────────────────────
-    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-    cat_cols = st.columns(len(categories))
-    for i, cat in enumerate(categories):
+    # ── Inline summary stats (styled like hero, no boxes) ────────
+    cat_parts = ""
+    for cat in categories:
         val = f[f["Category"] == cat]["Trade Value 1000USD"].sum() / 1_000
         color = CAT_COLORS.get(cat, "#888")
         icon  = CAT_ICONS.get(cat, "📦")
         n_p   = f[f["Category"] == cat]["Partner"].nunique()
-        with cat_cols[i]:
-            st.markdown(f"""
-            <div style="background:linear-gradient(135deg,{color}18 0%,{color}08 100%);
-                        border:1.5px solid {color}44;border-radius:12px;
-                        padding:18px 16px;text-align:center;margin-bottom:16px;">
-                <div style="font-size:22px;margin-bottom:4px;">{icon}</div>
-                <div style="font-size:13px;font-weight:800;color:{color};margin-bottom:6px;">{cat}</div>
-                <div style="font-size:28px;font-weight:900;color:#1a1a2e;line-height:1;">USD {val:,.1f}M</div>
-                <div style="font-size:11px;color:#999;margin-top:4px;">{n_p} partners</div>
+        cat_parts += f'''
+        <div style="display:flex;flex-direction:column;align-items:center;text-align:center;min-width:120px;">
+            <div style="font-size:10px;font-weight:700;color:{color};text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;">{icon} {cat}</div>
+            <div style="font-size:32px;font-weight:900;color:#1a1a2e;line-height:1;">USD {val:,.0f}M</div>
+            <div style="font-size:11px;color:#aaa;margin-top:4px;">{n_p} partners</div>
+        </div>
+        <div style="width:1px;height:50px;background:#e8e8e8;align-self:center;"></div>
+        '''
+
+    # Remove last divider
+    cat_parts = cat_parts.rsplit('<div style="width:1px;height:50px;background:#e8e8e8;align-self:center;"></div>', 1)[0]
+
+    total_f = f["Trade Value 1000USD"].sum() / 1_000_000
+    st.markdown(f"""
+    <div style="padding:24px 0 28px 0;border-bottom:1px solid #e8e8e8;margin-bottom:28px;">
+        <div style="font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:2px;margin-bottom:16px;">Sector Breakdown</div>
+        <div style="display:flex;align-items:center;gap:32px;flex-wrap:wrap;">
+            <div style="display:flex;flex-direction:column;align-items:center;text-align:center;min-width:120px;">
+                <div style="font-size:10px;font-weight:700;color:#1d3557;text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;">🌐 Total</div>
+                <div style="font-size:32px;font-weight:900;color:#1d3557;line-height:1;">USD {total_f:.2f}B</div>
+                <div style="font-size:11px;color:#aaa;margin-top:4px;">all sectors</div>
             </div>
-            """, unsafe_allow_html=True)
-
-    # ── Row 1: Top Partners Bar + Sector Donut ─────────────────
-    col_bar, col_donut = st.columns([3, 2])
-
-    with col_bar:
-        st.markdown('<div style="font-size:16px;font-weight:800;color:#1a1a2e;margin-bottom:8px;">Top 25 Partners by Trade Value</div>', unsafe_allow_html=True)
-        top_partners = (
-            f.groupby("Partner")["Trade Value 1000USD"].sum()
-            .sort_values(ascending=False)
-            .head(25)
-            .reset_index()
-        )
-        top_partners["Trade Value USD M"] = top_partners["Trade Value 1000USD"] / 1_000
-        top_partners = top_partners.sort_values("Trade Value USD M", ascending=True)
-
-        fig_bar = go.Figure()
-        fig_bar.add_trace(go.Bar(
-            y=top_partners["Partner"],
-            x=top_partners["Trade Value USD M"],
-            orientation="h",
-            marker=dict(
-                color=top_partners["Trade Value USD M"],
-                colorscale=[[0, "#c8dff4"], [1, "#1d3557"]],
-                showscale=False,
-                line=dict(width=0),
-            ),
-            text=[f"USD {v:,.0f}M" for v in top_partners["Trade Value USD M"]],
-            textposition="outside",
-            textfont=dict(size=10, color="#555"),
-            hovertemplate="<b>%{y}</b><br>USD %{x:.2f}B<extra></extra>",
-        ))
-        fig_bar.update_layout(
-            height=520, margin=dict(l=0, r=60, t=10, b=0),
-            paper_bgcolor="white", plot_bgcolor="white",
-            xaxis=dict(title="Trade Value (USD Million)", showgrid=True, gridcolor="#f0f0f0", zeroline=False),
-            yaxis=dict(title="", showgrid=False, tickfont=dict(size=11)),
-            hoverlabel=dict(bgcolor="white", bordercolor="#ccc", font=dict(size=12)),
-        )
-        st.plotly_chart(fig_bar, use_container_width=True, key="cbam_top_partners", config={"displayModeBar": False})
-
-    with col_donut:
-        st.markdown('<div style="font-size:16px;font-weight:800;color:#1a1a2e;margin-bottom:8px;">Trade Value by Sector</div>', unsafe_allow_html=True)
-        cat_agg = f.groupby("Category")["Trade Value 1000USD"].sum().reset_index()
-        cat_agg["USD M"] = cat_agg["Trade Value 1000USD"] / 1_000
-        cat_agg["USD B"] = cat_agg["USD M"] / 1_000
-        cat_agg = cat_agg[cat_agg["USD M"] > 0]
-
-        fig_donut = go.Figure(go.Pie(
-            labels=cat_agg["Category"],
-            values=cat_agg["USD B"],
-            hole=0.55,
-            marker=dict(
-                colors=[CAT_COLORS.get(c, "#888") for c in cat_agg["Category"]],
-                line=dict(color="white", width=2),
-            ),
-            textinfo="label+percent",
-            textfont=dict(size=12),
-            hovertemplate="<b>%{label}</b><br>USD %{value:.2f}B<br>%{percent}<extra></extra>",
-        ))
-        total_filtered = cat_agg["USD B"].sum()
-        fig_donut.add_annotation(
-            text=f"<b>USD {total_filtered:.2f}B</b><br><span style='font-size:10px;color:#999'>Total</span>",
-            x=0.5, y=0.5, xref="paper", yref="paper",
-            showarrow=False, font=dict(size=14, color="#1a1a2e"), align="center",
-        )
-        fig_donut.update_layout(
-            height=420, margin=dict(l=0, r=0, t=10, b=0),
-            paper_bgcolor="white",
-            legend=dict(orientation="h", yanchor="bottom", y=-0.15, xanchor="center", x=0.5, font=dict(size=11)),
-            hoverlabel=dict(bgcolor="white", bordercolor="#ccc", font=dict(size=12)),
-            showlegend=True,
-        )
-        st.plotly_chart(fig_donut, use_container_width=True, key="cbam_donut", config={"displayModeBar": False})
+            <div style="width:1px;height:50px;background:#e8e8e8;align-self:center;"></div>
+            {cat_parts}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     # ── Row 2: EU vs UK comparison + Choropleth Map ────────────
     st.markdown("<hr style='border:none;border-top:1px solid #e8e8e8;margin:8px 0 20px 0'>", unsafe_allow_html=True)
@@ -1264,8 +1206,8 @@ def page_cbam():
             showframe=False,
             showcoastlines=True, coastlinecolor="#cccccc", coastlinewidth=1,
             showcountries=True, countrycolor="#dddddd", countrywidth=0.8,
-            showland=True, landcolor="#f5f5f5",
-            showocean=True, oceancolor="#eef4fb",
+            showland=True, landcolor="#f0f0f0",
+            showocean=True, oceancolor="#ffffff",
             showlakes=False,
             lataxis=dict(range=[-60, 85], showgrid=False),
             lonaxis=dict(range=[-180, 180], showgrid=False),
@@ -1277,6 +1219,81 @@ def page_cbam():
         ),
     )
     st.plotly_chart(fig_map, use_container_width=True, key="cbam_map", config={"displayModeBar": False, "scrollZoom": False})
+
+    # ── Charts ────────────────────────────────────────────────────
+    st.markdown("<hr style='border:none;border-top:1px solid #e8e8e8;margin:8px 0 20px 0'>", unsafe_allow_html=True)
+
+    col_bar, col_donut = st.columns([3, 2])
+
+    with col_bar:
+        st.markdown('<div style="font-size:16px;font-weight:800;color:#1a1a2e;margin-bottom:8px;">Top 25 Partners by Trade Value</div>', unsafe_allow_html=True)
+        top_partners = (
+            f.groupby("Partner")["Trade Value 1000USD"].sum()
+            .sort_values(ascending=False)
+            .head(25)
+            .reset_index()
+        )
+        top_partners["Trade Value USD M"] = top_partners["Trade Value 1000USD"] / 1_000
+        top_partners = top_partners.sort_values("Trade Value USD M", ascending=True)
+
+        fig_bar = go.Figure()
+        fig_bar.add_trace(go.Bar(
+            y=top_partners["Partner"],
+            x=top_partners["Trade Value USD M"],
+            orientation="h",
+            marker=dict(
+                color=top_partners["Trade Value USD M"],
+                colorscale=[[0, "#c8dff4"], [1, "#1d3557"]],
+                showscale=False,
+                line=dict(width=0),
+            ),
+            text=[f"USD {v:,.0f}M" for v in top_partners["Trade Value USD M"]],
+            textposition="outside",
+            textfont=dict(size=10, color="#555"),
+            hovertemplate="<b>%{y}</b><br>USD %{x:,.0f}M<extra></extra>",
+        ))
+        fig_bar.update_layout(
+            height=520, margin=dict(l=0, r=60, t=10, b=0),
+            paper_bgcolor="white", plot_bgcolor="white",
+            xaxis=dict(title="Trade Value (USD Million)", showgrid=True, gridcolor="#f0f0f0", zeroline=False),
+            yaxis=dict(title="", showgrid=False, tickfont=dict(size=11)),
+            hoverlabel=dict(bgcolor="white", bordercolor="#ccc", font=dict(size=12)),
+        )
+        st.plotly_chart(fig_bar, use_container_width=True, key="cbam_top_partners", config={"displayModeBar": False})
+
+    with col_donut:
+        st.markdown('<div style="font-size:16px;font-weight:800;color:#1a1a2e;margin-bottom:8px;">Trade Value by Sector</div>', unsafe_allow_html=True)
+        cat_agg = f.groupby("Category")["Trade Value 1000USD"].sum().reset_index()
+        cat_agg["USD M"] = cat_agg["Trade Value 1000USD"] / 1_000
+        cat_agg["USD B"] = cat_agg["USD M"] / 1_000
+        cat_agg = cat_agg[cat_agg["USD M"] > 0]
+
+        fig_donut = go.Figure(go.Pie(
+            labels=cat_agg["Category"],
+            values=cat_agg["USD B"],
+            hole=0.55,
+            marker=dict(
+                colors=[CAT_COLORS.get(c, "#888") for c in cat_agg["Category"]],
+                line=dict(color="white", width=2),
+            ),
+            textinfo="label+percent",
+            textfont=dict(size=12),
+            hovertemplate="<b>%{label}</b><br>USD %{value:.2f}B<br>%{percent}<extra></extra>",
+        ))
+        total_filtered = cat_agg["USD B"].sum()
+        fig_donut.add_annotation(
+            text=f"<b>USD {total_filtered:.2f}B</b><br><span style='font-size:10px;color:#999'>Total</span>",
+            x=0.5, y=0.5, xref="paper", yref="paper",
+            showarrow=False, font=dict(size=14, color="#1a1a2e"), align="center",
+        )
+        fig_donut.update_layout(
+            height=420, margin=dict(l=0, r=0, t=10, b=0),
+            paper_bgcolor="white",
+            legend=dict(orientation="h", yanchor="bottom", y=-0.15, xanchor="center", x=0.5, font=dict(size=11)),
+            hoverlabel=dict(bgcolor="white", bordercolor="#ccc", font=dict(size=12)),
+            showlegend=True,
+        )
+        st.plotly_chart(fig_donut, use_container_width=True, key="cbam_donut", config={"displayModeBar": False})
 
     # ── Row 3: Reporter comparison + sector breakdown per partner ──
     st.markdown("<hr style='border:none;border-top:1px solid #e8e8e8;margin:8px 0 20px 0'>", unsafe_allow_html=True)
