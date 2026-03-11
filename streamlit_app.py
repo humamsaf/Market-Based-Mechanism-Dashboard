@@ -957,8 +957,10 @@ def page_placeholder(title, icon):
 # ── CBAM Data Loader ───────────────────────────────────────────
 CBAM_FILE = "data/CBAM_EXPOSURE.xlsx"
 
-@st.cache_data
-def load_cbam_data():
+import os as _os
+
+@st.cache_data(ttl=0)
+def load_cbam_data(_mtime=None):
     df = pd.read_excel(CBAM_FILE)
     df.columns = [str(c).strip() for c in df.columns]
     df["Trade Value 1000USD"] = pd.to_numeric(df["Trade Value 1000USD"], errors="coerce").fillna(0)
@@ -966,13 +968,19 @@ def load_cbam_data():
     df["Category"] = df["Category"].astype(str).str.strip()
     df["Reporter"] = df["Reporter"].astype(str).str.strip()
     df["Product Description"] = df["Product Description"].astype(str).str.strip()
-    # Remove aggregate "World" rows for partner-level analysis
     return df
+
+def _load_cbam_fresh():
+    try:
+        mtime = _os.path.getmtime(CBAM_FILE)
+    except Exception:
+        mtime = None
+    return load_cbam_data(_mtime=mtime)
 
 
 # ── CBAM Page ──────────────────────────────────────────────────
 def page_cbam():
-    df = load_cbam_data()
+    df = _load_cbam_fresh()
 
     # ── Derived stats ──────────────────────────────────────────
     df_real = df[df["Partner"] != "World"].copy()
