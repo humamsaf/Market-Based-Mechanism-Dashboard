@@ -989,13 +989,14 @@ def page_cbam():
     n_cat = len(categories)
 
     CAT_COLORS = {
-        "Aluminium":  "#4a90d9",
-        "Cement":     "#e07b00",
-        "Fertilizer": "#2a9d8f",
-        "Other":      "#9b59b6",
+        "Aluminium":     "#4a90d9",
+        "Cement":        "#e07b00",
+        "Fertilizer":    "#2a9d8f",
+        "Iron and Steel":"#c0392b",
+        "Other":         "#9b59b6",
     }
 
-    MONO_BLUES = ["#1d3557", "#2a6496", "#7fb3d9", "#c8dff4"]
+    MONO_BLUES = ["#1d3557", "#2a6496", "#4a7fb5", "#7fb3d9", "#c8dff4"]
     # ── Hero ───────────────────────────────────────────────────
     def divv():
         return '<div style="width:1px;height:50px;background:#e0e0e0;align-self:center;"></div>'
@@ -1137,10 +1138,11 @@ def page_cbam():
     cat_by_partner = map_df.groupby(["Partner", "Category"])["Trade Value 1000USD"].sum().reset_index()
 
     CAT_SHAPE_CHAR = {
-        "Aluminium":  "●",
-        "Cement":     "■",
-        "Fertilizer": "◆",
-        "Other":      "✚",
+        "Aluminium":      "●",
+        "Cement":         "■",
+        "Fertilizer":     "◆",
+        "Iron and Steel": "▲",
+        "Other":          "✚",
     }
 
     def build_cbam_hover(partner):
@@ -1171,10 +1173,11 @@ def page_cbam():
 
     # Sector marker styles
     CAT_MARKER = {
-        "Aluminium":  {"symbol": "circle",   "color": "#1d6fa4", "size": 6, "offset": (0.0,  0.0)},
-        "Cement":     {"symbol": "square",   "color": "#c45e00", "size": 5, "offset": (0.0,  2.2)},
-        "Fertilizer": {"symbol": "diamond",  "color": "#1a7a6e", "size": 6, "offset": (2.0,  0.0)},
-        "Other":      {"symbol": "cross",    "color": "#6b3fa0", "size": 6, "offset": (-2.0, 0.0)},
+        "Aluminium":      {"symbol": "circle",        "color": "#1d6fa4", "size": 6, "offset": (0.0,  0.0)},
+        "Cement":         {"symbol": "square",        "color": "#c45e00", "size": 5, "offset": (0.0,  2.2)},
+        "Fertilizer":     {"symbol": "diamond",       "color": "#1a7a6e", "size": 6, "offset": (2.0,  0.0)},
+        "Iron and Steel": {"symbol": "triangle-up",   "color": "#a93226", "size": 6, "offset": (-2.0, 2.2)},
+        "Other":          {"symbol": "cross",         "color": "#6b3fa0", "size": 6, "offset": (-2.0, 0.0)},
     }
 
     fig_map = go.Figure()
@@ -1245,7 +1248,7 @@ def page_cbam():
 
     # Legend: sektor icons
     active_cats_legend = [c for c in categories if c in map_df["Category"].unique()]
-    SYMBOL_MAP = {"circle": "circle", "square": "square", "diamond": "diamond", "cross": "cross"}
+    SYMBOL_MAP = {"circle": "circle", "square": "square", "diamond": "diamond", "cross": "cross", "triangle-up": "triangle-up"}
     for k, cat in enumerate(active_cats_legend):
         style = CAT_MARKER[cat]
         fig_map.add_trace(go.Scattergeo(
