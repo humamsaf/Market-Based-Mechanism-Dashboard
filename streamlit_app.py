@@ -957,6 +957,7 @@ def page_placeholder(title, icon):
 # ── CBAM Data Loader ───────────────────────────────────────────
 CBAM_FILE = "data/CBAM_EXPOSURE.xlsx"
 
+@st.cache_data
 def load_cbam_data():
     df = pd.read_excel(CBAM_FILE)
     df.columns = [str(c).strip() for c in df.columns]
@@ -965,6 +966,7 @@ def load_cbam_data():
     df["Category"] = df["Category"].astype(str).str.strip()
     df["Reporter"] = df["Reporter"].astype(str).str.strip()
     df["Product Description"] = df["Product Description"].astype(str).str.strip()
+    # Remove aggregate "World" rows for partner-level analysis
     return df
 
 
@@ -1106,8 +1108,9 @@ def page_cbam():
         '<div style="font-size:10px;color:#999;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-top:7px;">Total</div>'
         '</div>'
     )
+    SUMMARY_ORDER = ["Iron and Steel", "Cement", "Aluminium", "Fertilizer", "Other"]
     cat_summary_items = []
-    for i_cat, cat in enumerate(categories):
+    for i_cat, cat in enumerate([c for c in SUMMARY_ORDER if c in categories]):
         val = f[f["Category"] == cat]["Trade Value 1000USD"].sum() / 1_000
         color = CAT_COLORS.get(cat, "#888")
         n_p   = f[f["Category"] == cat]["Partner"].nunique()
@@ -1245,7 +1248,8 @@ def page_cbam():
         ))
 
     # Legend: sektor icons
-    active_cats_legend = [c for c in categories if c in map_df["Category"].unique()]
+    LEGEND_ORDER = ["Iron and Steel", "Cement", "Aluminium", "Fertilizer", "Other"]
+    active_cats_legend = [c for c in LEGEND_ORDER if c in map_df["Category"].unique()]
     SYMBOL_MAP = {"circle": "circle", "square": "square", "diamond": "diamond", "cross": "cross", "triangle-up": "triangle-up"}
     for k, cat in enumerate(active_cats_legend):
         style = CAT_MARKER[cat]
