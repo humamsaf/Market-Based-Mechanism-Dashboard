@@ -1229,7 +1229,7 @@ def page_cbam():
             for _, sr in sec_rows.iterrows():
                 sec = sr["Category"]
                 sec_v = sr["Trade Value 1000USD"] / 1_000
-                if sec_v < 0.01:
+                if sec_v <= 0:
                     continue
                 sec_color = CAT_COLORS.get(sec, "#888")
                 sec_shape = CAT_SHAPE_CHAR.get(sec, "■")
@@ -1245,7 +1245,7 @@ def page_cbam():
                 ].sort_values("Trade Value 1000USD", ascending=False)
                 for _, pr in p_rows.iterrows():
                     pv = pr["Trade Value 1000USD"] / 1_000
-                    if pv < 0.01:
+                    if pv <= 0:
                         continue
                     lbl = code_to_label.get(pr["ProductCode"], pr["ProductCode"])
                     body += (
