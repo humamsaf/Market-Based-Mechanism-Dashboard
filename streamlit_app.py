@@ -1331,6 +1331,25 @@ def page_cbam():
         # Compute total per partner for labels on last segment
         partner_totals = top25_df.groupby("Partner")["Trade Value USD M"].sum()
 
+        # Build unified hover per partner: total + all sectors
+        pivot = top25_df.pivot_table(index="Partner", columns="Category", values="Trade Value USD M", fill_value=0)
+
+        def build_hover(partner):
+            total = partner_totals[partner]
+            lines = f"<b style='font-size:13px;'>{partner}</b><br>"
+            lines += "<span style='color:#ccc;'>──────────────────</span><br>"
+            lines += f"<span style='font-size:10px;color:#999;text-transform:uppercase;letter-spacing:1px;'>Total Trade Value</span><br>"
+            lines += f"<b style='font-size:15px;color:#1d3557;'>USD {total:,.0f}M</b><br>"
+            lines += "<span style='color:#ccc;'>──────────────────</span><br>"
+            for i_cat, cat in enumerate(categories):
+                val = pivot.loc[partner, cat] if cat in pivot.columns and partner in pivot.index else 0
+                if val > 0:
+                    color = MONO_BLUES[i_cat % len(MONO_BLUES)]
+                    lines += f"<span style='color:{color};'>■</span> <span style='color:#666;font-size:11px;'>{cat}</span>  <b>USD {val:,.0f}M</b><br>"
+            return lines
+
+        hover_map = {p: build_hover(p) for p in partner_order}
+
         fig_bar = go.Figure()
         for i_cat, cat in enumerate(categories):
             sub = top25_df[top25_df["Category"] == cat].set_index("Partner")
@@ -1349,7 +1368,8 @@ def page_cbam():
                 textposition="outside",
                 textfont=dict(size=10, color="#555"),
                 cliponaxis=False,
-                hovertemplate=f"<b>%{{y}}</b><br>{cat}: USD %{{x:,.0f}}M<extra></extra>",
+                customdata=[hover_map[p] for p in partner_order],
+                hovertemplate="%{customdata}<extra></extra>",
             ))
 
         fig_bar.update_layout(
