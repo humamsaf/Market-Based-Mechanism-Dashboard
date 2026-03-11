@@ -1205,21 +1205,15 @@ def page_cbam():
                 continue
 
             color = PRODUCT_PALETTE[pi % len(PRODUCT_PALETTE)]
-            # Build a semi-transparent version for choropleth fill
-            # Use Scattergeo bubbles so each product gets its own colour in legend
-            prod_agg["lat"] = prod_agg["iso3"].map(
-                lambda iso: CENTROIDS[iso][0] if iso in CENTROIDS else None
-            )
-            prod_agg["lon"] = prod_agg["iso3"].map(
-                lambda iso: CENTROIDS[iso][1] if iso in CENTROIDS else None
-            )
-            prod_agg = prod_agg.dropna(subset=["lat", "lon"])
+            # Convert hex to rgba for light/dark colorscale
+            r, g, b = int(color[1:3],16), int(color[3:5],16), int(color[5:7],16)
+            color_light = f"rgba({r},{g},{b},0.25)"
+            color_full  = f"rgba({r},{g},{b},1.0)"
 
-            # Also add choropleth fill for this product
             fig_map.add_trace(go.Choropleth(
                 locations=prod_agg["iso3"],
                 z=prod_agg["Trade Value USD M"],
-                colorscale=[[0, color + "55"], [1, color]],
+                colorscale=[[0, color_light], [1, color_full]],
                 showscale=False,
                 marker_line_color="#333333",
                 marker_line_width=0.8,
