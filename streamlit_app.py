@@ -1328,10 +1328,14 @@ def page_cbam():
             .index.tolist()
         )
 
+        # Compute total per partner for labels on last segment
+        partner_totals = top25_df.groupby("Partner")["Trade Value USD M"].sum()
+
         fig_bar = go.Figure()
         for i_cat, cat in enumerate(categories):
             sub = top25_df[top25_df["Category"] == cat].set_index("Partner")
             vals = [sub.loc[p, "Trade Value USD M"] if p in sub.index else 0 for p in partner_order]
+            is_last = (i_cat == len(categories) - 1)
             fig_bar.add_trace(go.Bar(
                 y=partner_order,
                 x=vals,
@@ -1341,16 +1345,29 @@ def page_cbam():
                     color=MONO_BLUES[i_cat % len(MONO_BLUES)],
                     line=dict(width=0),
                 ),
+                text=[f"USD {partner_totals[p]:,.0f}M" if is_last else "" for p in partner_order],
+                textposition="outside",
+                textfont=dict(size=10, color="#555"),
+                cliponaxis=False,
                 hovertemplate=f"<b>%{{y}}</b><br>{cat}: USD %{{x:,.0f}}M<extra></extra>",
             ))
 
         fig_bar.update_layout(
             barmode="stack",
-            height=560, margin=dict(l=0, r=20, t=10, b=0),
+            height=560, margin=dict(l=0, r=80, t=10, b=10),
             paper_bgcolor="white", plot_bgcolor="white",
             xaxis=dict(title="Trade Value (USD Million)", showgrid=True, gridcolor="#f0f0f0", zeroline=False),
             yaxis=dict(title="", showgrid=False, tickfont=dict(size=11)),
-            legend=dict(orientation="h", yanchor="bottom", y=-0.12, xanchor="center", x=0.5, font=dict(size=11)),
+            legend=dict(
+                orientation="v",
+                x=0.01, y=0.01,
+                xanchor="left", yanchor="bottom",
+                bgcolor="rgba(255,255,255,0.9)",
+                bordercolor="#cccccc",
+                borderwidth=1,
+                font=dict(size=11, color="#333"),
+                itemsizing="constant",
+            ),
             hoverlabel=dict(bgcolor="white", bordercolor="#ccc", font=dict(size=12)),
         )
         st.plotly_chart(fig_bar, use_container_width=True, key="cbam_top_partners", config={"displayModeBar": False})
