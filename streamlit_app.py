@@ -1150,6 +1150,7 @@ def page_cbam():
     map_agg["Trade Value USD M"] = map_agg["Trade Value 1000USD"] / 1_000
     map_agg["iso3"] = map_agg["Partner"].apply(to_iso3)
     map_agg = map_agg.dropna(subset=["iso3"])
+    map_agg = map_agg[map_agg["Trade Value USD M"] >= 0.5]
 
     CAT_SHAPE_CHAR = {
         "Iron and Steel": "▲",
@@ -1201,7 +1202,7 @@ def page_cbam():
             prod_agg["Trade Value USD M"] = prod_agg["Trade Value 1000USD"] / 1_000
             prod_agg["iso3"] = prod_agg["Partner"].apply(to_iso3)
             prod_agg = prod_agg.dropna(subset=["iso3"])
-            prod_agg = prod_agg[prod_agg["Trade Value USD M"] > 0]
+            prod_agg = prod_agg[prod_agg["Trade Value USD M"] >= 0.5]
             if prod_agg.empty:
                 continue
 
@@ -1218,7 +1219,7 @@ def page_cbam():
                 showscale=False,
                 marker_line_color="#333333",
                 marker_line_width=0.8,
-                hovertemplate="<b>%{location}</b><br>" + prod_label + "<br>USD %{z:,.0f}M<extra></extra>",
+                hovertemplate="<b>%{location}</b><br>" + prod_label + "<br>USD %{z:,.2f}M<extra></extra>",
                 name=prod_label,
                 showlegend=True,
                 legendgroup=f"prod_{pi}",
