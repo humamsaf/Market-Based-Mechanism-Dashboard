@@ -1184,46 +1184,70 @@ def page_cbam():
     fig_map = go.Figure()
 
     if product_codes_sel:
-        # ── PRODUCT MODE: choropleth = total all selected products, hover = breakdown per product ──
+        # ── PRODUCT MODE: choropleth = total all selected products, hover = breakdown per sector > product ──
 
-        # Total per partner across all selected products
         prod_total_df = map_df[map_df["ProductCode"].isin(product_codes_sel)]
+
+        # Total per partner (union of all countries that have ANY of the selected products)
         prod_total_agg = prod_total_df.groupby("Partner")["Trade Value 1000USD"].sum().reset_index()
         prod_total_agg["Trade Value USD M"] = prod_total_agg["Trade Value 1000USD"] / 1_000
         prod_total_agg["iso3"] = prod_total_agg["Partner"].apply(to_iso3)
         prod_total_agg = prod_total_agg.dropna(subset=["iso3"])
         prod_total_agg = prod_total_agg[prod_total_agg["Trade Value USD M"] >= 0.5]
 
-        # Per-product breakdown per partner for hover
-        prod_by_partner = (
+        # Breakdown: partner × sector × product
+        prod_by_sector_partner = (
             map_df[map_df["ProductCode"].isin(product_codes_sel)]
-            .groupby(["Partner", "ProductCode"])["Trade Value 1000USD"].sum()
+            .groupby(["Partner", "Category", "ProductCode"])["Trade Value 1000USD"].sum()
             .reset_index()
         )
-        # Map code → short label
+        # Sector total per partner
+        sector_total_by_partner = (
+            prod_by_sector_partner.groupby(["Partner", "Category"])["Trade Value 1000USD"].sum()
+            .reset_index()
+        )
         code_to_label = {lbl.split(" — ")[0]: lbl for lbl in product_sel}
 
         def build_product_hover(partner):
             total_v = prod_total_agg.loc[prod_total_agg["Partner"] == partner, "Trade Value USD M"]
-            total_v = total_v.iloc[0] if not total_v.empty else 0
-            rows = prod_by_partner[prod_by_partner["Partner"] == partner].sort_values("Trade Value 1000USD", ascending=False)
-            prod_lines = ""
-            for _, r in rows.iterrows():
-                v = r["Trade Value 1000USD"] / 1_000
-                if v < 0.01:
+            total_v = float(total_v.iloc[0]) if not total_v.empty else 0
+            # Sectors present for this partner (sorted by sector total desc)
+            sec_rows = sector_total_by_partner[sector_total_by_partner["Partner"] == partner]
+            sec_rows = sec_rows.sort_values("Trade Value 1000USD", ascending=False)
+            body = ""
+            for _, sr in sec_rows.iterrows():
+                sec = sr["Category"]
+                sec_v = sr["Trade Value 1000USD"] / 1_000
+                if sec_v < 0.01:
                     continue
-                lbl = code_to_label.get(r["ProductCode"], r["ProductCode"])
-                prod_lines += (
-                    "<br><span style='color:#4a90d9;font-size:11px;'>▸ " + lbl + "</span>"
-                    "<b style='color:#1a1a2e;'>&nbsp;&nbsp;USD " + f"{v:,.2f}" + "M</b>"
+                sec_color = CAT_COLORS.get(sec, "#888")
+                sec_shape = CAT_SHAPE_CHAR.get(sec, "■")
+                body += (
+                    "<br><span style='color:" + sec_color + ";font-size:11px;font-weight:700;'>"
+                    + sec_shape + " " + sec.upper()
+                    + "</span><b style='color:#555;font-size:11px;'>&nbsp;— USD " + f"{sec_v:,.2f}" + "M</b>"
                 )
+                # Products under this sector
+                p_rows = prod_by_sector_partner[
+                    (prod_by_sector_partner["Partner"] == partner) &
+                    (prod_by_sector_partner["Category"] == sec)
+                ].sort_values("Trade Value 1000USD", ascending=False)
+                for _, pr in p_rows.iterrows():
+                    pv = pr["Trade Value 1000USD"] / 1_000
+                    if pv < 0.01:
+                        continue
+                    lbl = code_to_label.get(pr["ProductCode"], pr["ProductCode"])
+                    body += (
+                        "<br>&nbsp;&nbsp;<span style='color:#888;font-size:10px;'>▸ " + lbl + "</span>"
+                        "<b style='color:#1a1a2e;font-size:10px;'>&nbsp;USD " + f"{pv:,.2f}" + "M</b>"
+                    )
             return (
                 "<b style='font-size:13px;color:#1a1a2e;'>" + partner + "</b>"
                 "<br><span style='color:#ccc;'>──────────────</span>"
                 "<br><span style='font-size:10px;color:#999;text-transform:uppercase;letter-spacing:1px;'>Total (selected products)</span>"
                 "<br><b style='font-size:16px;color:#1d3557;'>USD " + f"{total_v:,.2f}" + "M</b>"
                 "<br><span style='color:#ccc;'>──────────────</span>"
-                + prod_lines
+                + body
             )
 
         prod_total_agg["hover"] = prod_total_agg["Partner"].apply(build_product_hover)
