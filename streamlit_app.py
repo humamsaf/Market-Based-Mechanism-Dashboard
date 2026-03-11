@@ -1210,6 +1210,15 @@ def page_cbam():
         )
         code_to_label = {lbl.split(" — ")[0]: lbl for lbl in product_sel}
 
+        def fmt_val(v):
+            """Smart format: B if >=1000M, M no decimals if >=0.5M, 4dp if smaller"""
+            if v >= 1000:
+                return f"USD {v/1000:,.2f}B"
+            elif v >= 0.5:
+                return f"USD {v:,.0f}M"
+            else:
+                return f"USD {v:,.4f}M"
+
         def build_product_hover(partner):
             total_v = prod_total_all.loc[prod_total_all["Partner"] == partner, "Trade Value USD M"]
             total_v = float(total_v.iloc[0]) if not total_v.empty else 0
@@ -1309,6 +1318,7 @@ def page_cbam():
                 continue
             import pandas as _pd
             df_cat_p = _pd.DataFrame(rows_m)
+            df_cat_p["sec_v_fmt"] = df_cat_p["sec_v"].apply(fmt_val)
             fig_map.add_trace(go.Scattergeo(
                 lat=df_cat_p["lat"], lon=df_cat_p["lon"],
                 mode="markers",
@@ -1320,11 +1330,11 @@ def page_cbam():
                     opacity=0.9,
                 ),
                 name=cat,
-                customdata=df_cat_p[["partner", "sec_v"]].values,
+                customdata=df_cat_p[["partner", "sec_v_fmt"]].values,
                 hovertemplate=(
                     "<b>%{customdata[0]}</b><br>"
                     + cat + "<br>"
-                    "USD %{customdata[1]:,.4f}M<extra></extra>"
+                    "%{customdata[1]}<extra></extra>"
                 ),
                 showlegend=False,
             ))
