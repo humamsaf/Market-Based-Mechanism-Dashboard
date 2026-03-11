@@ -957,10 +957,8 @@ def page_placeholder(title, icon):
 # ── CBAM Data Loader ───────────────────────────────────────────
 CBAM_FILE = "data/CBAM_EXPOSURE.xlsx"
 
-import os as _os
-
 @st.cache_data(ttl=0)
-def load_cbam_data(_mtime=None):
+def load_cbam_data():
     df = pd.read_excel(CBAM_FILE)
     df.columns = [str(c).strip() for c in df.columns]
     df["Trade Value 1000USD"] = pd.to_numeric(df["Trade Value 1000USD"], errors="coerce").fillna(0)
@@ -970,17 +968,10 @@ def load_cbam_data(_mtime=None):
     df["Product Description"] = df["Product Description"].astype(str).str.strip()
     return df
 
-def _load_cbam_fresh():
-    try:
-        mtime = _os.path.getmtime(CBAM_FILE)
-    except Exception:
-        mtime = None
-    return load_cbam_data(_mtime=mtime)
-
 
 # ── CBAM Page ──────────────────────────────────────────────────
 def page_cbam():
-    df = _load_cbam_fresh()
+    df = load_cbam_data()
 
     # ── Derived stats ──────────────────────────────────────────
     df_real = df[df["Partner"] != "World"].copy()
