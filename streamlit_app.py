@@ -1095,9 +1095,10 @@ def page_cbam():
         partner_opts = sorted([p for p in df_real["Partner"].unique() if p != "World"])
         partner_sel = st.multiselect("Country / Partner", partner_opts, key=f"cbam_partner_{rc}", placeholder="All countries")
     with fc4:
-        # Product code options: sorted by code, label = "CODE — Description"
+        # Product code options: filtered by sector if selected
+        _prod_base = df_real[df_real["Category"].isin(cat_sel)] if cat_sel else df_real
         product_label_opts = (
-            df_real.groupby("ProductCode")["Product Description"]
+            _prod_base.groupby("ProductCode")["Product Description"]
             .first()
             .reset_index()
             .sort_values("ProductCode")
