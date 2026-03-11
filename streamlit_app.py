@@ -1173,11 +1173,11 @@ def page_cbam():
 
     # Sector marker styles
     CAT_MARKER = {
-        "Aluminium":      {"symbol": "circle",        "color": "#1d6fa4", "size": 6, "offset": (0.0,  0.0)},
-        "Cement":         {"symbol": "square",        "color": "#c45e00", "size": 5, "offset": (0.0,  2.2)},
-        "Fertilizer":     {"symbol": "diamond",       "color": "#1a7a6e", "size": 6, "offset": (2.0,  0.0)},
-        "Iron and Steel": {"symbol": "triangle-up",   "color": "#a93226", "size": 6, "offset": (-2.0, 2.2)},
-        "Other":          {"symbol": "cross",         "color": "#6b3fa0", "size": 6, "offset": (-2.0, 0.0)},
+        "Aluminium":      {"symbol": "circle",      "color": "#1d6fa4", "size": 6, "offset": (0.0,  0.0)},
+        "Cement":         {"symbol": "square",      "color": "#c45e00", "size": 5, "offset": (0.0,  2.2)},
+        "Fertilizer":     {"symbol": "diamond",     "color": "#1a7a6e", "size": 6, "offset": (2.0,  0.0)},
+        "Iron and Steel": {"symbol": "triangle-up", "color": "#a93226", "size": 6, "offset": (-2.0, 2.2)},
+        "Other":          {"symbol": "cross",       "color": "#6b3fa0", "size": 6, "offset": (-2.0, 0.0)},
     }
 
     fig_map = go.Figure()
