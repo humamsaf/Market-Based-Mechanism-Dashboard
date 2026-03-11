@@ -1097,8 +1097,11 @@ def page_cbam():
     with fc4:
         # Product code options: sorted by code, label = "CODE — Description"
         product_label_opts = (
-            df_real.drop_duplicates("ProductCode")
-            .sort_values("ProductCode")["_product_label"]
+            df_real.groupby("ProductCode")["Product Description"]
+            .first()
+            .reset_index()
+            .sort_values("ProductCode")
+            .apply(lambda r: r["ProductCode"] + " — " + r["Product Description"], axis=1)
             .tolist()
         )
         product_sel = st.multiselect("Product Code", product_label_opts, key=f"cbam_prod_{rc}", placeholder="All products")
