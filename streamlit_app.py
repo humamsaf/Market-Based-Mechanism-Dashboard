@@ -957,7 +957,6 @@ def page_placeholder(title, icon):
 # ── CBAM Data Loader ───────────────────────────────────────────
 CBAM_FILE = "data/CBAM_EXPOSURE.xlsx"
 
-@st.cache_data(ttl=0)
 def load_cbam_data():
     df = pd.read_excel(CBAM_FILE)
     df.columns = [str(c).strip() for c in df.columns]
