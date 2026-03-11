@@ -1294,7 +1294,7 @@ def page_cbam():
         ))
 
         # Sector markers for selected products — only partners with value >= 0.5M
-        valid_partners_set = set(prod_total_all[prod_total_all["Trade Value USD M"] >= 0.001]["Partner"].tolist())
+        valid_partners_set = set(prod_total_all[prod_total_all["Trade Value USD M"] > 0]["Partner"].tolist())
         active_cats_prod = [c for c in categories if c in prod_total_df["Category"].unique()]
         for i, cat in enumerate(active_cats_prod):
             style = CAT_MARKER[cat]
