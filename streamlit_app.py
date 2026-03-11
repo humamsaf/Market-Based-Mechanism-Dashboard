@@ -1184,60 +1184,129 @@ def page_cbam():
     fig_map = go.Figure()
 
     if product_codes_sel:
-        # ── PRODUCT MODE: one choropleth per selected product code ──
-        # Show only the selected product(s); each gets its own colour
-        # Base grey choropleth for all countries (context)
+        # ── PRODUCT MODE: choropleth = total all selected products, hover = breakdown per product ──
+
+        # Total per partner across all selected products
+        prod_total_df = map_df[map_df["ProductCode"].isin(product_codes_sel)]
+        prod_total_agg = prod_total_df.groupby("Partner")["Trade Value 1000USD"].sum().reset_index()
+        prod_total_agg["Trade Value USD M"] = prod_total_agg["Trade Value 1000USD"] / 1_000
+        prod_total_agg["iso3"] = prod_total_agg["Partner"].apply(to_iso3)
+        prod_total_agg = prod_total_agg.dropna(subset=["iso3"])
+        prod_total_agg = prod_total_agg[prod_total_agg["Trade Value USD M"] >= 0.5]
+
+        # Per-product breakdown per partner for hover
+        prod_by_partner = (
+            map_df[map_df["ProductCode"].isin(product_codes_sel)]
+            .groupby(["Partner", "ProductCode"])["Trade Value 1000USD"].sum()
+            .reset_index()
+        )
+        # Map code → short label
+        code_to_label = {lbl.split(" — ")[0]: lbl for lbl in product_sel}
+
+        def build_product_hover(partner):
+            total_v = prod_total_agg.loc[prod_total_agg["Partner"] == partner, "Trade Value USD M"]
+            total_v = total_v.iloc[0] if not total_v.empty else 0
+            rows = prod_by_partner[prod_by_partner["Partner"] == partner].sort_values("Trade Value 1000USD", ascending=False)
+            prod_lines = ""
+            for _, r in rows.iterrows():
+                v = r["Trade Value 1000USD"] / 1_000
+                if v < 0.01:
+                    continue
+                lbl = code_to_label.get(r["ProductCode"], r["ProductCode"])
+                prod_lines += (
+                    "<br><span style='color:#4a90d9;font-size:11px;'>▸ " + lbl + "</span>"
+                    "<b style='color:#1a1a2e;'>&nbsp;&nbsp;USD " + f"{v:,.2f}" + "M</b>"
+                )
+            return (
+                "<b style='font-size:13px;color:#1a1a2e;'>" + partner + "</b>"
+                "<br><span style='color:#ccc;'>──────────────</span>"
+                "<br><span style='font-size:10px;color:#999;text-transform:uppercase;letter-spacing:1px;'>Total (selected products)</span>"
+                "<br><b style='font-size:16px;color:#1d3557;'>USD " + f"{total_v:,.2f}" + "M</b>"
+                "<br><span style='color:#ccc;'>──────────────</span>"
+                + prod_lines
+            )
+
+        prod_total_agg["hover"] = prod_total_agg["Partner"].apply(build_product_hover)
+
+        # Single choropleth — total value, blue scale
         fig_map.add_trace(go.Choropleth(
-            locations=map_agg["iso3"],
-            z=[0] * len(map_agg),
-            colorscale=[[0, "#eeeeee"], [1, "#eeeeee"]],
+            locations=prod_total_agg["iso3"],
+            z=prod_total_agg["Trade Value USD M"],
+            colorscale=[[0, "#dceaf7"], [0.3, "#7fb3d9"], [0.7, "#2a6496"], [1, "#1d3557"]],
             showscale=False,
-            marker_line_color="#cccccc",
-            marker_line_width=0.8,
-            hoverinfo="skip",
+            hovertemplate="%{customdata}<extra></extra>",
+            customdata=prod_total_agg[["hover"]].values,
+            marker_line_color="#333333",
+            marker_line_width=1.0,
+            name="Trade Value",
             showlegend=False,
-            name="_base",
         ))
 
-        for pi, code in enumerate(product_codes_sel):
-            prod_df = map_df[map_df["ProductCode"] == code]
-            prod_label = product_sel[pi] if pi < len(product_sel) else code
-            prod_agg = prod_df.groupby("Partner")["Trade Value 1000USD"].sum().reset_index()
-            prod_agg["Trade Value USD M"] = prod_agg["Trade Value 1000USD"] / 1_000
-            prod_agg["iso3"] = prod_agg["Partner"].apply(to_iso3)
-            prod_agg = prod_agg.dropna(subset=["iso3"])
-            prod_agg = prod_agg[prod_agg["Trade Value USD M"] >= 0.5]
-            if prod_agg.empty:
+        # Sector markers for selected products
+        active_cats_prod = [c for c in categories if c in prod_total_df["Category"].unique()]
+        for i, cat in enumerate(active_cats_prod):
+            style = CAT_MARKER[cat]
+            dlat, dlon = style["offset"]
+            cat_partners = prod_total_df[prod_total_df["Category"] == cat]["Partner"].unique()
+            rows_m = []
+            for partner in cat_partners:
+                iso3 = to_iso3(partner)
+                if iso3 and iso3 in CENTROIDS:
+                    lat, lon = CENTROIDS[iso3]
+                    rows_m.append({"partner": partner, "lat": lat + dlat, "lon": lon + dlon})
+            if not rows_m:
                 continue
-
-            color = PRODUCT_PALETTE[pi % len(PRODUCT_PALETTE)]
-            # Convert hex to rgba for light/dark colorscale
-            r, g, b = int(color[1:3],16), int(color[3:5],16), int(color[5:7],16)
-            color_light = f"rgba({r},{g},{b},0.25)"
-            color_full  = f"rgba({r},{g},{b},1.0)"
-
-            fig_map.add_trace(go.Choropleth(
-                locations=prod_agg["iso3"],
-                z=prod_agg["Trade Value USD M"],
-                colorscale=[[0, color_light], [1, color_full]],
-                showscale=False,
-                marker_line_color="#333333",
-                marker_line_width=0.8,
-                hovertemplate="<b>%{location}</b><br>" + prod_label + "<br>USD %{z:,.2f}M<extra></extra>",
-                name=prod_label,
-                showlegend=True,
-                legendgroup=f"prod_{pi}",
-                legendgrouptitle_text="Product Codes" if pi == 0 else "",
+            import pandas as _pd
+            df_cat_p = _pd.DataFrame(rows_m)
+            fig_map.add_trace(go.Scattergeo(
+                lat=df_cat_p["lat"], lon=df_cat_p["lon"],
+                mode="markers",
+                marker=dict(
+                    symbol=style["symbol"],
+                    color=style["color"],
+                    size=style["size"],
+                    line=dict(width=0.8, color="#222222"),
+                    opacity=0.9,
+                ),
+                name=cat,
+                text=df_cat_p["partner"],
+                hoverinfo="skip",
+                showlegend=False,
             ))
 
+        # Value bins legend
         VALUE_BINS = [
-            ("< USD 500M",   "#dceaf7"),
-            ("USD 500M–1B",  "#a8cbea"),
-            ("USD 1B–3B",    "#7fb3d9"),
-            ("USD 3B–6B",    "#2a6496"),
-            ("> USD 6B",     "#1d3557"),
+            ("< USD 500M",      "#dceaf7"),
+            ("USD 500M – 1B",   "#a8cbea"),
+            ("USD 1B – 3B",     "#7fb3d9"),
+            ("USD 3B – 6B",     "#2a6496"),
+            ("> USD 6B",        "#1d3557"),
         ]
-        # Legend note only (no value bins in product mode)
+        for j, (label, color) in enumerate(VALUE_BINS):
+            fig_map.add_trace(go.Scattergeo(
+                lat=[None], lon=[None], mode="markers",
+                marker=dict(symbol="square", color=color, size=10,
+                            line=dict(width=0.6, color="#555555")),
+                name=label,
+                showlegend=True,
+                legendgroup="value",
+                legendgrouptitle_text="Trade Value" if j == 0 else "",
+                hoverinfo="skip",
+            ))
+
+        SYMBOL_MAP = {"circle": "circle", "square": "square", "diamond": "diamond", "cross": "cross", "triangle-up": "triangle-up"}
+        for k, cat in enumerate(active_cats_prod):
+            style = CAT_MARKER[cat]
+            fig_map.add_trace(go.Scattergeo(
+                lat=[None], lon=[None], mode="markers",
+                marker=dict(symbol=SYMBOL_MAP[style["symbol"]], color=style["color"], size=8,
+                            line=dict(width=0.8, color="#222222")),
+                name=cat,
+                showlegend=True,
+                legendgroup="sectors",
+                legendgrouptitle_text="Sectors" if k == 0 else "",
+                hoverinfo="skip",
+            ))
     else:
         # ── DEFAULT MODE: choropleth by total trade value + sector markers ──
         cat_by_partner = map_df.groupby(["Partner", "Category"])["Trade Value 1000USD"].sum().reset_index()
