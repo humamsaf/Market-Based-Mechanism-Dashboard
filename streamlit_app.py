@@ -955,7 +955,7 @@ def page_placeholder(title, icon):
 
 
 # ── CBAM Data Loader ───────────────────────────────────────────
-CBAM_FILE = "data/CBAM EXPOSURE.xlsx"
+CBAM_FILE = "data/CBAM_EXPOSURE.xlsx"
 
 @st.cache_data
 def load_cbam_data():
