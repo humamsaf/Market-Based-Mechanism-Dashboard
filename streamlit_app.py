@@ -1380,8 +1380,8 @@ def page_cbam():
             yaxis=dict(title="", showgrid=False, tickfont=dict(size=11)),
             legend=dict(
                 orientation="v",
-                x=0.01, y=0.01,
-                xanchor="left", yanchor="bottom",
+                x=0.99, y=0.01,
+                xanchor="right", yanchor="bottom",
                 bgcolor="rgba(255,255,255,0.9)",
                 bordercolor="#cccccc",
                 borderwidth=1,
