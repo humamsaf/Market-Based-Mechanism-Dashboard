@@ -1195,7 +1195,7 @@ def page_cbam():
         prod_total_all = prod_total_all.dropna(subset=["iso3"])
 
         # Choropleth only shows countries >= 0.5M
-        prod_total_agg = prod_total_all[prod_total_all["Trade Value USD M"] >= 0.5].copy()
+        prod_total_agg = prod_total_all[prod_total_all["Trade Value USD M"] > 0].copy()
 
         # Breakdown: partner × sector × product (all partners)
         prod_by_sector_partner = (
@@ -1227,7 +1227,7 @@ def page_cbam():
                 body += (
                     "<br><span style='color:" + sec_color + ";font-size:11px;font-weight:700;'>"
                     + sec_shape + " " + sec.upper()
-                    + "</span><b style='color:#555;font-size:11px;'>&nbsp;— USD " + f"{sec_v:,.2f}" + "M</b>"
+                    + "</span><b style='color:#555;font-size:11px;'>&nbsp;— USD " + f"{sec_v:,.4f}" + "M</b>"
                 )
                 # Products under this sector
                 p_rows = prod_by_sector_partner[
@@ -1241,13 +1241,13 @@ def page_cbam():
                     lbl = code_to_label.get(pr["ProductCode"], pr["ProductCode"])
                     body += (
                         "<br>&nbsp;&nbsp;<span style='color:#888;font-size:10px;'>▸ " + lbl + "</span>"
-                        "<b style='color:#1a1a2e;font-size:10px;'>&nbsp;USD " + f"{pv:,.2f}" + "M</b>"
+                        "<b style='color:#1a1a2e;font-size:10px;'>&nbsp;USD " + f"{pv:,.4f}" + "M</b>"
                     )
             return (
                 "<b style='font-size:13px;color:#1a1a2e;'>" + partner + "</b>"
                 "<br><span style='color:#ccc;'>──────────────</span>"
                 "<br><span style='font-size:10px;color:#999;text-transform:uppercase;letter-spacing:1px;'>Total (selected products)</span>"
-                "<br><b style='font-size:16px;color:#1d3557;'>USD " + f"{total_v:,.2f}" + "M</b>"
+                "<br><b style='font-size:16px;color:#1d3557;'>USD " + f"{total_v:,.4f}" + "M</b>"
                 "<br><span style='color:#ccc;'>──────────────</span>"
                 + body
             )
@@ -1324,7 +1324,7 @@ def page_cbam():
                 hovertemplate=(
                     "<b>%{customdata[0]}</b><br>"
                     + cat + "<br>"
-                    "USD %{customdata[1]:,.2f}M<extra></extra>"
+                    "USD %{customdata[1]:,.4f}M<extra></extra>"
                 ),
                 showlegend=False,
             ))
