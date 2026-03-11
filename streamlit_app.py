@@ -1303,36 +1303,54 @@ def page_cbam():
 
     with col_bar:
         st.markdown('<div style="font-size:16px;font-weight:800;color:#1a1a2e;margin-bottom:8px;">Top 25 Partners by Trade Value</div>', unsafe_allow_html=True)
-        top_partners = (
+
+        # Get top 25 partners by total trade value
+        top25_names = (
             f.groupby("Partner")["Trade Value 1000USD"].sum()
             .sort_values(ascending=False)
             .head(25)
+            .index.tolist()
+        )
+
+        # Pivot: rows = Partner, cols = Category
+        top25_df = (
+            f[f["Partner"].isin(top25_names)]
+            .groupby(["Partner", "Category"])["Trade Value 1000USD"]
+            .sum()
             .reset_index()
         )
-        top_partners["Trade Value USD M"] = top_partners["Trade Value 1000USD"] / 1_000
-        top_partners = top_partners.sort_values("Trade Value USD M", ascending=True)
+        top25_df["Trade Value USD M"] = top25_df["Trade Value 1000USD"] / 1_000
+
+        # Sort partners by total (ascending so top is at top in horizontal bar)
+        partner_order = (
+            top25_df.groupby("Partner")["Trade Value USD M"].sum()
+            .sort_values(ascending=True)
+            .index.tolist()
+        )
 
         fig_bar = go.Figure()
-        fig_bar.add_trace(go.Bar(
-            y=top_partners["Partner"],
-            x=top_partners["Trade Value USD M"],
-            orientation="h",
-            marker=dict(
-                color=top_partners["Trade Value USD M"],
-                colorscale=[[0, "#c8dff4"], [1, "#1d3557"]],
-                showscale=False,
-                line=dict(width=0),
-            ),
-            text=[f"USD {v:,.0f}M" for v in top_partners["Trade Value USD M"]],
-            textposition="outside",
-            textfont=dict(size=10, color="#555"),
-            hovertemplate="<b>%{y}</b><br>USD %{x:,.0f}M<extra></extra>",
-        ))
+        for i_cat, cat in enumerate(categories):
+            sub = top25_df[top25_df["Category"] == cat].set_index("Partner")
+            vals = [sub.loc[p, "Trade Value USD M"] if p in sub.index else 0 for p in partner_order]
+            fig_bar.add_trace(go.Bar(
+                y=partner_order,
+                x=vals,
+                name=cat,
+                orientation="h",
+                marker=dict(
+                    color=MONO_BLUES[i_cat % len(MONO_BLUES)],
+                    line=dict(width=0),
+                ),
+                hovertemplate=f"<b>%{{y}}</b><br>{cat}: USD %{{x:,.0f}}M<extra></extra>",
+            ))
+
         fig_bar.update_layout(
-            height=520, margin=dict(l=0, r=60, t=10, b=0),
+            barmode="stack",
+            height=560, margin=dict(l=0, r=20, t=10, b=0),
             paper_bgcolor="white", plot_bgcolor="white",
             xaxis=dict(title="Trade Value (USD Million)", showgrid=True, gridcolor="#f0f0f0", zeroline=False),
             yaxis=dict(title="", showgrid=False, tickfont=dict(size=11)),
+            legend=dict(orientation="h", yanchor="bottom", y=-0.12, xanchor="center", x=0.5, font=dict(size=11)),
             hoverlabel=dict(bgcolor="white", bordercolor="#ccc", font=dict(size=12)),
         )
         st.plotly_chart(fig_bar, use_container_width=True, key="cbam_top_partners", config={"displayModeBar": False})
