@@ -1330,12 +1330,7 @@ def page_cbam():
                     opacity=0.9,
                 ),
                 name=cat,
-                customdata=df_cat_p[["partner", "sec_v_fmt"]].values,
-                hovertemplate=(
-                    "<b>%{customdata[0]}</b><br>"
-                    + cat + "<br>"
-                    "%{customdata[1]}<extra></extra>"
-                ),
+                hoverinfo="skip",
                 showlegend=False,
             ))
 
