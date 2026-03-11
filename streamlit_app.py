@@ -1284,18 +1284,27 @@ def page_cbam():
             showlegend=False,
         ))
 
-        # Sector markers for selected products
+        # Sector markers for selected products — only partners with value >= 0.5M
+        valid_partners_set = set(prod_total_all[prod_total_all["Trade Value USD M"] >= 0.5]["Partner"].tolist())
         active_cats_prod = [c for c in categories if c in prod_total_df["Category"].unique()]
         for i, cat in enumerate(active_cats_prod):
             style = CAT_MARKER[cat]
             dlat, dlon = style["offset"]
-            cat_partners = prod_total_df[prod_total_df["Category"] == cat]["Partner"].unique()
+            cat_partners = prod_total_df[
+                (prod_total_df["Category"] == cat) &
+                (prod_total_df["Partner"].isin(valid_partners_set))
+            ]["Partner"].unique()
             rows_m = []
             for partner in cat_partners:
                 iso3 = to_iso3(partner)
                 if iso3 and iso3 in CENTROIDS:
                     lat, lon = CENTROIDS[iso3]
-                    rows_m.append({"partner": partner, "lat": lat + dlat, "lon": lon + dlon})
+                    # Sector value for this partner
+                    sec_v = prod_total_df[
+                        (prod_total_df["Partner"] == partner) &
+                        (prod_total_df["Category"] == cat)
+                    ]["Trade Value 1000USD"].sum() / 1_000
+                    rows_m.append({"partner": partner, "lat": lat + dlat, "lon": lon + dlon, "sec_v": sec_v})
             if not rows_m:
                 continue
             import pandas as _pd
@@ -1311,8 +1320,12 @@ def page_cbam():
                     opacity=0.9,
                 ),
                 name=cat,
-                text=df_cat_p["partner"],
-                hoverinfo="skip",
+                customdata=df_cat_p[["partner", "sec_v"]].values,
+                hovertemplate=(
+                    "<b>%{customdata[0]}</b><br>"
+                    + cat + "<br>"
+                    "USD %{customdata[1]:,.2f}M<extra></extra>"
+                ),
                 showlegend=False,
             ))
 
