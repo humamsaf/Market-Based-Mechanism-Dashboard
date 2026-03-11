@@ -1188,14 +1188,16 @@ def page_cbam():
 
         prod_total_df = map_df[map_df["ProductCode"].isin(product_codes_sel)]
 
-        # Total per partner (union of all countries that have ANY of the selected products)
-        prod_total_agg = prod_total_df.groupby("Partner")["Trade Value 1000USD"].sum().reset_index()
-        prod_total_agg["Trade Value USD M"] = prod_total_agg["Trade Value 1000USD"] / 1_000
-        prod_total_agg["iso3"] = prod_total_agg["Partner"].apply(to_iso3)
-        prod_total_agg = prod_total_agg.dropna(subset=["iso3"])
-        prod_total_agg = prod_total_agg[prod_total_agg["Trade Value USD M"] >= 0.5]
+        # ALL partners with valid iso3 (for hover — no threshold filter)
+        prod_total_all = prod_total_df.groupby("Partner")["Trade Value 1000USD"].sum().reset_index()
+        prod_total_all["Trade Value USD M"] = prod_total_all["Trade Value 1000USD"] / 1_000
+        prod_total_all["iso3"] = prod_total_all["Partner"].apply(to_iso3)
+        prod_total_all = prod_total_all.dropna(subset=["iso3"])
 
-        # Breakdown: partner × sector × product
+        # Choropleth only shows countries >= 0.5M
+        prod_total_agg = prod_total_all[prod_total_all["Trade Value USD M"] >= 0.5].copy()
+
+        # Breakdown: partner × sector × product (all partners)
         prod_by_sector_partner = (
             map_df[map_df["ProductCode"].isin(product_codes_sel)]
             .groupby(["Partner", "Category", "ProductCode"])["Trade Value 1000USD"].sum()
@@ -1209,7 +1211,7 @@ def page_cbam():
         code_to_label = {lbl.split(" — ")[0]: lbl for lbl in product_sel}
 
         def build_product_hover(partner):
-            total_v = prod_total_agg.loc[prod_total_agg["Partner"] == partner, "Trade Value USD M"]
+            total_v = prod_total_all.loc[prod_total_all["Partner"] == partner, "Trade Value USD M"]
             total_v = float(total_v.iloc[0]) if not total_v.empty else 0
             # Sectors present for this partner (sorted by sector total desc)
             sec_rows = sector_total_by_partner[sector_total_by_partner["Partner"] == partner]
@@ -1250,18 +1252,34 @@ def page_cbam():
                 + body
             )
 
-        prod_total_agg["hover"] = prod_total_agg["Partner"].apply(build_product_hover)
+        prod_total_all["hover"] = prod_total_all["Partner"].apply(build_product_hover)
+        # Merge hover back into choropleth df
+        prod_total_agg = prod_total_agg.merge(prod_total_all[["Partner", "hover"]], on="Partner", how="left")
+
+        # Combine: colored countries (>=0.5M) + zero-value countries (for hover only)
+        # All valid countries get hover; only >=0.5M get color
+        import numpy as _np
+        prod_hover_only = prod_total_all[~prod_total_all["Partner"].isin(prod_total_agg["Partner"])].copy()
+        prod_hover_only["Trade Value USD M"] = _np.nan  # NaN = no color in choropleth
+
+        prod_map_combined = pd.concat([prod_total_agg, prod_hover_only], ignore_index=True)
+        # Fill hover for hover-only rows (already computed in prod_total_all)
+        if "hover" not in prod_map_combined.columns:
+            prod_map_combined["hover"] = prod_map_combined["Partner"].apply(build_product_hover)
+
+        zmax = prod_total_agg["Trade Value USD M"].max() if not prod_total_agg.empty else 1
 
         # Single choropleth — total value, blue scale
         fig_map.add_trace(go.Choropleth(
-            locations=prod_total_agg["iso3"],
-            z=prod_total_agg["Trade Value USD M"],
+            locations=prod_map_combined["iso3"],
+            z=prod_map_combined["Trade Value USD M"],
             colorscale=[[0, "#dceaf7"], [0.3, "#7fb3d9"], [0.7, "#2a6496"], [1, "#1d3557"]],
+            zmin=0, zmax=zmax,
             showscale=False,
             hovertemplate="%{customdata}<extra></extra>",
-            customdata=prod_total_agg[["hover"]].values,
-            marker_line_color="#333333",
-            marker_line_width=1.0,
+            customdata=prod_map_combined[["hover"]].values,
+            marker_line_color="#cccccc",
+            marker_line_width=0.8,
             name="Trade Value",
             showlegend=False,
         ))
