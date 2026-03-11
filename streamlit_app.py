@@ -1371,6 +1371,14 @@ def page_cbam():
         # ── DEFAULT MODE: choropleth by total trade value + sector markers ──
         cat_by_partner = map_df.groupby(["Partner", "Category"])["Trade Value 1000USD"].sum().reset_index()
 
+        def fmt_val_default(v):
+            if v >= 1000:
+                return f"USD {v/1000:,.2f}B"
+            elif v >= 0.5:
+                return f"USD {v:,.0f}M"
+            else:
+                return f"USD {v:,.4f}M"
+
         def build_cbam_hover(partner):
             row = cat_by_partner[cat_by_partner["Partner"] == partner]
             total = row["Trade Value 1000USD"].sum() / 1_000
@@ -1382,15 +1390,15 @@ def page_cbam():
                 color = CAT_COLORS.get(r["Category"], "#888")
                 shape = CAT_SHAPE_CHAR.get(r["Category"], "■")
                 sector_lines += (
-                    "<br><span style='color:" + color + ";'>" + shape + "</span>"
-                    "&nbsp;<span style='color:#666;font-size:11px;'>" + r["Category"] + "</span>"
-                    "<b style='color:#1a1a2e;'>&nbsp;&nbsp;USD " + f"{v:,.0f}" + "M</b>"
+                    "<br><span style='color:" + color + ";font-size:11px;font-weight:700;'>"
+                    + shape + " " + r["Category"].upper()
+                    + "</span><b style='color:#555;font-size:11px;'>&nbsp;— " + fmt_val_default(v) + "</b>"
                 )
             return (
                 "<b style='font-size:13px;color:#1a1a2e;'>" + partner + "</b>"
                 "<br><span style='color:#ccc;'>──────────────</span>"
                 "<br><span style='font-size:10px;color:#999;text-transform:uppercase;letter-spacing:1px;'>Total Trade Value</span>"
-                "<br><b style='font-size:16px;color:#1d3557;'>USD " + f"{total:,.0f}" + "M</b>"
+                "<br><b style='font-size:16px;color:#1d3557;'>" + fmt_val_default(total) + "</b>"
                 "<br><span style='color:#ccc;'>──────────────</span>"
                 + sector_lines
             )
