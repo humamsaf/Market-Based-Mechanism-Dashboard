@@ -1201,6 +1201,7 @@ def page_cbam():
             prod_agg["Trade Value USD M"] = prod_agg["Trade Value 1000USD"] / 1_000
             prod_agg["iso3"] = prod_agg["Partner"].apply(to_iso3)
             prod_agg = prod_agg.dropna(subset=["iso3"])
+            prod_agg = prod_agg[prod_agg["Trade Value USD M"] > 0]
             if prod_agg.empty:
                 continue
 
