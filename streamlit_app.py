@@ -957,7 +957,7 @@ def page_placeholder(title, icon):
 # ── CBAM Data Loader ───────────────────────────────────────────
 CBAM_FILE = "data/CBAM_EXPOSURE.xlsx"
 
-@st.cache_data
+@st.cache_data(ttl=0)
 def load_cbam_data():
     df = pd.read_excel(CBAM_FILE)
     df.columns = [str(c).strip() for c in df.columns]
@@ -966,7 +966,6 @@ def load_cbam_data():
     df["Category"] = df["Category"].astype(str).str.strip()
     df["Reporter"] = df["Reporter"].astype(str).str.strip()
     df["Product Description"] = df["Product Description"].astype(str).str.strip()
-    # Remove aggregate "World" rows for partner-level analysis
     return df
 
 
@@ -985,14 +984,19 @@ def page_cbam():
     uk_val      = uk_val_m    / 1_000
     n_partners = df_real["Partner"].nunique()
     n_products = df_real["ProductCode"].nunique()
-    categories = sorted(df_real["Category"].unique())
+    CAT_ORDER = ["Iron and Steel", "Cement", "Aluminium", "Fertilisers", "Other"]
+    # Map "Fertilizer" → "Fertilisers" in the data for display consistency
+    df_real["Category"] = df_real["Category"].replace({"Fertilizer": "Fertilisers"})
+    existing_cats = df_real["Category"].unique()
+    categories = [c for c in CAT_ORDER if c in existing_cats] + \
+                 [c for c in existing_cats if c not in CAT_ORDER]
     n_cat = len(categories)
 
     CAT_COLORS = {
-        "Aluminium":     "#4a90d9",
-        "Cement":        "#e07b00",
-        "Fertilizer":    "#2a9d8f",
         "Iron and Steel":"#c0392b",
+        "Cement":        "#e07b00",
+        "Aluminium":     "#4a90d9",
+        "Fertilisers":   "#2a9d8f",
         "Other":         "#9b59b6",
     }
 
@@ -1108,9 +1112,8 @@ def page_cbam():
         '<div style="font-size:10px;color:#999;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-top:7px;">Total</div>'
         '</div>'
     )
-    SUMMARY_ORDER = ["Iron and Steel", "Cement", "Aluminium", "Fertilizer", "Other"]
     cat_summary_items = []
-    for i_cat, cat in enumerate([c for c in SUMMARY_ORDER if c in categories]):
+    for i_cat, cat in enumerate(categories):
         val = f[f["Category"] == cat]["Trade Value 1000USD"].sum() / 1_000
         color = CAT_COLORS.get(cat, "#888")
         n_p   = f[f["Category"] == cat]["Partner"].nunique()
@@ -1139,10 +1142,10 @@ def page_cbam():
     cat_by_partner = map_df.groupby(["Partner", "Category"])["Trade Value 1000USD"].sum().reset_index()
 
     CAT_SHAPE_CHAR = {
-        "Aluminium":      "●",
-        "Cement":         "■",
-        "Fertilizer":     "◆",
         "Iron and Steel": "▲",
+        "Cement":         "■",
+        "Aluminium":      "●",
+        "Fertilisers":    "◆",
         "Other":          "✚",
     }
 
@@ -1174,10 +1177,10 @@ def page_cbam():
 
     # Sector marker styles
     CAT_MARKER = {
-        "Aluminium":      {"symbol": "circle",      "color": "#1d6fa4", "size": 6, "offset": (0.0,  0.0)},
-        "Cement":         {"symbol": "square",      "color": "#c45e00", "size": 5, "offset": (0.0,  2.2)},
-        "Fertilizer":     {"symbol": "diamond",     "color": "#1a7a6e", "size": 6, "offset": (2.0,  0.0)},
         "Iron and Steel": {"symbol": "triangle-up", "color": "#a93226", "size": 6, "offset": (-2.0, 2.2)},
+        "Cement":         {"symbol": "square",      "color": "#c45e00", "size": 5, "offset": (0.0,  2.2)},
+        "Aluminium":      {"symbol": "circle",      "color": "#1d6fa4", "size": 6, "offset": (0.0,  0.0)},
+        "Fertilisers":    {"symbol": "diamond",     "color": "#1a7a6e", "size": 6, "offset": (2.0,  0.0)},
         "Other":          {"symbol": "cross",       "color": "#6b3fa0", "size": 6, "offset": (-2.0, 0.0)},
     }
 
@@ -1248,8 +1251,7 @@ def page_cbam():
         ))
 
     # Legend: sektor icons
-    LEGEND_ORDER = ["Iron and Steel", "Cement", "Aluminium", "Fertilizer", "Other"]
-    active_cats_legend = [c for c in LEGEND_ORDER if c in map_df["Category"].unique()]
+    active_cats_legend = [c for c in categories if c in map_df["Category"].unique()]
     SYMBOL_MAP = {"circle": "circle", "square": "square", "diamond": "diamond", "cross": "cross", "triangle-up": "triangle-up"}
     for k, cat in enumerate(active_cats_legend):
         style = CAT_MARKER[cat]
